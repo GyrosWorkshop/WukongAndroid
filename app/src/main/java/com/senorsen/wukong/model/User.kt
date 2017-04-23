@@ -1,6 +1,6 @@
 package com.senorsen.wukong.model
 
-class User(
+data class User(
          var id: String?,
          var userName: String?,
          var displayName: String?,

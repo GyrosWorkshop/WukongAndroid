@@ -1,7 +1,7 @@
 package com.senorsen.wukong.model
 
 // A RequestSong is an object which contains identified song and credentials, which is supposed to be sent to the server.
-class RequestSong(
+data class RequestSong(
         var siteId: String?,
         var songId: String?,
 
@@ -11,7 +11,7 @@ class RequestSong(
 )
 
 // A Song is an object contains all the data of a song.
-class Song(
+data class Song(
         var siteId: String?,
         var songId: String?,
         var artist: String?,
@@ -25,7 +25,7 @@ class Song(
 )
 
 // A File is an object which contains uri and other required metadata.
-class File(
+data class File(
         var file: String?,
         var fileViaCdn: String?,
         var format: String?,
@@ -34,7 +34,7 @@ class File(
 )
 
 // A lovely lyric.
-class Lyric(
+data class Lyric(
         var lrc: Boolean,
         var translated: Boolean,
         var data: String?
