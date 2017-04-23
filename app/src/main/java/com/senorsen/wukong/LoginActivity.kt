@@ -75,7 +75,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
             return
         }
 
-        loaderManager.initLoader(0, null, this)
+        loaderManager.initLoader(0, Bundle(), this)
     }
 
     private fun mayRequestContacts(): Boolean {
