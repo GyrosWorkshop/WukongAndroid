@@ -1,6 +1,6 @@
 package com.senorsen.wukong.network
 
-class ApiUrls {
+object ApiUrls {
 
     // Base url, hostname, etc.
     val hostname = "wukong.azurewebsites.net"
