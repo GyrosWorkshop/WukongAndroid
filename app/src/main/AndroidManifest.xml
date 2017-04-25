@@ -34,7 +34,8 @@
         </service>
         <service
             android:name=".service.WukongService"
-            android:exported="false" />
+            android:exported="false"
+            android:process=":wukongsrv" />
     </application>
 
 </manifest>
