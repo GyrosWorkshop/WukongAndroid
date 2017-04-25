@@ -25,23 +25,37 @@ class SocketWrapper(wsUrl: String, cookies: String, socketReceiver: SocketReceiv
         val request = Request.Builder()
                 .addHeader("Cookie", cookies)
                 .url(wsUrl).build()
-        val listener = ActualWebSocketListener(socketReceiver, handler, applicationContext)
+        var listener: ActualWebSocketListener? = null
+
+        val reconnectCallback = object : Callback {
+            override fun call() {
+                client.dispatcher().cancelAll()
+                ws = client.newWebSocket(request, listener)
+            }
+        }
+
+        listener = ActualWebSocketListener(socketReceiver, reconnectCallback, handler, applicationContext)
 
         ws = client.newWebSocket(request, listener)
 
-        client.dispatcher().executorService().shutdown()
+//        client.dispatcher().executorService().shutdown()
     }
 
     fun disconnect() {
         ws.close(ActualWebSocketListener.Companion.NORMAL_CLOSURE_STATUS, "Bye")
     }
 
-    abstract class SocketReceiver {
-        abstract fun onEventMessage(protocol: WebSocketReceiveProtocol)
+    interface SocketReceiver {
+        fun onEventMessage(protocol: WebSocketReceiveProtocol)
+    }
+
+    interface Callback {
+        fun call()
     }
 
 
     class ActualWebSocketListener(private val socketReceiver: SocketReceiver,
+                                  private val reconnectCallBack: Callback,
                                   private val handler: Handler,
                                   private val applicationContext: Context) : WebSocketListener() {
 
@@ -74,9 +88,14 @@ class SocketWrapper(wsUrl: String, cookies: String, socketReceiver: SocketReceiv
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+            Log.d(TAG, "Closing: $code $reason")
             t.cancel(true)
-            webSocket.close(NORMAL_CLOSURE_STATUS, null)
-            println("Closing: $code $reason")
+            if (code == NORMAL_CLOSURE_STATUS) {
+                webSocket.close(NORMAL_CLOSURE_STATUS, null)
+            } else {
+                Log.i(TAG, "Reconnection...")
+
+            }
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {

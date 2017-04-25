@@ -53,7 +53,7 @@ class WukongService : Service() {
                 Log.d(TAG, "User: " + currentUser.toString())
 
                 http.channelJoin("test")
-                socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, object : SocketWrapper.SocketReceiver() {
+                socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, object : SocketWrapper.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
                         when {
                             protocol.eventName == "Play" -> {
