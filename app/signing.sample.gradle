@@ -1,0 +1,8 @@
+android {
+    config {
+        keyAlias 'alias'
+        keyPassword 'keypassword'
+        storeFile file('filepath')
+        storePassword 'storepassword'
+    }
+}
