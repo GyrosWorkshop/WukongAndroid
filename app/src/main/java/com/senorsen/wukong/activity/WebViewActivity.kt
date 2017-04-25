@@ -36,6 +36,8 @@ class WebViewActivity : AppCompatActivity() {
         var loggedIn = false
 
         webView.setWebViewClient(object : WebViewClient() {
+
+            @Suppress("OverridingDeprecatedMember")
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 if (url.startsWith(ApiUrls.base)) {
                     CookieManager.getInstance().setCookie(url, "")
@@ -45,14 +47,14 @@ class WebViewActivity : AppCompatActivity() {
             }
 
             override fun onPageFinished(view: WebView?, url: String) {
-                if (url.startsWith(ApiUrls.base) && !loggedIn) {
+                if (url == ApiUrls.base + '/' && !loggedIn) {
                     val cookies = CookieManager.getInstance().getCookie(url)
                     Log.d(TAG, "All the cookies of $url: $cookies")
-                    val cookieList = cookies.split(';').map(String::trim).filterNot(String::isNullOrBlank).joinToString("\n")
-                    if (cookieList.isNotEmpty()) {
+                    if (cookies.isNotBlank()) {
                         val sharedPref = applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE)
                         val editor = sharedPref.edit()
-                                .putString("cookies", cookieList)
+                                .remove("cookies")
+                                .putString("cookies", cookies)
                                 .apply()
                         Toast.makeText(applicationContext, "Logged in successfully.", Toast.LENGTH_SHORT).show()
                         loggedIn = true
@@ -60,6 +62,7 @@ class WebViewActivity : AppCompatActivity() {
                     }
                 }
             }
+
         })
 
     }

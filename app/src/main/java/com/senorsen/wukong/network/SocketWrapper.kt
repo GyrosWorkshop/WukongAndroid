@@ -4,18 +4,17 @@ import okhttp3.*
 import okio.ByteString
 
 
-class SocketWrapper {
+class SocketWrapper(wsUrl: String, cookies: String) {
 
     lateinit var ws: WebSocket
 
-    fun SocketWrapper(wsUrl: String, cookieJar: CookieJar) {
+    init {
 
-        val client = OkHttpClient().newBuilder()
-                .cookieJar(cookieJar).build()
+        val client = OkHttpClient()
 
         val request = Request.Builder()
-                .url(wsUrl)
-                .build()
+                .addHeader("Cookie", cookies)
+                .url(wsUrl).build()
         val listener = ActualWebSocketListener()
 
         ws = client.newWebSocket(request, listener)

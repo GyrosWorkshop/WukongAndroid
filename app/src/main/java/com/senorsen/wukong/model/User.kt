@@ -10,6 +10,4 @@ data class User(
         var fromSite: String? = null,
         var siteUserId: String? = null,
         var url: String? = null
-) {
-
-}
+)

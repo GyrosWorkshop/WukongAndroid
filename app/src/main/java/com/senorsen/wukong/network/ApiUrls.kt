@@ -3,7 +3,8 @@ package com.senorsen.wukong.network
 object ApiUrls {
 
     // Base url, hostname, etc.
-    val hostname = "wukong.azurewebsites.net"
+    val hostname = "api4.wukongmusic.us"
+//    val hostname = "wukong.azurewebsites.net"
     val base = "https://$hostname"
 
     // API endpoints.

@@ -1,15 +1,24 @@
 package com.senorsen.wukong.service
 
+import android.app.IntentService
 import android.app.Service
 import android.content.ContentValues.TAG
 import android.content.Intent
+import android.os.AsyncTask
+import android.os.Handler
 import android.os.IBinder
 import android.util.Log
-import com.senorsen.wukong.network.AppCookieJar
+import android.widget.Toast
+import com.senorsen.wukong.model.User
+import com.senorsen.wukong.network.AppCookies
+import com.senorsen.wukong.network.HttpWrapper
 
 class WukongService : Service() {
 
-    lateinit var cookieJar: AppCookieJar
+    lateinit var http: HttpWrapper
+    lateinit var currentUser: User
+
+    val messageHandler = Handler()
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -21,12 +30,21 @@ class WukongService : Service() {
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        cookieJar = AppCookieJar(applicationContext)
-        Log.d(TAG, "Cookies: " + cookieJar.readCookieLineFromSharedPreferences().joinToString("; "))
+        val cookies = AppCookies(applicationContext).readCookiesFromSharedPreferences()
+        Log.d(TAG, "Cookies: " + cookies)
+        http = HttpWrapper(cookies)
 
-        Log.d(TAG, "onStartCommand WukongService: " + this)
-        val name = intent.getStringExtra("name")
-        Log.d(TAG, "name: " + name)
+        Thread(Runnable {
+            try {
+                currentUser = http.getUserInfo()
+                Log.d(TAG, "User: " + currentUser.toString())
+            } catch (e: HttpWrapper.UserUnauthorizedException) {
+                messageHandler.post {
+                    Toast.makeText(applicationContext, "Please sign in to continue.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }).start().run { }
+
         return START_STICKY
     }
 
@@ -34,4 +52,5 @@ class WukongService : Service() {
         super.onDestroy()
         Log.d(TAG, "onDestroy")
     }
+
 }
