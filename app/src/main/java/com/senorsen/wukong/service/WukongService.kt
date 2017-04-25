@@ -59,8 +59,7 @@ class WukongService : Service() {
                             protocol.eventName == "Play" -> {
                                 val song = protocol.song!!
                                 handler.post {
-                                    setNotification("${song.artist} - ${song.title}")
-//                                    Toast.makeText(applicationContext, "Wukong: ${song.artist} - ${song.title}", Toast.LENGTH_SHORT).show()
+                                    setNotification(song.title!!, "${song.artist} - ${song.album}")
                                 }
                             }
                         }
@@ -97,7 +96,7 @@ class WukongService : Service() {
         Log.d(TAG, "onDestroy")
     }
 
-    fun setNotification(text: String) {
+    fun setNotification(title: String, content: String) {
         val intent = Intent(this, MainActivity::class.java)
         val contextIntent = PendingIntent.getActivity(this, 0, intent, 0)
 
@@ -105,8 +104,8 @@ class WukongService : Service() {
         val notification = NotificationCompat.Builder(this)
                 .setContentIntent(contextIntent)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(getString(R.string.app_name))
-                .setContentText(text).build()
+                .setContentTitle(title)
+                .setContentText(content).build()
 //        notification.flags = Notification.FLAG_ONGOING_EVENT
         notificationManager.notify(0, notification)
     }
