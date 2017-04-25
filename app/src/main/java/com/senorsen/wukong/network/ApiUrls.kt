@@ -16,7 +16,7 @@ object ApiUrls {
     val channelJoinEndpoint = "$apiEndpoint/channel/join"
     val channelReportFinishedEndpoint = "$apiEndpoint/channel/finished"
     val channelUpdateNextSongEndpoint = "$apiEndpoint/channel/updateNextSong"
-    val channelVoteDownUri = "$apiEndpoint/channel/downVote"
+    val channelDownvoteUri = "$apiEndpoint/channel/downVote"
 
     // Music Provider API endpoints.
     val providerEndpoint = "$base/provider"

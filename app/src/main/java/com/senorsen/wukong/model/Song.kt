@@ -15,19 +15,18 @@ data class RequestSong(
 )
 
 // A Song is an object contains all the data of a song.
-class Song {
-    var siteId: String? = null
-    var songId: String? = null
-    var artist: String? = null
-    var album: String? = null
-    lateinit var artwork: File
-    var title: String? = null
-    lateinit var lyrics: List<Lyric>
-    var webUrl: String? = null
-    var mvId: String? = null
-    var mvWebUrl: String? = null
-
-    fun Song() {}
+data class Song(
+        var siteId: String? = null,
+        var songId: String? = null,
+        var artist: String? = null,
+        var album: String? = null,
+        var artwork: File? = null,
+        var title: String? = null,
+        var lyrics: List<Lyric>? = null,
+        var webUrl: String? = null,
+        var mvId: String? = null,
+        var mvWebUrl: String? = null
+) {
 
     class Deserializer : ResponseDeserializable<Song> {
         override fun deserialize(content: String) = Gson().fromJson(content, Song::class.java)
@@ -35,12 +34,13 @@ class Song {
 }
 
 // A File is an object which contains uri and other required metadata.
-class File {
-    var file: String? = null
-    var fileViaCdn: String? = null
-    var format: String? = null
-    var audioQuality: String? = null
-    var audioBitrate: Int? = null
+data class File(
+        var file: String? = null,
+        var fileViaCdn: String? = null,
+        var format: String? = null,
+        var audioQuality: String? = null,
+        var audioBitrate: Int? = null
+) {
 
     class Deserializer : ResponseDeserializable<File> {
         override fun deserialize(content: String) = Gson().fromJson(content, File::class.java)
@@ -48,10 +48,11 @@ class File {
 }
 
 // A lovely lyric.
-class Lyric {
-    var lrc: Boolean? = null
-    var translated: Boolean? = null
-    var data: String? = null
+class Lyric(
+        var lrc: Boolean? = null,
+        var translated: Boolean? = null,
+        var data: String? = null
+) {
 
     class Deserializer : ResponseDeserializable<Lyric> {
         override fun deserialize(content: String) = Gson().fromJson(content, Lyric::class.java)
