@@ -32,7 +32,7 @@ class FileCookieJar : CookieJar {
 
 fun readCookieLineFromFile(context: Context): List<String> {
     val cookieLine = ArrayList<String>()
-    val file = File(context.filesDir, "wukongcookies.txt")
+    val file = File(context.filesDir, "wukong-cookies.txt")
 
     try {
         val br = BufferedReader(FileReader(file))
