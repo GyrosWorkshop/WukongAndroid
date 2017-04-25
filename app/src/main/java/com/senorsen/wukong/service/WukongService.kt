@@ -77,6 +77,8 @@ class WukongService : Service() {
             }
         })
 
+        Thread.sleep(2000)
+
         super.onDestroy()
         Log.d(TAG, "onDestroy")
     }

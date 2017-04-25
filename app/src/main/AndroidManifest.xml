@@ -26,14 +26,14 @@
             android:resource="@xml/automotive_app_desc" />
 
         <service
-            android:name=".service.WukongMusicService"
+            android:name="com.senorsen.wukong.service.WukongMusicService"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
         <service
-            android:name=".service.WukongService"
+            android:name="com.senorsen.wukong.service.WukongService"
             android:exported="false"
             android:process=":wukongsrv" />
     </application>
