@@ -10,8 +10,10 @@ import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
 import com.senorsen.wukong.model.User
+import com.senorsen.wukong.network.ApiUrls
 import com.senorsen.wukong.network.AppCookies
 import com.senorsen.wukong.network.HttpWrapper
+import com.senorsen.wukong.network.SocketWrapper
 
 class WukongService : Service() {
 
@@ -38,9 +40,17 @@ class WukongService : Service() {
             try {
                 currentUser = http.getUserInfo()
                 Log.d(TAG, "User: " + currentUser.toString())
+
+                http.channelJoin("test")
+                val socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, messageHandler, applicationContext)
+
             } catch (e: HttpWrapper.UserUnauthorizedException) {
                 messageHandler.post {
                     Toast.makeText(applicationContext, "Please sign in to continue.", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                messageHandler.post {
+                    Toast.makeText(applicationContext, "Unknown Exception: " + e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }).start().run { }

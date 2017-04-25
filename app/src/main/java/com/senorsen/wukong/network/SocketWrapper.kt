@@ -1,10 +1,16 @@
 package com.senorsen.wukong.network
 
+import android.content.ContentValues.TAG
+import android.content.Context
+import android.os.Handler
+import android.util.Log
+import android.widget.Toast
+import com.google.gson.Gson
 import okhttp3.*
 import okio.ByteString
 
 
-class SocketWrapper(wsUrl: String, cookies: String) {
+class SocketWrapper(wsUrl: String, cookies: String, handler: Handler, applicationContext: Context) {
 
     lateinit var ws: WebSocket
 
@@ -15,25 +21,33 @@ class SocketWrapper(wsUrl: String, cookies: String) {
         val request = Request.Builder()
                 .addHeader("Cookie", cookies)
                 .url(wsUrl).build()
-        val listener = ActualWebSocketListener()
+        val listener = ActualWebSocketListener(handler, applicationContext)
 
         ws = client.newWebSocket(request, listener)
 
         client.dispatcher().executorService().shutdown()
     }
 
-    inner class ActualWebSocketListener : WebSocketListener() {
+    inner class ActualWebSocketListener(private val handler: Handler, private val applicationContext: Context) : WebSocketListener() {
 
         private val NORMAL_CLOSURE_STATUS = 1000
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
             webSocket.send("Knock, knock!")
             webSocket.send("Hello!")
-            webSocket.close(NORMAL_CLOSURE_STATUS, "Goodbye!")
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
-            println("Receiving: " + text)
+            Log.d(TAG, "Receiving: " + text)
+            val receiveProtocol = Gson().fromJson(text, WebSocketReceiveProtocol::class.java)
+            when {
+                receiveProtocol.eventName == "Play" -> {
+                    val song = receiveProtocol.song!!
+                    handler.post {
+                        Toast.makeText(applicationContext, "Wukong: ${song.artist} - ${song.title}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
@@ -41,7 +55,7 @@ class SocketWrapper(wsUrl: String, cookies: String) {
             println("Closing: $code $reason")
         }
 
-        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response) {
+        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             t.printStackTrace()
         }
 

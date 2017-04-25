@@ -9,6 +9,7 @@ import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
+import java.net.URLEncoder
 
 
 class HttpWrapper(private val cookies: String) {
@@ -29,6 +30,10 @@ class HttpWrapper(private val cookies: String) {
         return Gson().fromJson(ret, User::class.java)
     }
 
+    fun channelJoin(channelId: String) {
+        post(ApiUrls.channelJoinEndpoint + "/" + urlEncode(channelId))
+    }
+
     private fun get(url: String): String {
         val request = Request.Builder()
                 .addHeader("Cookie", cookies)
@@ -46,12 +51,26 @@ class HttpWrapper(private val cookies: String) {
         }
     }
 
-    private fun post(url: String, json: String): String {
+    private fun post(url: String, json: String = "{}"): String {
         val body = RequestBody.create(JSON, json)
         val request = Request.Builder()
+                .addHeader("Cookie", cookies)
                 .url(url)
                 .post(body).build()
         val response = client.newCall(request).execute()
-        return response.body().string()
+        when {
+            response.isSuccessful ->
+                return response.body().string()
+
+            response.code() == 401 ->
+                throw UserUnauthorizedException(response.body().string())
+
+            else ->
+                throw IllegalStateException()
+        }
+    }
+
+    private fun urlEncode(segment: String): String {
+        return URLEncoder.encode(segment, "utf-8")
     }
 }
