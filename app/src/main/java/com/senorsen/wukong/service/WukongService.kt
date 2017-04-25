@@ -1,7 +1,6 @@
 package com.senorsen.wukong.service
 
-import android.app.IntentService
-import android.app.Service
+import android.app.*
 import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.AsyncTask
@@ -10,10 +9,13 @@ import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
 import com.senorsen.wukong.model.User
-import com.senorsen.wukong.network.ApiUrls
-import com.senorsen.wukong.network.AppCookies
-import com.senorsen.wukong.network.HttpWrapper
-import com.senorsen.wukong.network.SocketWrapper
+import android.content.Context
+import android.graphics.drawable.Icon
+import android.support.v7.app.NotificationCompat
+import com.senorsen.wukong.R
+import com.senorsen.wukong.activity.MainActivity
+import com.senorsen.wukong.network.*
+
 
 class WukongService : Service() {
 
@@ -21,7 +23,7 @@ class WukongService : Service() {
     var socket: SocketWrapper? = null
     lateinit var currentUser: User
 
-    val messageHandler = Handler()
+    val handler = Handler()
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -51,14 +53,26 @@ class WukongService : Service() {
                 Log.d(TAG, "User: " + currentUser.toString())
 
                 http.channelJoin("test")
-                socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, messageHandler, applicationContext)
+                socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, object : SocketWrapper.SocketReceiver() {
+                    override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
+                        when {
+                            protocol.eventName == "Play" -> {
+                                val song = protocol.song!!
+                                handler.post {
+                                    setNotification("${song.artist} - ${song.title}")
+//                                    Toast.makeText(applicationContext, "Wukong: ${song.artist} - ${song.title}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }
+                }, handler, applicationContext)
 
             } catch (e: HttpWrapper.UserUnauthorizedException) {
-                messageHandler.post {
+                handler.post {
                     Toast.makeText(applicationContext, "Please sign in to continue.", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                messageHandler.post {
+                handler.post {
                     Toast.makeText(applicationContext, "Unknown Exception: " + e.message, Toast.LENGTH_SHORT).show()
                 }
             }
@@ -81,6 +95,20 @@ class WukongService : Service() {
 
         super.onDestroy()
         Log.d(TAG, "onDestroy")
+    }
+
+    fun setNotification(text: String) {
+        val intent = Intent(this, MainActivity::class.java)
+        val contextIntent = PendingIntent.getActivity(this, 0, intent, 0)
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notification = NotificationCompat.Builder(this)
+                .setContentIntent(contextIntent)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(getString(R.string.app_name))
+                .setContentText(text).build()
+//        notification.flags = Notification.FLAG_ONGOING_EVENT
+        notificationManager.notify(0, notification)
     }
 
 }

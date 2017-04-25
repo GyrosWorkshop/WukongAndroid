@@ -14,7 +14,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 
-class SocketWrapper(wsUrl: String, cookies: String, handler: Handler, applicationContext: Context) {
+class SocketWrapper(wsUrl: String, cookies: String, socketReceiver: SocketReceiver, handler: Handler, applicationContext: Context) {
 
     lateinit var ws: WebSocket
 
@@ -25,7 +25,7 @@ class SocketWrapper(wsUrl: String, cookies: String, handler: Handler, applicatio
         val request = Request.Builder()
                 .addHeader("Cookie", cookies)
                 .url(wsUrl).build()
-        val listener = ActualWebSocketListener(handler, applicationContext)
+        val listener = ActualWebSocketListener(socketReceiver, handler, applicationContext)
 
         ws = client.newWebSocket(request, listener)
 
@@ -36,12 +36,19 @@ class SocketWrapper(wsUrl: String, cookies: String, handler: Handler, applicatio
         ws.close(ActualWebSocketListener.Companion.NORMAL_CLOSURE_STATUS, "Bye")
     }
 
-    class ActualWebSocketListener(private val handler: Handler,
-                                        private val applicationContext: Context) : WebSocketListener() {
+    abstract class SocketReceiver {
+        abstract fun onEventMessage(protocol: WebSocketReceiveProtocol)
+    }
+
+
+    class ActualWebSocketListener(private val socketReceiver: SocketReceiver,
+                                  private val handler: Handler,
+                                  private val applicationContext: Context) : WebSocketListener() {
 
         companion object {
             val NORMAL_CLOSURE_STATUS = 1000
         }
+
         val executor = ScheduledThreadPoolExecutor(1)
         lateinit private var t: ScheduledFuture<*>
 
@@ -63,6 +70,7 @@ class SocketWrapper(wsUrl: String, cookies: String, handler: Handler, applicatio
         override fun onMessage(webSocket: WebSocket, text: String) {
             Log.d(TAG, "Receiving: " + text)
             val receiveProtocol = Gson().fromJson(text, WebSocketReceiveProtocol::class.java)
+            socketReceiver.onEventMessage(receiveProtocol)
             when {
                 receiveProtocol.eventName == "Play" -> {
                     val song = receiveProtocol.song!!
