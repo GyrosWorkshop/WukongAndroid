@@ -1,6 +1,7 @@
 package com.senorsen.wukong.network
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Environment
 import okhttp3.Cookie
 import okhttp3.CookieJar
@@ -19,7 +20,7 @@ class FileCookieJar : CookieJar {
     }
 
     override fun loadForRequest(url: HttpUrl?): MutableList<Cookie> {
-        val cookies = readCookieLineFromFile(context).map {
+        val cookies = readCookieLineFromSharedPreferences(context).map {
             val line = it.split('=')
             Cookie.Builder()
                     .name(line[0])
@@ -30,21 +31,6 @@ class FileCookieJar : CookieJar {
     }
 }
 
-fun readCookieLineFromFile(context: Context): List<String> {
-    val cookieLine = ArrayList<String>()
-    val file = File(context.filesDir, "wukong-cookies.txt")
-
-    try {
-        val br = BufferedReader(FileReader(file))
-        var line: String? = br.readLine()
-        while (line != null) {
-            cookieLine.add(line)
-            line = br.readLine()
-        }
-        br.close()
-    } catch (e: IOException) {
-        // Create file first.
-    }
-
-    return cookieLine
+fun readCookieLineFromSharedPreferences(context: Context): List<String> {
+    return context.getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("cookies", "").split('\n')
 }
