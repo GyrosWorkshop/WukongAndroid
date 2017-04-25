@@ -10,6 +10,7 @@ import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.util.Log
 import android.webkit.CookieManager
+import android.widget.Toast
 import com.senorsen.wukong.network.ApiUrls
 
 
@@ -31,6 +32,8 @@ class WebViewActivity : AppCompatActivity() {
         CookieManager.getInstance().removeAllCookies(null)
         webView.loadUrl("${ApiUrls.oAuthRedirectEndpoint}/GitHub")
 
+        var loggedIn = false
+
         webView.setWebViewClient(object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 if (url.startsWith(ApiUrls.base)) {
@@ -41,13 +44,19 @@ class WebViewActivity : AppCompatActivity() {
             }
 
             override fun onPageFinished(view: WebView?, url: String) {
-                if (url.startsWith(ApiUrls.base)) {
+                if (url.startsWith(ApiUrls.base) && !loggedIn) {
                     val cookies = CookieManager.getInstance().getCookie(url)
                     Log.d(TAG, "All the cookies of $url: $cookies")
-                    val sharedPref = applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE)
-                    val editor = sharedPref.edit()
-                            .putString("cookies", cookies.split(';').map(String::trim).filterNot(String::isNullOrBlank).joinToString("\n"))
-                            .apply()
+                    val cookieList = cookies.split(';').map(String::trim).filterNot(String::isNullOrBlank).joinToString("\n")
+                    if (cookieList.isNotEmpty()) {
+                        val sharedPref = applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE)
+                        val editor = sharedPref.edit()
+                                .putString("cookies", cookieList)
+                                .apply()
+                        Toast.makeText(applicationContext, "Logged in successfully.", Toast.LENGTH_SHORT).show()
+                        loggedIn = true
+                        finish()
+                    }
                 }
             }
         })
