@@ -71,14 +71,6 @@ class SocketWrapper(wsUrl: String, cookies: String, socketReceiver: SocketReceiv
             Log.d(TAG, "Receiving: " + text)
             val receiveProtocol = Gson().fromJson(text, WebSocketReceiveProtocol::class.java)
             socketReceiver.onEventMessage(receiveProtocol)
-            when {
-                receiveProtocol.eventName == "Play" -> {
-                    val song = receiveProtocol.song!!
-                    handler.post {
-                        Toast.makeText(applicationContext, "Wukong: ${song.artist} - ${song.title}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
