@@ -8,6 +8,10 @@ import android.widget.Toast
 import com.google.gson.Gson
 import okhttp3.*
 import okio.ByteString
+import java.util.*
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 
 class SocketWrapper(wsUrl: String, cookies: String, handler: Handler, applicationContext: Context) {
@@ -28,13 +32,32 @@ class SocketWrapper(wsUrl: String, cookies: String, handler: Handler, applicatio
         client.dispatcher().executorService().shutdown()
     }
 
-    inner class ActualWebSocketListener(private val handler: Handler, private val applicationContext: Context) : WebSocketListener() {
+    fun disconnect() {
+        ws.close(ActualWebSocketListener.Companion.NORMAL_CLOSURE_STATUS, "Bye")
+    }
 
-        private val NORMAL_CLOSURE_STATUS = 1000
+    class ActualWebSocketListener(private val handler: Handler,
+                                        private val applicationContext: Context) : WebSocketListener() {
+
+        companion object {
+            val NORMAL_CLOSURE_STATUS = 1000
+        }
+        val executor = ScheduledThreadPoolExecutor(1)
+        lateinit private var t: ScheduledFuture<*>
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
-            webSocket.send("Knock, knock!")
-            webSocket.send("Hello!")
+            try {
+                t = executor.scheduleAtFixedRate(object : TimerTask() {
+                    override fun run() {
+                        // FIXME(Senorsen): hardcoded string
+                        webSocket.send(Gson().toJson(WebSocketTransmitProtocol("test", "ping"), WebSocketTransmitProtocol::class.java))
+                    }
+                }, 0, 30, TimeUnit.SECONDS)
+            } catch (e: Exception) {
+                handler.post {
+                    Toast.makeText(applicationContext, "Wukong WebSocket onOpen: " + e.message, Toast.LENGTH_LONG).show()
+                }
+            }
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
@@ -51,6 +74,7 @@ class SocketWrapper(wsUrl: String, cookies: String, handler: Handler, applicatio
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+            t.cancel(true)
             webSocket.close(NORMAL_CLOSURE_STATUS, null)
             println("Closing: $code $reason")
         }

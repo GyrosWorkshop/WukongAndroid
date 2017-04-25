@@ -18,6 +18,7 @@ import com.senorsen.wukong.network.SocketWrapper
 class WukongService : Service() {
 
     lateinit var http: HttpWrapper
+    var socket: SocketWrapper? = null
     lateinit var currentUser: User
 
     val messageHandler = Handler()
@@ -37,12 +38,20 @@ class WukongService : Service() {
         http = HttpWrapper(cookies)
 
         Thread(Runnable {
+
+            try {
+                // Terminate previous connection.
+                socket?.disconnect()
+            } catch (e: Exception) {
+                Log.e(TAG, "disconnect exception", e)
+            }
+
             try {
                 currentUser = http.getUserInfo()
                 Log.d(TAG, "User: " + currentUser.toString())
 
                 http.channelJoin("test")
-                val socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, messageHandler, applicationContext)
+                socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, messageHandler, applicationContext)
 
             } catch (e: HttpWrapper.UserUnauthorizedException) {
                 messageHandler.post {
@@ -59,6 +68,15 @@ class WukongService : Service() {
     }
 
     override fun onDestroy() {
+
+        Thread(Runnable {
+            try {
+                socket?.disconnect()
+            } catch (e: Exception) {
+                Log.e(TAG, "disconnect exception", e)
+            }
+        })
+
         super.onDestroy()
         Log.d(TAG, "onDestroy")
     }
