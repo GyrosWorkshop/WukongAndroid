@@ -1,8 +1,10 @@
 android {
-    config {
-        keyAlias 'alias'
-        keyPassword 'keypassword'
-        storeFile file('filepath')
-        storePassword 'storepassword'
+    signingConfigs {
+        config {
+            keyAlias 'alias'
+            keyPassword 'keypassword'
+            storeFile file('filepath')
+            storePassword 'storepassword'
+        }
     }
 }
