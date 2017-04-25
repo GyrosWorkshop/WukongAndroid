@@ -106,8 +106,9 @@ class WukongService : Service() {
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title)
                 .setContentText(content).build()
-//        notification.flags = Notification.FLAG_ONGOING_EVENT
-        notificationManager.notify(0, notification)
+        notification.flags = Notification.FLAG_ONGOING_EVENT
+        notificationManager.notify(1, notification)
+        startForeground(1, notification)
     }
 
 }
