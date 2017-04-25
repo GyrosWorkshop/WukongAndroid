@@ -46,8 +46,8 @@ class WebViewActivity : AppCompatActivity() {
                     Log.d(TAG, "All the cookies of $url: $cookies")
                     val sharedPref = applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE)
                     val editor = sharedPref.edit()
-                    editor.putString("cookies", cookies.split(';').map(String::trim).filterNot(String::isNullOrBlank).joinToString("\n"))
-                    editor.apply()
+                            .putString("cookies", cookies.split(';').map(String::trim).filterNot(String::isNullOrBlank).joinToString("\n"))
+                            .apply()
                 }
             }
         })
