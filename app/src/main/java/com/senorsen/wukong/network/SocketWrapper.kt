@@ -27,7 +27,6 @@ class SocketWrapper {
         override fun onOpen(webSocket: WebSocket, response: Response) {
             webSocket.send("Knock, knock!")
             webSocket.send("Hello!")
-            webSocket.send(ByteString.decodeHex("deadbeef"))
             webSocket.close(NORMAL_CLOSURE_STATUS, "Goodbye!")
         }
 
