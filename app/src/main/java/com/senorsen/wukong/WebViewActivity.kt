@@ -1,18 +1,19 @@
 package com.senorsen.wukong
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.content.ContentValues.TAG
 import android.content.Context
+import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.Toolbar
 import android.util.Log
 import android.webkit.CookieManager
 import com.senorsen.wukong.network.ApiUrls
 
 
-class WebViewActivity : Activity() {
+class WebViewActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
 
@@ -20,6 +21,10 @@ class WebViewActivity : Activity() {
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.webview)
+
+        val toolbar = findViewById(R.id.toolbar) as Toolbar
+        title = "Sign In"
+        setSupportActionBar(toolbar)
 
         webView = findViewById(R.id.webview) as WebView
         webView.settings.javaScriptEnabled = true
