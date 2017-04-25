@@ -1,10 +1,11 @@
-package com.senorsen.wukong
+package com.senorsen.wukong.activity
 
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
+import com.senorsen.wukong.R
 
 class MainActivity : AppCompatActivity() {
 

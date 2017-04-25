@@ -1,4 +1,4 @@
-package com.senorsen.wukong
+package com.senorsen.wukong.activity
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -11,6 +11,7 @@ import android.support.v7.widget.Toolbar
 import android.util.Log
 import android.webkit.CookieManager
 import android.widget.Toast
+import com.senorsen.wukong.R
 import com.senorsen.wukong.network.ApiUrls
 
 

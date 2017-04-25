@@ -1,4 +1,4 @@
-package com.senorsen.wukong
+package com.senorsen.wukong.activity
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -31,6 +31,7 @@ import android.widget.TextView
 import java.util.ArrayList
 
 import android.Manifest.permission.READ_CONTACTS
+import com.senorsen.wukong.R
 
 /**
  * A login screen that offers login via email/password.
