@@ -8,11 +8,14 @@ class SocketWrapper {
 
     lateinit var ws: WebSocket
 
-    fun SocketWrapper(wsUrl: String) {
+    fun SocketWrapper(wsUrl: String, cookieJar: CookieJar) {
 
-        val client = OkHttpClient()
+        val client = OkHttpClient().newBuilder()
+                .cookieJar(cookieJar).build()
 
-        val request = Request.Builder().url(wsUrl).build()
+        val request = Request.Builder()
+                .url(wsUrl)
+                .build()
         val listener = ActualWebSocketListener()
 
         ws = client.newWebSocket(request, listener)
@@ -32,10 +35,6 @@ class SocketWrapper {
 
         override fun onMessage(webSocket: WebSocket, text: String) {
             println("Receiving: " + text)
-        }
-
-        override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-            println("Receiving: " + bytes.hex())
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
