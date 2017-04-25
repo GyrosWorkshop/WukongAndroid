@@ -1,7 +1,5 @@
 package com.senorsen.wukong.model
 
-import com.github.kittinunf.fuel.core.Request
-import com.github.kittinunf.fuel.core.ResponseDeserializable
 import com.google.gson.Gson
 
 // A RequestSong is an object which contains identified song and credentials, which is supposed to be sent to the server.
@@ -28,9 +26,6 @@ data class Song(
         var mvWebUrl: String? = null
 ) {
 
-    class Deserializer : ResponseDeserializable<Song> {
-        override fun deserialize(content: String) = Gson().fromJson(content, Song::class.java)
-    }
 }
 
 // A File is an object which contains uri and other required metadata.
@@ -42,9 +37,6 @@ data class File(
         var audioBitrate: Int? = null
 ) {
 
-    class Deserializer : ResponseDeserializable<File> {
-        override fun deserialize(content: String) = Gson().fromJson(content, File::class.java)
-    }
 }
 
 // A lovely lyric.
@@ -54,7 +46,4 @@ class Lyric(
         var data: String? = null
 ) {
 
-    class Deserializer : ResponseDeserializable<Lyric> {
-        override fun deserialize(content: String) = Gson().fromJson(content, Lyric::class.java)
-    }
 }

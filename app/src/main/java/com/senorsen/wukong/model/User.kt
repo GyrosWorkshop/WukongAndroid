@@ -1,6 +1,5 @@
 package com.senorsen.wukong.model
 
-import com.github.kittinunf.fuel.core.ResponseDeserializable
 import com.google.gson.Gson
 
 data class User(
@@ -13,7 +12,4 @@ data class User(
         var url: String? = null
 ) {
 
-    class Deserializer : ResponseDeserializable<User> {
-        override fun deserialize(content: String) = Gson().fromJson(content, User::class.java)
-    }
 }

@@ -1,6 +1,5 @@
 package com.senorsen.wukong.network
 
-import com.github.kittinunf.fuel.core.ResponseDeserializable
 import com.google.gson.Gson
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.model.User
@@ -22,7 +21,4 @@ data class WebSocketReceiveProtocol(
         val users: List<User>? = null
 ) {
 
-    class Deserializer : ResponseDeserializable<WebSocketReceiveProtocol> {
-        override fun deserialize(content: String) = Gson().fromJson(content, WebSocketReceiveProtocol::class.java)
-    }
 }
