@@ -24,6 +24,7 @@
         <meta-data
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />
+
         <service
             android:name=".service.WukongMusicService"
             android:exported="false">
@@ -31,6 +32,9 @@
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
+        <service
+            android:name=".service.WukongService"
+            android:exported="false" />
     </application>
 
 </manifest>
