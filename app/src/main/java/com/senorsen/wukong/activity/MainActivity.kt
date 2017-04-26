@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(Intent(this, WebViewActivity::class.java), REQUEST_COOKIES)
         }
 
-        val channelText = findViewById(R.id.channel_id) as EditText
+        val channelEdit = findViewById(R.id.channel_id) as EditText
 
         val startServiceButton = findViewById(R.id.start_service) as Button
         startServiceButton.setOnClickListener {
@@ -41,18 +41,18 @@ class MainActivity : AppCompatActivity() {
                 cookies = applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("cookies", "")
             }
 
-            if (channelText.text.isNullOrBlank()) {
-                channelText.error = "required"
+            if (channelEdit.text.isNullOrBlank()) {
+                channelEdit.error = "required"
                 return@setOnClickListener
             }
 
             applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE)
                     .edit()
-                    .putString("channel", channelText.text.toString()).apply()
+                    .putString("channel", channelEdit.text.toString()).apply()
 
             serviceIntent = Intent(this, WukongService::class.java)
                     .putExtra("cookies", cookies)
-                    .putExtra("channel", channelText.text.toString().trim())
+                    .putExtra("channel", channelEdit.text.toString().trim())
             startService(serviceIntent)
         }
 
@@ -61,15 +61,15 @@ class MainActivity : AppCompatActivity() {
             stopService(serviceIntent)
         }
 
-        channelText.text = SpannableStringBuilder(applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", ""))
-
+        channelEdit.text = SpannableStringBuilder(applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", ""))
+        channelEdit.setSelection(channelEdit.text.toString().length)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
             REQUEST_COOKIES -> {
-                cookies =  data!!.getStringExtra("cookies")
+                cookies = data!!.getStringExtra("cookies")
                 Toast.makeText(applicationContext, "Logged in successfully.", Toast.LENGTH_SHORT).show()
 
                 val sharedPref = applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE)
