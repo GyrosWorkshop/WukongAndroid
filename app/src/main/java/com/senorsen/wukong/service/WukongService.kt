@@ -72,8 +72,6 @@ class WukongService : Service() {
                 currentUser = http.getUserInfo()
                 Log.d(TAG, "User: " + currentUser.toString())
 
-                http.channelJoin(channelId)
-
                 var userList: ArrayList<User>? = null
 
                 val receiver = object : SocketWrapper.SocketReceiver {
@@ -104,6 +102,7 @@ class WukongService : Service() {
                 var reconnectCallback: Any? = null
 
                 val doConnect = fun() {
+                    http.channelJoin(channelId)
                     socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, channelId, reconnectCallback as SocketWrapper.Callback, receiver, handler, applicationContext)
                 }
 
