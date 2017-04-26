@@ -11,11 +11,13 @@ import android.widget.Toast
 import com.senorsen.wukong.model.User
 import android.content.Context
 import android.graphics.drawable.Icon
+import android.os.Looper
 import android.support.v7.app.NotificationCompat
 import com.senorsen.wukong.R
 import com.senorsen.wukong.activity.MainActivity
 import com.senorsen.wukong.network.*
 import java.io.IOException
+import javax.security.auth.callback.Callback
 
 
 class WukongService : Service() {
@@ -26,6 +28,7 @@ class WukongService : Service() {
 
     val handler = Handler()
     var thread: Thread? = null
+    lateinit var threadHandler: Handler
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -36,30 +39,31 @@ class WukongService : Service() {
         Log.d(TAG, "onCreate")
     }
 
-    private fun startConnect() {
-
+    private fun stopPrevConnect() {
+        if (thread != null) {
+            threadHandler.post {
+                Log.i(TAG, "socket disconnect")
+                socket?.disconnect()
+            }
+            Thread.sleep(1000)
+            thread?.interrupt()
+        }
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+    private fun startConnect(intent: Intent) {
         val cookies = intent.getStringExtra("cookies")
         val channelId = intent.getStringExtra("channel")
         Log.d(TAG, "Channel: " + channelId)
         Log.d(TAG, "Cookies: " + cookies)
         http = HttpWrapper(cookies)
 
-        if (thread != null && thread!!.isAlive) {
-            Log.d(TAG, "Thread alive, interrupt")
-            thread?.interrupt()
-        }
+        stopPrevConnect()
 
         thread = Thread(Runnable {
 
-            try {
-                // Terminate previous connection.
-                socket?.disconnect()
-            } catch (e: Exception) {
-                Log.e(TAG, "disconnect exception", e)
-            }
+            Looper.prepare()
+
+            threadHandler = Handler()
 
             try {
                 currentUser = http.getUserInfo()
@@ -72,40 +76,54 @@ class WukongService : Service() {
                         when {
                             protocol.eventName == "Play" -> {
                                 val song = protocol.song!!
-                                handler.post {
-                                    setNotification(song.title!!, "${song.artist} - ${song.album}")
-                                }
+                                setNotification(song.title!!, "${song.artist} - ${song.album}")
                             }
                         }
                     }
                 }
+
+                var reconnectCallback: Any? = null
+
+                val doConnect = fun() {
+                    socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, channelId, reconnectCallback as SocketWrapper.Callback, receiver, handler, applicationContext)
+                }
+
+                reconnectCallback = object : SocketWrapper.Callback {
+                    override fun call() {
+                        Thread.sleep(3000)
+                        handler.post {
+                            Toast.makeText(applicationContext, "Wukong: Reconnecting...", Toast.LENGTH_SHORT).show()
+                        }
+                        doConnect()
+                    }
+                }
+
                 try {
-                    socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, channelId, receiver, handler, applicationContext)
+                    doConnect()
                 } catch (e: IOException) {
                     Log.e(TAG, "socket exception: " + e.message)
                 }
 
             } catch (e: HttpWrapper.UserUnauthorizedException) {
-                handler.post {
-                    Toast.makeText(applicationContext, "Please sign in to continue.", Toast.LENGTH_SHORT).show()
-                }
+                Toast.makeText(applicationContext, "Please sign in to continue.", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                handler.post {
-                    e.printStackTrace()
-                    Toast.makeText(applicationContext, "Unknown Exception: " + e.message, Toast.LENGTH_SHORT).show()
-                }
+                e.printStackTrace()
+                Toast.makeText(applicationContext, "Unknown Exception: " + e.message, Toast.LENGTH_SHORT).show()
             }
         })
         thread!!.start()
+    }
+
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+
+        this.startConnect(intent)
 
         return START_STICKY
     }
 
     override fun onDestroy() {
 
-        if (thread != null && thread!!.isAlive) {
-            thread!!.interrupt()
-        }
+        stopPrevConnect()
 
         super.onDestroy()
         Log.d(TAG, "onDestroy")

@@ -15,7 +15,13 @@ import java.util.concurrent.TimeUnit
 
 
 class SocketWrapper(
-        wsUrl: String, cookies: String, private val channelId: String, socketReceiver: SocketReceiver, handler: Handler, applicationContext: Context
+        wsUrl: String,
+        cookies: String,
+        private val channelId: String,
+        reconnectCallback: Callback,
+        socketReceiver: SocketReceiver,
+        handler: Handler,
+        applicationContext: Context
 ) {
 
     lateinit var ws: WebSocket
@@ -30,17 +36,6 @@ class SocketWrapper(
                 .addHeader("Cookie", cookies)
                 .url(wsUrl).build()
         var listener: ActualWebSocketListener? = null
-
-        val reconnectCallback = object : Callback {
-            override fun call() {
-                client.dispatcher().cancelAll()
-                Thread.sleep(3000)
-                handler.post {
-                    Toast.makeText(applicationContext, "Wukong: Reconnecting...", Toast.LENGTH_SHORT).show()
-                }
-                ws = client.newWebSocket(request, listener)
-            }
-        }
 
         listener = ActualWebSocketListener(channelId, socketReceiver, reconnectCallback, handler, applicationContext)
 
