@@ -32,6 +32,10 @@ class SocketWrapper(wsUrl: String, cookies: String, socketReceiver: SocketReceiv
         val reconnectCallback = object : Callback {
             override fun call() {
                 client.dispatcher().cancelAll()
+                Thread.sleep(3000)
+                handler.post {
+                    Toast.makeText(applicationContext, "Wukong: Reconnecting...", Toast.LENGTH_SHORT).show()
+                }
                 ws = client.newWebSocket(request, listener)
             }
         }
@@ -95,13 +99,15 @@ class SocketWrapper(wsUrl: String, cookies: String, socketReceiver: SocketReceiv
             if (code == NORMAL_CLOSURE_STATUS) {
                 webSocket.close(NORMAL_CLOSURE_STATUS, null)
             } else {
-                Log.i(TAG, "Reconnection...")
-
+                Log.i(TAG, "Reconnection")
+                reconnectCallBack.call()
             }
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             t.printStackTrace()
+            Log.i(TAG, "Reconnection onFailure")
+            reconnectCallBack.call()
         }
 
     }

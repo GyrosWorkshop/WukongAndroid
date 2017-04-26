@@ -72,16 +72,10 @@ class WukongService : Service() {
                         }
                     }
                 }
-                while (true) {
-                    try {
-                        socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, receiver, handler, applicationContext)
-                    } catch (e: IOException) {
-                        Log.e(TAG, "socket exception: " + e.message)
-                    }
-                    Thread.sleep(3000)
-                    handler.post {
-                        Toast.makeText(applicationContext, "Reconnecting...", Toast.LENGTH_SHORT).show()
-                    }
+                try {
+                    socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, receiver, handler, applicationContext)
+                } catch (e: IOException) {
+                    Log.e(TAG, "socket exception: " + e.message)
                 }
 
             } catch (e: HttpWrapper.UserUnauthorizedException) {
