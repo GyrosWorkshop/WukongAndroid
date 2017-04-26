@@ -18,7 +18,28 @@ data class WebSocketReceiveProtocol(
         val elapsed: Double? = null,
         val user: String? = null,
 
-        val users: List<User>? = null
-) {
+        val users: List<User>? = null,
+
+        val notification: Notification? = null
+)
+
+object Protocol {
+
+    val PLAY: String
+        get() = "Play"
+
+    val PRELOAD: String
+        get() = "Preload"
+
+    val USER_LIST_UPDATE: String
+        get() = "UserListUpdated"
+
+    val NOTIFICATION: String
+        get() = "Notification"
 
 }
+
+data class Notification(
+        var message: String?,
+        var timeout: Int
+)

@@ -24,9 +24,7 @@ data class Song(
         var webUrl: String? = null,
         var mvId: String? = null,
         var mvWebUrl: String? = null
-) {
-
-}
+)
 
 // A File is an object which contains uri and other required metadata.
 data class File(
@@ -35,15 +33,11 @@ data class File(
         var format: String? = null,
         var audioQuality: String? = null,
         var audioBitrate: Int? = null
-) {
-
-}
+)
 
 // A lovely lyric.
 class Lyric(
         var lrc: Boolean? = null,
         var translated: Boolean? = null,
         var data: String? = null
-) {
-
-}
+)

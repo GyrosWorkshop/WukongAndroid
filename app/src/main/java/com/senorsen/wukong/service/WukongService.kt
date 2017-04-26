@@ -1,6 +1,7 @@
 package com.senorsen.wukong.service
 
 import android.app.*
+import android.app.Notification
 import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.AsyncTask
@@ -12,7 +13,7 @@ import com.senorsen.wukong.model.User
 import android.content.Context
 import android.graphics.drawable.Icon
 import android.os.Looper
-import android.support.v7.app.NotificationCompat
+import android.support.v4.app.NotificationCompat
 import com.senorsen.wukong.R
 import com.senorsen.wukong.activity.MainActivity
 import com.senorsen.wukong.network.*
@@ -71,12 +72,28 @@ class WukongService : Service() {
 
                 http.channelJoin(channelId)
 
+                var userList: ArrayList<User>? = null
+
                 val receiver = object : SocketWrapper.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
-                        when {
-                            protocol.eventName == "Play" -> {
+                        when (protocol.eventName) {
+
+                            Protocol.USER_LIST_UPDATE -> {
+                                userList = protocol.users!! as ArrayList<User>
+                            }
+
+                            Protocol.PRELOAD -> {
+                            }
+
+                            Protocol.PLAY -> {
                                 val song = protocol.song!!
-                                setNotification(song.title!!, "${song.artist} - ${song.album}")
+                                setNotification(song.title!!, "${song.artist} - ${song.album}\nby ${userList?.filter { it.id == protocol.user }?.first()?.userName}")
+                            }
+
+                            Protocol.NOTIFICATION -> {
+                                handler.post {
+                                    Toast.makeText(applicationContext, "Wukong: " + protocol.notification?.message, Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     }
@@ -105,10 +122,14 @@ class WukongService : Service() {
                 }
 
             } catch (e: HttpWrapper.UserUnauthorizedException) {
-                Toast.makeText(applicationContext, "Please sign in to continue.", Toast.LENGTH_SHORT).show()
+                handler.post {
+                    Toast.makeText(applicationContext, "Please sign in to continue.", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(applicationContext, "Unknown Exception: " + e.message, Toast.LENGTH_SHORT).show()
+                handler.post {
+                    Toast.makeText(applicationContext, "Unknown Exception: " + e.message, Toast.LENGTH_SHORT).show()
+                }
             }
         })
         thread!!.start()
@@ -137,9 +158,10 @@ class WukongService : Service() {
         val notification = NotificationCompat.Builder(this)
                 .setContentIntent(contextIntent)
                 .setSmallIcon(R.mipmap.ic_launcher)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(content))
                 .setContentTitle(title)
                 .setContentText(content).build()
-        notification.flags = Notification.FLAG_ONGOING_EVENT
+        notification.flags = NotificationCompat.FLAG_ONGOING_EVENT
         notificationManager.notify(1, notification)
         startForeground(1, notification)
     }
