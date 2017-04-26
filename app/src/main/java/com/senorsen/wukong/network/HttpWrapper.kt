@@ -3,6 +3,7 @@ package com.senorsen.wukong.network
 import android.content.ContentValues.TAG
 import android.util.Log
 import com.google.gson.Gson
+import com.senorsen.wukong.model.RequestSong
 import com.senorsen.wukong.model.User
 import okhttp3.CookieJar
 import okhttp3.MediaType
@@ -32,6 +33,14 @@ class HttpWrapper(private val cookies: String) {
 
     fun channelJoin(channelId: String) {
         post(ApiUrls.channelJoinEndpoint + "/" + urlEncode(channelId))
+    }
+
+    fun downvote(song: RequestSong) {
+        post(ApiUrls.channelDownvoteUri, Gson().toJson(song))
+    }
+
+    fun reportFinish(song: RequestSong) {
+        post(ApiUrls.channelReportFinishedEndpoint, Gson().toJson(song))
     }
 
     private fun get(url: String): String {
