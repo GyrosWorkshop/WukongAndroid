@@ -1,2 +1,4 @@
-# WukongAndroid
-Wukong Music for Android
+# Wukong
+Wukong Music client for Android
+
+(Not finished!)
