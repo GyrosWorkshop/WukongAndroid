@@ -73,12 +73,14 @@ class WukongService : Service() {
                     }
                 }
                 while (true) {
-                    Thread.sleep(3000)
-                    Toast.makeText(applicationContext, "Reconnection...", Toast.LENGTH_SHORT).show()
                     try {
                         socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, receiver, handler, applicationContext)
                     } catch (e: IOException) {
                         Log.e(TAG, "socket exception: " + e.message)
+                    }
+                    Thread.sleep(3000)
+                    handler.post {
+                        Toast.makeText(applicationContext, "Reconnecting...", Toast.LENGTH_SHORT).show()
                     }
                 }
 
@@ -88,6 +90,7 @@ class WukongService : Service() {
                 }
             } catch (e: Exception) {
                 handler.post {
+                    e.printStackTrace()
                     Toast.makeText(applicationContext, "Unknown Exception: " + e.message, Toast.LENGTH_SHORT).show()
                 }
             }
