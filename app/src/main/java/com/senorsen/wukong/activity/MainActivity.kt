@@ -6,6 +6,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
+import android.text.Editable
+import android.text.SpannableStringBuilder
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
@@ -44,6 +46,10 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE)
+                    .edit()
+                    .putString("channel", channelText.text.toString()).apply()
+
             serviceIntent = Intent(this, WukongService::class.java)
                     .putExtra("cookies", cookies)
                     .putExtra("channel", channelText.text.toString().trim())
@@ -54,6 +60,8 @@ class MainActivity : AppCompatActivity() {
         stopServiceButton.setOnClickListener {
             stopService(serviceIntent)
         }
+
+        channelText.text = SpannableStringBuilder(applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", ""))
 
     }
 
