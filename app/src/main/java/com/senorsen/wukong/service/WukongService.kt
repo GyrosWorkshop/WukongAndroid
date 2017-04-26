@@ -25,7 +25,7 @@ class WukongService : Service() {
     lateinit var currentUser: User
 
     val handler = Handler()
-    lateinit var thread: Thread
+    var thread: Thread? = null
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -42,8 +42,15 @@ class WukongService : Service() {
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         val cookies = intent.getStringExtra("cookies")
+        val channelId = intent.getStringExtra("channel")
+        Log.d(TAG, "Channel: " + channelId)
         Log.d(TAG, "Cookies: " + cookies)
         http = HttpWrapper(cookies)
+
+        if (thread != null && thread!!.isAlive) {
+            Log.d(TAG, "Thread alive, interrupt")
+            thread?.interrupt()
+        }
 
         thread = Thread(Runnable {
 
@@ -58,7 +65,7 @@ class WukongService : Service() {
                 currentUser = http.getUserInfo()
                 Log.d(TAG, "User: " + currentUser.toString())
 
-                http.channelJoin("test")
+                http.channelJoin(channelId)
 
                 val receiver = object : SocketWrapper.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
@@ -73,7 +80,7 @@ class WukongService : Service() {
                     }
                 }
                 try {
-                    socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, receiver, handler, applicationContext)
+                    socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, channelId, receiver, handler, applicationContext)
                 } catch (e: IOException) {
                     Log.e(TAG, "socket exception: " + e.message)
                 }
@@ -89,22 +96,16 @@ class WukongService : Service() {
                 }
             }
         })
-        thread.start()
+        thread!!.start()
 
         return START_STICKY
     }
 
     override fun onDestroy() {
 
-        Thread(Runnable {
-            try {
-                socket?.disconnect()
-            } catch (e: Exception) {
-                Log.e(TAG, "disconnect exception", e)
-            }
-        })
-
-        Thread.sleep(2000)
+        if (thread != null && thread!!.isAlive) {
+            thread!!.interrupt()
+        }
 
         super.onDestroy()
         Log.d(TAG, "onDestroy")

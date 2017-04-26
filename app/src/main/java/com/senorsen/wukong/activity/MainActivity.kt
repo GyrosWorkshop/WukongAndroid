@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.widget.Button
+import android.widget.EditText
 import android.widget.Toast
 import com.senorsen.wukong.R
 import com.senorsen.wukong.service.WukongService
@@ -30,14 +31,22 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(Intent(this, WebViewActivity::class.java), REQUEST_COOKIES)
         }
 
+        val channelText = findViewById(R.id.channel_id) as EditText
+
         val startServiceButton = findViewById(R.id.start_service) as Button
         startServiceButton.setOnClickListener {
             if (cookies == null) {
                 cookies = applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("cookies", "")
             }
 
+            if (channelText.text.isNullOrBlank()) {
+                channelText.error = "required"
+                return@setOnClickListener
+            }
+
             serviceIntent = Intent(this, WukongService::class.java)
                     .putExtra("cookies", cookies)
+                    .putExtra("channel", channelText.text.toString().trim())
             startService(serviceIntent)
         }
 

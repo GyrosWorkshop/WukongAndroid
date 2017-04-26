@@ -14,7 +14,9 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 
-class SocketWrapper(wsUrl: String, cookies: String, socketReceiver: SocketReceiver, handler: Handler, applicationContext: Context) {
+class SocketWrapper(
+        wsUrl: String, cookies: String, private val channelId: String, socketReceiver: SocketReceiver, handler: Handler, applicationContext: Context
+) {
 
     lateinit var ws: WebSocket
 
@@ -40,7 +42,7 @@ class SocketWrapper(wsUrl: String, cookies: String, socketReceiver: SocketReceiv
             }
         }
 
-        listener = ActualWebSocketListener(socketReceiver, reconnectCallback, handler, applicationContext)
+        listener = ActualWebSocketListener(channelId, socketReceiver, reconnectCallback, handler, applicationContext)
 
         ws = client.newWebSocket(request, listener)
 
@@ -60,7 +62,8 @@ class SocketWrapper(wsUrl: String, cookies: String, socketReceiver: SocketReceiv
     }
 
 
-    class ActualWebSocketListener(private val socketReceiver: SocketReceiver,
+    class ActualWebSocketListener(private val channelId: String,
+                                  private val socketReceiver: SocketReceiver,
                                   private val reconnectCallBack: Callback,
                                   private val handler: Handler,
                                   private val applicationContext: Context) : WebSocketListener() {
@@ -77,7 +80,7 @@ class SocketWrapper(wsUrl: String, cookies: String, socketReceiver: SocketReceiv
                 t = executor.scheduleAtFixedRate(object : TimerTask() {
                     override fun run() {
                         // FIXME(Senorsen): hardcoded string
-                        webSocket.send(Gson().toJson(WebSocketTransmitProtocol("test", "ping"), WebSocketTransmitProtocol::class.java))
+                        webSocket.send(Gson().toJson(WebSocketTransmitProtocol("", "ping"), WebSocketTransmitProtocol::class.java))
                     }
                 }, 0, 30, TimeUnit.SECONDS)
             } catch (e: Exception) {

@@ -5,9 +5,23 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.senorsen.wukong.MainActivity">
+    tools:context="com.senorsen.wukong.activity.MainActivity">
 
     <include layout="@layout/toolbar" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TextView" />
+
+    <EditText
+        android:id="@+id/channel_id"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="@string/channel_id"
+        android:inputType="text" />
 
     <Button
         android:id="@+id/sign_in"
