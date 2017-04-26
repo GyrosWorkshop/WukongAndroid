@@ -20,7 +20,9 @@ class SocketWrapper(wsUrl: String, cookies: String, socketReceiver: SocketReceiv
 
     init {
 
-        val client = OkHttpClient()
+        val client = OkHttpClient.Builder()
+                .readTimeout(0, TimeUnit.MILLISECONDS)
+                .build()
 
         val request = Request.Builder()
                 .addHeader("Cookie", cookies)

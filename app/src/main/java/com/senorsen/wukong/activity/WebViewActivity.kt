@@ -1,11 +1,14 @@
 package com.senorsen.wukong.activity
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.content.ContentValues.TAG
 import android.content.Context
+import android.content.Intent
+import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.util.Log
@@ -18,6 +21,8 @@ import com.senorsen.wukong.network.ApiUrls
 class WebViewActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+
+    private val handler = Handler()
 
     @SuppressLint("SetJavaScriptEnabled")
     public override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,14 +56,13 @@ class WebViewActivity : AppCompatActivity() {
                     val cookies = CookieManager.getInstance().getCookie(url)
                     Log.d(TAG, "All the cookies of $url: $cookies")
                     if (cookies.isNotBlank()) {
-                        val sharedPref = applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE)
-                        val editor = sharedPref.edit()
-                                .remove("cookies")
-                                .putString("cookies", cookies)
-                                .apply()
-                        Toast.makeText(applicationContext, "Logged in successfully.", Toast.LENGTH_SHORT).show()
                         loggedIn = true
-                        finish()
+
+                        handler.post {
+                            webView.destroy()
+                            setResult(Activity.RESULT_OK, Intent().putExtra("cookies", cookies))
+                            finish()
+                        }
                     }
                 }
             }

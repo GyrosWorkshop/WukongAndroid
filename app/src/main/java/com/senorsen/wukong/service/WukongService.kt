@@ -15,6 +15,7 @@ import android.support.v7.app.NotificationCompat
 import com.senorsen.wukong.R
 import com.senorsen.wukong.activity.MainActivity
 import com.senorsen.wukong.network.*
+import java.io.IOException
 
 
 class WukongService : Service() {
@@ -24,6 +25,7 @@ class WukongService : Service() {
     lateinit var currentUser: User
 
     val handler = Handler()
+    lateinit var thread: Thread
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -34,12 +36,16 @@ class WukongService : Service() {
         Log.d(TAG, "onCreate")
     }
 
+    private fun startConnect() {
+
+    }
+
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        val cookies = AppCookies(applicationContext).readCookiesFromSharedPreferences()
+        val cookies = intent.getStringExtra("cookies")
         Log.d(TAG, "Cookies: " + cookies)
         http = HttpWrapper(cookies)
 
-        Thread(Runnable {
+        thread = Thread(Runnable {
 
             try {
                 // Terminate previous connection.
@@ -53,7 +59,8 @@ class WukongService : Service() {
                 Log.d(TAG, "User: " + currentUser.toString())
 
                 http.channelJoin("test")
-                socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, object : SocketWrapper.SocketReceiver {
+
+                val receiver = object : SocketWrapper.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
                         when {
                             protocol.eventName == "Play" -> {
@@ -64,7 +71,16 @@ class WukongService : Service() {
                             }
                         }
                     }
-                }, handler, applicationContext)
+                }
+                while (true) {
+                    Thread.sleep(3000)
+                    Toast.makeText(applicationContext, "Reconnection...", Toast.LENGTH_SHORT).show()
+                    try {
+                        socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, receiver, handler, applicationContext)
+                    } catch (e: IOException) {
+                        Log.e(TAG, "socket exception: " + e.message)
+                    }
+                }
 
             } catch (e: HttpWrapper.UserUnauthorizedException) {
                 handler.post {
@@ -75,7 +91,8 @@ class WukongService : Service() {
                     Toast.makeText(applicationContext, "Unknown Exception: " + e.message, Toast.LENGTH_SHORT).show()
                 }
             }
-        }).start().run { }
+        })
+        thread.start()
 
         return START_STICKY
     }
