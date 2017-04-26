@@ -23,6 +23,8 @@ import javax.security.auth.callback.Callback
 
 class WukongService : Service() {
 
+    private val NOTIFICATION_ID = 1
+
     lateinit var http: HttpWrapper
     var socket: SocketWrapper? = null
     lateinit var currentUser: User
@@ -162,8 +164,8 @@ class WukongService : Service() {
                 .setContentTitle(title)
                 .setContentText(content).build()
         notification.flags = NotificationCompat.FLAG_ONGOING_EVENT
-        notificationManager.notify(1, notification)
-        startForeground(1, notification)
+        notificationManager.notify(NOTIFICATION_ID, notification)
+        startForeground(NOTIFICATION_ID, notification)
     }
 
 }
