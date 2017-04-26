@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity() {
 
         val stopServiceButton = findViewById(R.id.stop_service) as Button
         stopServiceButton.setOnClickListener {
-            stopService(serviceIntent)
+            stopService(Intent(this, WukongService::class.java))
         }
 
         channelEdit.text = SpannableStringBuilder(applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", ""))
