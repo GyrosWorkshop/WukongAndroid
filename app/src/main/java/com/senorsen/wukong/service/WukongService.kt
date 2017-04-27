@@ -135,7 +135,7 @@ class WukongService : Service() {
                                 val song = protocol.song!!
                                 setNotification(song.title!!, "${song.artist} - ${song.album}\nby ${getUserFromList(userList, protocol.user)?.userName}")
                                 // FIXME: cannot playback lossless
-                                val originalUrl = song.musics!!.filter { it.audioQuality != SongQuality.LOSSLESS }.sortedByDescending { it.audioBitrate }.first().file!!
+                                val originalUrl = song.musics!!.sortedByDescending { it.audioBitrate }.first().file!!
                                 Log.d(TAG, "originalUrl: " + originalUrl)
                                 val mediaUrl = MediaProvider().resolveRedirect(originalUrl)
                                 Log.d(TAG, "resolved media url: " + mediaUrl)
