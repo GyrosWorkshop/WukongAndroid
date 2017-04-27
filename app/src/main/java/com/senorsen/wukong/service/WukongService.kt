@@ -40,6 +40,8 @@ class WukongService : Service() {
     lateinit var mediaPlayer: MediaPlayer
     lateinit var wifiLock: WifiLock
 
+    var isPaused = false
+
     override fun onBind(intent: Intent): IBinder? {
         return null
     }
@@ -65,6 +67,7 @@ class WukongService : Service() {
             when (intent?.action) {
                 AudioManager.ACTION_AUDIO_BECOMING_NOISY ->
                     if (mediaPlayer.isPlaying) handler.post {
+                        isPaused = true
                         mediaPlayer.pause()
                         Toast.makeText(context, "Wukong paused.", Toast.LENGTH_SHORT).show()
                     }
@@ -139,7 +142,8 @@ class WukongService : Service() {
                                     mediaPlayer.setDataSource(mediaUrl)
                                     mediaPlayer.prepare()
                                     mediaPlayer.seekTo((protocol.elapsed!! * 1000).toInt())
-                                    mediaPlayer.start()
+                                    if (!isPaused)
+                                        mediaPlayer.start()
                                     mediaPlayer.setOnCompletionListener {
                                         Log.d(TAG, "finished")
                                         threadHandler.post {
