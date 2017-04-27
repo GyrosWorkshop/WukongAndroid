@@ -111,7 +111,7 @@ class WukongService : Service() {
                                 val originalUrl = song.musics!!.sortedByDescending { it.audioBitrate }.first().file!!
                                 Log.d(TAG, "originalUrl: " + originalUrl)
                                 val mediaUrl = MediaProvider().resolveRedirect(originalUrl)
-                                Log.d(TAG, "mediaUrl: " + mediaUrl)
+                                Log.d(TAG, "resolved media url: " + mediaUrl)
                                 handler.post {
                                     mediaPlayer.setDataSource(mediaUrl)
                                     mediaPlayer.prepare()
