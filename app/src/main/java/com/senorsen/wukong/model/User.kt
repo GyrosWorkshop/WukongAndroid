@@ -11,3 +11,7 @@ data class User(
         var siteUserId: String? = null,
         var url: String? = null
 )
+
+fun getUserFromList(userList: List<User>?, id: String?): User? {
+    return userList?.find { it.id == id }
+}

@@ -23,7 +23,7 @@ class HttpWrapper(private val cookies: String) {
 
     private val JSON = MediaType.parse("application/json; charset=utf-8")
 
-    var client = OkHttpClient()
+    val client = OkHttpClient()
 
     fun getUserInfo(): User {
         val ret = get(ApiUrls.userInfoEndpoint)

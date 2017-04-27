@@ -23,7 +23,8 @@ data class Song(
         var lyrics: List<Lyric>? = null,
         var webUrl: String? = null,
         var mvId: String? = null,
-        var mvWebUrl: String? = null
+        var mvWebUrl: String? = null,
+        var musics: List<File>? = null
 )
 
 // A File is an object which contains uri and other required metadata.

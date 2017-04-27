@@ -4,21 +4,23 @@ import android.app.*
 import android.app.Notification
 import android.content.ContentValues.TAG
 import android.content.Intent
-import android.os.AsyncTask
-import android.os.Handler
-import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
 import com.senorsen.wukong.model.User
 import android.content.Context
 import android.graphics.drawable.Icon
-import android.os.Looper
+import android.media.AudioManager
+import android.media.MediaPlayer
+import android.os.*
 import android.support.v4.app.NotificationCompat
 import com.senorsen.wukong.R
 import com.senorsen.wukong.activity.MainActivity
 import com.senorsen.wukong.network.*
 import java.io.IOException
 import javax.security.auth.callback.Callback
+import android.net.wifi.WifiManager
+import android.net.wifi.WifiManager.WifiLock
+import com.senorsen.wukong.model.getUserFromList
 
 
 class WukongService : Service() {
@@ -32,6 +34,8 @@ class WukongService : Service() {
     val handler = Handler()
     var thread: Thread? = null
     lateinit var threadHandler: Handler
+    lateinit var mediaPlayer: MediaPlayer
+    lateinit var wifiLock: WifiLock
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -40,6 +44,16 @@ class WukongService : Service() {
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate")
+
+        mediaPlayer = MediaPlayer()
+        mediaPlayer.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
+
+        wifiLock = (getSystemService(Context.WIFI_SERVICE) as WifiManager)
+                .createWifiLock(WifiManager.WIFI_MODE_FULL, getString(R.string.app_name))
+
+        wifiLock.acquire()
+
     }
 
     private fun stopPrevConnect() {
@@ -51,6 +65,12 @@ class WukongService : Service() {
             Thread.sleep(1000)
             thread?.interrupt()
         }
+
+
+        if (mediaPlayer.isPlaying) {
+            mediaPlayer.stop()
+        }
+        mediaPlayer.reset()
     }
 
     private fun startConnect(intent: Intent) {
@@ -87,7 +107,17 @@ class WukongService : Service() {
 
                             Protocol.PLAY -> {
                                 val song = protocol.song!!
-                                setNotification(song.title!!, "${song.artist} - ${song.album}\nby ${userList?.filter { it.id == protocol.user }?.first()?.userName}")
+                                setNotification(song.title!!, "${song.artist} - ${song.album}\nby ${getUserFromList(userList, protocol.user)?.userName}")
+                                val originalUrl = song.musics!!.first().file!!
+                                Log.d(TAG, "originalUrl: " + originalUrl)
+                                val mediaUrl = MediaProvider().resolveRedirect(originalUrl)
+                                Log.d(TAG, "mediaUrl: " + mediaUrl)
+                                handler.post {
+                                    mediaPlayer.setDataSource(mediaUrl)
+                                    mediaPlayer.prepare()
+                                    mediaPlayer.seekTo((protocol.elapsed!! * 1000).toInt())
+                                    mediaPlayer.start()
+                                }
                             }
 
                             Protocol.NOTIFICATION -> {
@@ -146,6 +176,9 @@ class WukongService : Service() {
     override fun onDestroy() {
 
         stopPrevConnect()
+
+        mediaPlayer.release()
+        wifiLock.release()
 
         super.onDestroy()
         Log.d(TAG, "onDestroy")
