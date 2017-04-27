@@ -3,6 +3,8 @@ package com.senorsen.wukong.network
 import android.content.ContentValues.TAG
 import android.util.Log
 import com.google.gson.Gson
+import com.senorsen.wukong.BuildConfig
+import com.senorsen.wukong.R
 import com.senorsen.wukong.model.RequestSong
 import com.senorsen.wukong.model.User
 import okhttp3.CookieJar
@@ -14,6 +16,8 @@ import java.net.URLEncoder
 
 
 class HttpWrapper(private val cookies: String) {
+
+    val userAgent = "WukongAndroid/" + BuildConfig.VERSION_NAME
 
     class UserUnauthorizedException : Exception {
         constructor(e: Exception) : super(e)
@@ -45,7 +49,8 @@ class HttpWrapper(private val cookies: String) {
 
     private fun get(url: String): String {
         val request = Request.Builder()
-                .addHeader("Cookie", cookies)
+                .header("Cookie", cookies)
+                .header("User-Agent", userAgent)
                 .url(url).build()
         val response = client.newCall(request).execute()
         when {
@@ -62,8 +67,10 @@ class HttpWrapper(private val cookies: String) {
 
     private fun post(url: String, json: String = "{}"): String {
         val body = RequestBody.create(JSON, json)
+        Log.d(TAG, "")
         val request = Request.Builder()
-                .addHeader("Cookie", cookies)
+                .header("Cookie", cookies)
+                .header("User-Agent", userAgent)
                 .url(url)
                 .post(body).build()
         val response = client.newCall(request).execute()
