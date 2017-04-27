@@ -42,6 +42,12 @@ class WukongService : Service() {
 
     var isPaused = false
 
+    inner class WukongServiceBinder : Binder() {
+        fun getService(): WukongService {
+            return this@WukongService
+        }
+    }
+
     override fun onBind(intent: Intent): IBinder? {
         return null
     }
@@ -234,5 +240,6 @@ class WukongService : Service() {
         notificationManager.notify(NOTIFICATION_ID, notification)
         startForeground(NOTIFICATION_ID, notification)
     }
+
 
 }
