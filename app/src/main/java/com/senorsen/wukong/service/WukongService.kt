@@ -2,12 +2,14 @@ package com.senorsen.wukong.service
 
 import android.app.*
 import android.app.Notification
+import android.content.BroadcastReceiver
 import android.content.ContentValues.TAG
 import android.content.Intent
 import android.util.Log
 import android.widget.Toast
 import com.senorsen.wukong.model.User
 import android.content.Context
+import android.content.IntentFilter
 import android.graphics.drawable.Icon
 import android.media.AudioManager
 import android.media.MediaPlayer
@@ -57,6 +59,20 @@ class WukongService : Service() {
 
     }
 
+    private val mNoisyReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+
+            when (intent?.action) {
+                AudioManager.ACTION_AUDIO_BECOMING_NOISY ->
+                    if (mediaPlayer.isPlaying) handler.post {
+                        mediaPlayer.pause()
+                        Toast.makeText(context, "Wukong paused.", Toast.LENGTH_SHORT).show()
+                    }
+            }
+            Log.d(TAG, "noisy receiver: " + intent?.action + ", ${mediaPlayer.isPlaying}")
+        }
+    }
+
     private fun stopPrevConnect() {
         if (thread != null) {
             threadHandler.post {
@@ -82,6 +98,10 @@ class WukongService : Service() {
         http = HttpWrapper(cookies)
 
         stopPrevConnect()
+
+        val intentFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+        intentFilter.addAction(AudioManager.ACTION_HEADSET_PLUG)
+        applicationContext.registerReceiver(mNoisyReceiver, intentFilter)
 
         thread = Thread(Runnable {
 
@@ -110,7 +130,7 @@ class WukongService : Service() {
                                 val song = protocol.song!!
                                 setNotification(song.title!!, "${song.artist} - ${song.album}\nby ${getUserFromList(userList, protocol.user)?.userName}")
                                 // FIXME: cannot playback lossless
-                                val originalUrl = song.musics!!.filter {it.audioQuality != SongQuality.LOSSLESS}.sortedByDescending { it.audioBitrate }.first().file!!
+                                val originalUrl = song.musics!!.filter { it.audioQuality != SongQuality.LOSSLESS }.sortedByDescending { it.audioBitrate }.first().file!!
                                 Log.d(TAG, "originalUrl: " + originalUrl)
                                 val mediaUrl = MediaProvider().resolveRedirect(originalUrl)
                                 Log.d(TAG, "resolved media url: " + mediaUrl)
