@@ -77,7 +77,7 @@ class SocketWrapper(
                         // FIXME(Senorsen): hardcoded string
                         webSocket.send(Gson().toJson(WebSocketTransmitProtocol("", "ping"), WebSocketTransmitProtocol::class.java))
                     }
-                }, 0, 30, TimeUnit.SECONDS)
+                }, 0, 10, TimeUnit.SECONDS)
             } catch (e: Exception) {
                 handler.post {
                     Toast.makeText(applicationContext, "Wukong WebSocket onOpen: " + e.message, Toast.LENGTH_LONG).show()
