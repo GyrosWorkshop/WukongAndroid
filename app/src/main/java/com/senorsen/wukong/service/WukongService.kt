@@ -106,6 +106,8 @@ class WukongService : Service() {
         intentFilter.addAction(AudioManager.ACTION_HEADSET_PLUG)
         applicationContext.registerReceiver(mNoisyReceiver, intentFilter)
 
+        isPaused = false
+
         thread = Thread(Runnable {
 
             Looper.prepare()
