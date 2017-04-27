@@ -20,6 +20,7 @@ import java.io.IOException
 import javax.security.auth.callback.Callback
 import android.net.wifi.WifiManager
 import android.net.wifi.WifiManager.WifiLock
+import com.senorsen.wukong.model.SongQuality
 import com.senorsen.wukong.model.getUserFromList
 
 
@@ -108,11 +109,13 @@ class WukongService : Service() {
                             Protocol.PLAY -> {
                                 val song = protocol.song!!
                                 setNotification(song.title!!, "${song.artist} - ${song.album}\nby ${getUserFromList(userList, protocol.user)?.userName}")
-                                val originalUrl = song.musics!!.sortedByDescending { it.audioBitrate }.first().file!!
+                                // FIXME: cannot playback lossless
+                                val originalUrl = song.musics!!.filter {it.audioQuality != SongQuality.LOSSLESS}.sortedByDescending { it.audioBitrate }.first().file!!
                                 Log.d(TAG, "originalUrl: " + originalUrl)
                                 val mediaUrl = MediaProvider().resolveRedirect(originalUrl)
                                 Log.d(TAG, "resolved media url: " + mediaUrl)
                                 handler.post {
+                                    mediaPlayer.reset()
                                     mediaPlayer.setDataSource(mediaUrl)
                                     mediaPlayer.prepare()
                                     mediaPlayer.seekTo((protocol.elapsed!! * 1000).toInt())

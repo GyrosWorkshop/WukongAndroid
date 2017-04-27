@@ -1,6 +1,18 @@
 package com.senorsen.wukong.model
 
-import com.google.gson.Gson
+object SongQuality {
+    val LOSSLESS: String
+        get() = "lossless"
+
+    val HIGH: String
+        get() = "high"
+
+    val LOW: String
+        get() = "low"
+
+    val MEDIUM: String
+        get() = "medium"
+}
 
 // A RequestSong is an object which contains identified song and credentials, which is supposed to be sent to the server.
 data class RequestSong(
