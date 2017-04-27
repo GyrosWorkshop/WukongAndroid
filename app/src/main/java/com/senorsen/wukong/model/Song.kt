@@ -25,7 +25,11 @@ data class Song(
         var mvId: String? = null,
         var mvWebUrl: String? = null,
         var musics: List<File>? = null
-)
+) {
+    fun toRequestSong(): RequestSong {
+        return RequestSong(siteId = siteId, songId = songId, withCookie = null)
+    }
+}
 
 // A File is an object which contains uri and other required metadata.
 data class File(

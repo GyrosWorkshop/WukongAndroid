@@ -108,7 +108,7 @@ class WukongService : Service() {
                             Protocol.PLAY -> {
                                 val song = protocol.song!!
                                 setNotification(song.title!!, "${song.artist} - ${song.album}\nby ${getUserFromList(userList, protocol.user)?.userName}")
-                                val originalUrl = song.musics!!.first().file!!
+                                val originalUrl = song.musics!!.sortedByDescending { it.audioBitrate }.first().file!!
                                 Log.d(TAG, "originalUrl: " + originalUrl)
                                 val mediaUrl = MediaProvider().resolveRedirect(originalUrl)
                                 Log.d(TAG, "mediaUrl: " + mediaUrl)
@@ -117,6 +117,11 @@ class WukongService : Service() {
                                     mediaPlayer.prepare()
                                     mediaPlayer.seekTo((protocol.elapsed!! * 1000).toInt())
                                     mediaPlayer.start()
+                                    mediaPlayer.setOnCompletionListener {
+                                        threadHandler.post {
+                                            http.reportFinish(song.toRequestSong())
+                                        }
+                                    }
                                 }
                             }
 
