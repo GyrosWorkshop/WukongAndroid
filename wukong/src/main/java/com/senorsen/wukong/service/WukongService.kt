@@ -50,8 +50,12 @@ class WukongService : Service() {
     var isPaused = false
 
     var currentSong: Song? = null
+    var downvoted = false
+    var songStartTime: Long = 0
 
     private val ACTION_DOWNVOTE = "com.senorsen.wukong.DOWNVOTE"
+    private val ACTION_PAUSE = "com.senorsen.wukong.PAUSE"
+    private val ACTION_PLAY = "com.senorsen.wukong.PLAY"
     private lateinit var receiver: BroadcastReceiver
 
     inner class WukongServiceBinder : Binder() {
@@ -70,12 +74,20 @@ class WukongService : Service() {
 
         val filter = IntentFilter()
         filter.addAction(ACTION_DOWNVOTE)
+        filter.addAction(ACTION_PAUSE)
+        filter.addAction(ACTION_PLAY)
+
         receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (intent != null) {
                     Log.d(TAG, intent.action)
                     when (intent.action) {
                         ACTION_DOWNVOTE -> sendDownvote(intent)
+
+                        ACTION_PAUSE -> switchPause()
+
+                        ACTION_PLAY -> switchPlay()
+
                     }
                 }
             }
@@ -138,6 +150,7 @@ class WukongService : Service() {
         applicationContext.registerReceiver(mNoisyReceiver, intentFilter)
 
         isPaused = false
+        downvoted = false
 
         thread = Thread(Runnable {
 
@@ -178,7 +191,10 @@ class WukongService : Service() {
 
                                 val song = protocol.song!!
                                 currentSong = song
-                                setNotification((protocol.elapsed!! * 1000).toInt())
+                                downvoted = protocol.downVote ?: false
+                                songStartTime = currentTimeMillis() - (protocol.elapsed!! * 1000).toLong()
+
+                                setNotification(songStartTime)
 
                                 var mediaSrc: String? = mediaCacheSelector.getValidMedia(song)
                                 if (mediaSrc == null) {
@@ -267,6 +283,26 @@ class WukongService : Service() {
             Thread(Runnable {
                 http.downvote(currentSong!!.toRequestSong())
             }).start()
+            downvoted = true
+            setNotification(songStartTime)
+        }
+    }
+
+    private fun switchPause() {
+        try {
+            mediaPlayer.pause()
+            isPaused = true
+            setNotification(songStartTime)
+        } catch (e: Exception) {
+        }
+    }
+
+    private fun switchPlay() {
+        try {
+            mediaPlayer.start()
+            isPaused = false
+            setNotification(songStartTime)
+        } catch (e: Exception) {
         }
     }
 
@@ -341,7 +377,25 @@ class WukongService : Service() {
             val serviceIntent = Intent(ACTION_DOWNVOTE).setPackage(packageName)
             serviceIntent.putExtra("song", currentSong!!.toRequestSong().toString())
             val downvoteIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
-            notificationBuilder.addAction(android.support.v4.app.NotificationCompat.Action(R.drawable.ic_downvote, "Downvote", downvoteIntent))
+            val action = android.support.v4.app.NotificationCompat.Action(R.drawable.ic_downvote, "Downvote", downvoteIntent)
+            if (downvoted) {
+                val f = action.javaClass.getDeclaredField("mAllowGeneratedReplies")
+                f.isAccessible = true
+                f.set(action, false)
+            }
+            notificationBuilder.addAction(action)
+        }
+
+        if (!isPaused) {
+            val serviceIntent = Intent(ACTION_PAUSE).setPackage(packageName)
+            val pauseIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
+            val action = android.support.v4.app.NotificationCompat.Action(R.drawable.ic_pause, "Pause", pauseIntent)
+            notificationBuilder.addAction(action)
+        } else {
+            val serviceIntent = Intent(ACTION_PLAY).setPackage(packageName)
+            val playIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
+            val action = android.support.v4.app.NotificationCompat.Action(R.drawable.ic_play, "Play", playIntent)
+            notificationBuilder.addAction(action)
         }
 
         val fetchArtUrl = currentSong?.artwork?.file
@@ -367,9 +421,9 @@ class WukongService : Service() {
         return notificationBuilder
     }
 
-    private fun setNotification(elapsed: Int) {
+    private fun setNotification(songStartTime: Long) {
         val notification = makeNotificationBuilder(null)
-                .setWhen(currentTimeMillis() - elapsed).build()
+                .setWhen(songStartTime).build()
 
         notification.flags = NotificationCompat.FLAG_ONGOING_EVENT
         mNotificationManager.notify(NOTIFICATION_ID, notification)
