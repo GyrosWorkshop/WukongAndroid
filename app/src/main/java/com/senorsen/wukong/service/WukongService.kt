@@ -118,6 +118,7 @@ class WukongService : Service() {
                                     mediaPlayer.seekTo((protocol.elapsed!! * 1000).toInt())
                                     mediaPlayer.start()
                                     mediaPlayer.setOnCompletionListener {
+                                        Log.d(TAG, "finished")
                                         threadHandler.post {
                                             http.reportFinish(song.toRequestSong())
                                         }
