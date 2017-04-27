@@ -57,10 +57,11 @@ class MainActivity : AppCompatActivity() {
                     .edit()
                     .putString("channel", channelEdit.text.toString()).apply()
 
+            stopService(Intent(this, WukongService::class.java))
+
             serviceIntent = Intent(this, WukongService::class.java)
                     .putExtra("cookies", cookies)
                     .putExtra("channel", channelEdit.text.toString().trim())
-            stopService(Intent(this, WukongService::class.java))
             startService(serviceIntent)
         }
 

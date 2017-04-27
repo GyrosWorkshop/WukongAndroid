@@ -7,11 +7,7 @@ import com.senorsen.wukong.BuildConfig
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.RequestSong
 import com.senorsen.wukong.model.User
-import okhttp3.CookieJar
-import okhttp3.MediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.*
 import java.net.URLEncoder
 
 
@@ -20,6 +16,19 @@ class HttpWrapper(private val cookies: String) {
     val userAgent = "WukongAndroid/" + BuildConfig.VERSION_NAME
 
     class UserUnauthorizedException : Exception {
+        constructor(e: Exception) : super(e)
+        constructor(message: String) : super(message)
+        constructor(message: String, e: Exception) : super(e)
+    }
+
+    class InvalidRequestException : Exception {
+        constructor(e: Exception) : super(e)
+        constructor(message: String) : super(message)
+        constructor(message: String, e: Exception) : super(e)
+    }
+
+    class InvalidResponseException : Exception {
+        constructor(response: Response) : super("Invalid response: success=${response.isSuccessful}, code=${response.code()}")
         constructor(e: Exception) : super(e)
         constructor(message: String) : super(message)
         constructor(message: String, e: Exception) : super(e)
@@ -60,8 +69,11 @@ class HttpWrapper(private val cookies: String) {
             response.code() == 401 ->
                 throw UserUnauthorizedException(response.body().string())
 
+            response.code() == 400 ->
+                throw InvalidRequestException(response.body().string())
+
             else ->
-                throw IllegalStateException()
+                throw InvalidResponseException(response)
         }
     }
 
@@ -81,8 +93,11 @@ class HttpWrapper(private val cookies: String) {
             response.code() == 401 ->
                 throw UserUnauthorizedException(response.body().string())
 
+            response.code() == 400 ->
+                throw InvalidRequestException(response.body().string())
+
             else ->
-                throw IllegalStateException()
+                throw InvalidResponseException(response)
         }
     }
 

@@ -7,28 +7,34 @@ import android.content.ContentValues.TAG
 import android.content.Intent
 import android.util.Log
 import android.widget.Toast
-import com.senorsen.wukong.model.User
 import android.content.Context
 import android.content.IntentFilter
-import android.graphics.drawable.Icon
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.*
-import android.support.v4.app.NotificationCompat
+import android.support.v7.app.NotificationCompat
 import com.senorsen.wukong.R
 import com.senorsen.wukong.activity.MainActivity
 import com.senorsen.wukong.network.*
 import java.io.IOException
-import javax.security.auth.callback.Callback
 import android.net.wifi.WifiManager
 import android.net.wifi.WifiManager.WifiLock
-import com.senorsen.wukong.model.SongQuality
-import com.senorsen.wukong.model.getUserFromList
+import android.support.v4.app.NotificationManagerCompat
+import android.support.v4.media.session.MediaSessionCompat
+import com.senorsen.wukong.media.MediaCacheSelector
+import com.senorsen.wukong.model.*
+import com.senorsen.wukong.utils.ResourceHelper
+import java.lang.System.currentTimeMillis
 
 
 class WukongService : Service() {
 
     private val NOTIFICATION_ID = 1
+
+    val albumArtCache = AlbumArtCache()
 
     lateinit var http: HttpWrapper
     var socket: SocketWrapper? = null
@@ -38,9 +44,15 @@ class WukongService : Service() {
     var thread: Thread? = null
     lateinit var threadHandler: Handler
     lateinit var mediaPlayer: MediaPlayer
+    private val mediaCacheSelector = MediaCacheSelector()
     lateinit var wifiLock: WifiLock
 
     var isPaused = false
+
+    var currentSong: Song? = null
+
+    private val ACTION_DOWNVOTE = "com.senorsen.wukong.DOWNVOTE"
+    private lateinit var receiver: BroadcastReceiver
 
     inner class WukongServiceBinder : Binder() {
         fun getService(): WukongService {
@@ -56,14 +68,27 @@ class WukongService : Service() {
         super.onCreate()
         Log.d(TAG, "onCreate")
 
-        mediaPlayer = MediaPlayer()
-        mediaPlayer.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
+        val filter = IntentFilter()
+        filter.addAction(ACTION_DOWNVOTE)
+        receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent != null) {
+                    Log.d(TAG, intent.action)
+                    when (intent.action) {
+                        ACTION_DOWNVOTE -> sendDownvote(intent)
+                    }
+                }
+            }
+        }
+        registerReceiver(receiver, filter)
 
         wifiLock = (getSystemService(Context.WIFI_SERVICE) as WifiManager)
                 .createWifiLock(WifiManager.WIFI_MODE_FULL, getString(R.string.app_name))
 
         wifiLock.acquire()
+
+        prepareNotification()
+        createMedia()
 
     }
 
@@ -92,7 +117,7 @@ class WukongService : Service() {
             thread?.interrupt()
         }
 
-
+        currentSong = null
         if (mediaPlayer.isPlaying) {
             mediaPlayer.stop()
         }
@@ -135,27 +160,52 @@ class WukongService : Service() {
                             }
 
                             Protocol.PRELOAD -> {
+
+                                Log.d(TAG, "preload " + protocol.song)
+
+                                // Preload artwork image.
+                                if (protocol.song?.artwork?.file != null)
+                                    albumArtCache.fetch(protocol.song.artwork?.file!!, null)
+
                             }
 
                             Protocol.PLAY -> {
+
+                                if (protocol.song == null) {
+                                    setNotification("Channel $channelId: play null")
+                                    return
+                                }
+
                                 val song = protocol.song!!
-                                setNotification(song.title!!, "${song.artist} - ${song.album}\nby ${getUserFromList(userList, protocol.user)?.userName}")
-                                // FIXME: cannot playback lossless
-                                val originalUrl = song.musics!!.sortedByDescending { it.audioBitrate }.first().file!!
-                                Log.d(TAG, "originalUrl: " + originalUrl)
-                                val mediaUrl = MediaProvider().resolveRedirect(originalUrl)
-                                Log.d(TAG, "resolved media url: " + mediaUrl)
+                                currentSong = song
+                                setNotification((protocol.elapsed!! * 1000).toInt())
+
+                                var mediaSrc: String? = mediaCacheSelector.getValidMedia(song)
+                                if (mediaSrc == null) {
+                                    val originalUrl = song.musics!!.sortedByDescending(File::audioBitrate).first().file!!
+                                    Log.d(TAG, "originalUrl: $originalUrl")
+                                    mediaSrc = MediaProvider().resolveRedirect(originalUrl)
+                                    Log.d(TAG, "resolved media url: $mediaSrc")
+                                } else {
+                                    Log.d(TAG, "use cached media: $mediaSrc")
+                                }
                                 handler.post {
                                     mediaPlayer.reset()
-                                    mediaPlayer.setDataSource(mediaUrl)
+                                    mediaPlayer.setDataSource(mediaSrc)
                                     mediaPlayer.prepare()
                                     mediaPlayer.seekTo((protocol.elapsed!! * 1000).toInt())
+
                                     if (!isPaused)
                                         mediaPlayer.start()
+
                                     mediaPlayer.setOnCompletionListener {
                                         Log.d(TAG, "finished")
                                         threadHandler.post {
-                                            http.reportFinish(song.toRequestSong())
+                                            try {
+                                                http.reportFinish(song.toRequestSong())
+                                            } catch (e: HttpWrapper.InvalidRequestException) {
+                                                e.printStackTrace()
+                                            }
                                         }
                                     }
                                 }
@@ -181,6 +231,7 @@ class WukongService : Service() {
                     override fun call() {
                         Thread.sleep(3000)
                         handler.post {
+                            setNotification("Reconnecting")
                             Toast.makeText(applicationContext, "Wukong: Reconnecting...", Toast.LENGTH_SHORT).show()
                         }
                         doConnect()
@@ -189,6 +240,7 @@ class WukongService : Service() {
 
                 try {
                     doConnect()
+                    setNotification("Channel $channelId idle.")
                 } catch (e: IOException) {
                     Log.e(TAG, "socket exception: " + e.message)
                 }
@@ -207,9 +259,22 @@ class WukongService : Service() {
         thread!!.start()
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+    private fun sendDownvote(intent: Intent) {
+        Log.d(TAG, currentSong!!.toRequestSong().toString())
+        Log.d(TAG, intent.getStringExtra("song"))
+        if (currentSong != null && currentSong!!.toRequestSong().toString() == intent.getStringExtra("song")) {
+            Log.d(TAG, "Downvote: $currentSong")
+            Thread(Runnable {
+                http.downvote(currentSong!!.toRequestSong())
+            }).start()
+        }
+    }
 
-        this.startConnect(intent)
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
+        if (intent != null) {
+            startConnect(intent)
+        }
 
         return START_STICKY
     }
@@ -222,24 +287,122 @@ class WukongService : Service() {
         wifiLock.release()
 
         super.onDestroy()
+        unregisterReceiver(receiver);
         Log.d(TAG, "onDestroy")
     }
 
-    fun setNotification(title: String, content: String) {
+    private lateinit var mSessionCompat: MediaSessionCompat
+    private lateinit var mSession: MediaSessionCompat.Token
+
+    private fun createMedia() {
+        mediaPlayer = MediaPlayer()
+        mediaPlayer.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
+
+        mSessionCompat = MediaSessionCompat(this, "WukongMusicService")
+        mSession = mSessionCompat.sessionToken
+    }
+
+    private lateinit var mNotificationManager: NotificationManagerCompat
+    private var mNotificationColor: Int = 0
+
+    private fun prepareNotification() {
+        mNotificationManager = NotificationManagerCompat.from(this)
+        mNotificationColor = ResourceHelper.getThemeColor(this, R.attr.colorPrimary, Color.DKGRAY)
+    }
+
+    private fun makeNotificationBuilder(nContent: String?): NotificationCompat.Builder {
+        var title: String = "Wukong"
+        var content = nContent
+        if (nContent == null && currentSong != null) {
+            title = currentSong?.title!!
+            content = "${currentSong?.artist} - ${currentSong?.album}"
+        }
+
         val intent = Intent(this, MainActivity::class.java)
         val contextIntent = PendingIntent.getActivity(this, 0, intent, 0)
 
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val notification = NotificationCompat.Builder(this)
+        val playPauseButtonPosition = 0
+
+        val notificationBuilder = NotificationCompat.Builder(this)
+                .setStyle(NotificationCompat.MediaStyle()
+                        .setShowActionsInCompactView()
+                        .setMediaSession(mSession))
+                .setColor(mNotificationColor)
                 .setContentIntent(contextIntent)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setStyle(NotificationCompat.BigTextStyle().bigText(content))
+                .setUsesChronometer(true)
+                .setShowWhen(true)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setSmallIcon(R.mipmap.ic_notification)
                 .setContentTitle(title)
-                .setContentText(content).build()
+                .setContentText(content) as android.support.v7.app.NotificationCompat.Builder
+
+        if (currentSong != null) {
+            val serviceIntent = Intent(ACTION_DOWNVOTE).setPackage(packageName)
+            serviceIntent.putExtra("song", currentSong!!.toRequestSong().toString())
+            val downvoteIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
+            notificationBuilder.addAction(android.support.v4.app.NotificationCompat.Action(R.drawable.ic_downvote, "Downvote", downvoteIntent))
+        }
+
+        val fetchArtUrl = currentSong?.artwork?.file
+        var art: Bitmap? = null
+        if (fetchArtUrl != null) {
+            // This sample assumes the iconUri will be a valid URL formatted String, but
+            // it can actually be any valid Android Uri formatted String.
+            // async fetch the album art icon
+            art = albumArtCache.getBigImage(fetchArtUrl)
+        }
+
+        if (art == null) {
+            // use a placeholder art while the remote art is being downloaded
+            art = BitmapFactory.decodeResource(resources,
+                    R.mipmap.ic_default_art)
+        }
+
+        notificationBuilder.setLargeIcon(art)
+
+        if (fetchArtUrl != null) {
+            fetchBitmapFromURLAsync(fetchArtUrl, currentSong!!, notificationBuilder)
+        }
+        return notificationBuilder
+    }
+
+    private fun setNotification(elapsed: Int) {
+        val notification = makeNotificationBuilder(null)
+                .setWhen(currentTimeMillis() - elapsed).build()
+
         notification.flags = NotificationCompat.FLAG_ONGOING_EVENT
-        notificationManager.notify(NOTIFICATION_ID, notification)
+        mNotificationManager.notify(NOTIFICATION_ID, notification)
         startForeground(NOTIFICATION_ID, notification)
     }
 
+    private fun setNotification(content: String?) {
+        val notification = makeNotificationBuilder(content).build()
+
+        notification.flags = NotificationCompat.FLAG_ONGOING_EVENT
+        mNotificationManager.notify(NOTIFICATION_ID, notification)
+        startForeground(NOTIFICATION_ID, notification)
+    }
+
+    private fun setNotification(builder: NotificationCompat.Builder) {
+        val notification = builder.build()
+
+        notification.flags = NotificationCompat.FLAG_ONGOING_EVENT
+        mNotificationManager.notify(NOTIFICATION_ID, notification)
+        startForeground(NOTIFICATION_ID, notification)
+    }
+
+    private fun fetchBitmapFromURLAsync(bitmapUrl: String, song: Song, builder: NotificationCompat.Builder) {
+        albumArtCache.fetch(bitmapUrl, object : AlbumArtCache.FetchListener() {
+            override fun onFetched(artUrl: String, bigImage: Bitmap, iconImage: Bitmap) {
+                if (currentSong == song) {
+                    // If the media is still the same, update the notification:
+                    Log.d(TAG, "fetchBitmapFromURLAsync: set bitmap to " + artUrl)
+                    builder.setLargeIcon(bigImage)
+                    mNotificationManager.notify(NOTIFICATION_ID, builder.build())
+                }
+            }
+        })
+    }
 
 }
