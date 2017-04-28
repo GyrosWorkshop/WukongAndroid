@@ -1,6 +1,6 @@
 android {
     signingConfigs {
-        release {
+        config {
             storeFile file('../wukong.jks')
             storePassword System.getenv("storepass")
             keyAlias System.getenv("keyalias")

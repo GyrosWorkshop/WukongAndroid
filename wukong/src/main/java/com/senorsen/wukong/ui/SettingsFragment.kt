@@ -4,6 +4,7 @@ import android.app.Fragment
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
+import android.preference.PreferenceFragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,7 +19,7 @@ import com.senorsen.wukong.R
  * Use the [SettingsFragment.newInstance] factory method to
  * create an instance of this fragment.
  */
-class SettingsFragment : Fragment() {
+class SettingsFragment : PreferenceFragment() {
 
     // TODO: Rename and change types of parameters
     private var mParam1: String? = null
