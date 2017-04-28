@@ -17,8 +17,8 @@
     <string name="channel_id">Channel</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
-    <string name="permission_warning">Wukong Music needs the permission to write cache files and etc.
-        Otherwise, performance and data usages may be highly impacted, or the App will crashed.</string>
+    <string name="permission_warning">Wukong Music needs the permission to r/w media files and etc.\n
+        Otherwise, performance and data usages may be highly impacted, or the App will crash.</string>
     <string name="warning">Warning</string>
     <string name="title_activity_settings">Settings</string>
 
