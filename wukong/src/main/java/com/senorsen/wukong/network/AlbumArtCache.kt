@@ -55,7 +55,7 @@ class AlbumArtCache {
     }
 
     fun fetch(artUrl: String, listener: FetchListener?) {
-        // WARNING: for the sake of simplicity, simultaneous multi-thread fetch requests
+        // WARNING: for the sake of simplicity, simultaneous multi-workThread fetch requests
         // are not handled properly: they may cause redundant costly operations, like HTTP
         // requests and bitmap rescales. For production-level apps, we recommend you use
         // a proper image loading library, like Glide.

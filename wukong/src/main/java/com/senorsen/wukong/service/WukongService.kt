@@ -27,6 +27,7 @@ import com.senorsen.wukong.media.MediaCacheSelector
 import com.senorsen.wukong.model.*
 import com.senorsen.wukong.utils.ResourceHelper
 import java.lang.System.currentTimeMillis
+import kotlin.concurrent.thread
 
 
 class WukongService : Service() {
@@ -40,8 +41,7 @@ class WukongService : Service() {
     lateinit var currentUser: User
 
     val handler = Handler()
-    var thread: Thread? = null
-    var threadHandler: Handler? = null
+    var workThread: Thread? = null
     lateinit var mediaPlayer: MediaPlayer
     private val mediaCacheSelector = MediaCacheSelector()
     lateinit var wifiLock: WifiLock
@@ -119,12 +119,10 @@ class WukongService : Service() {
     }
 
     private fun stopPrevConnect() {
-        if (thread != null) {
+        if (workThread != null) {
             Log.i(TAG, "socket disconnect")
-            threadHandler?.post {
-                socket?.disconnect()
-                thread?.interrupt()
-            }
+            socket?.disconnect()
+            workThread?.interrupt()
         }
 
         currentSong = null
@@ -150,10 +148,7 @@ class WukongService : Service() {
         isPaused = false
         downvoted = false
 
-        thread = Thread(Runnable {
-
-            Looper.prepare()
-            threadHandler = Handler()
+        workThread = Thread(Runnable {
 
             try {
 
@@ -168,6 +163,9 @@ class WukongService : Service() {
 
                             Protocol.USER_LIST_UPDATE -> {
                                 userList = protocol.users!! as ArrayList<User>
+                                handler.post {
+                                    Toast.makeText(applicationContext, "Wukong $channelId: " + userList!!.map { it.userName }.joinToString(), Toast.LENGTH_SHORT).show()
+                                }
                             }
 
                             Protocol.PRELOAD -> {
@@ -215,7 +213,7 @@ class WukongService : Service() {
 
                                         mediaPlayer.setOnCompletionListener {
                                             Log.d(TAG, "finished")
-                                            threadHandler!!.post {
+                                            thread {
                                                 try {
                                                     http.reportFinish(song.toRequestSong())
                                                 } catch (e: HttpWrapper.InvalidRequestException) {
@@ -249,12 +247,20 @@ class WukongService : Service() {
 
                 reconnectCallback = object : SocketWrapper.Callback {
                     override fun call() {
-                        Thread.sleep(3000)
-                        handler.post {
-                            setNotification("Reconnecting")
-                            Toast.makeText(applicationContext, "Wukong: Reconnecting...", Toast.LENGTH_SHORT).show()
+                        var retry = true
+                        while (retry) {
+                            try {
+                                Thread.sleep(1000)
+                                handler.post {
+                                    setNotification("Reconnecting")
+                                    Toast.makeText(applicationContext, "Wukong: Reconnecting...", Toast.LENGTH_SHORT).show()
+                                }
+                                doConnect()
+                                retry = false
+                            } catch (e: IOException) {
+                                retry = true
+                            }
                         }
-                        doConnect()
                     }
                 }
 
@@ -276,10 +282,8 @@ class WukongService : Service() {
                 }
             }
 
-            Looper.loop()
-
         })
-        thread!!.start()
+        workThread!!.start()
     }
 
     private fun sendDownvote(intent: Intent) {
@@ -287,9 +291,9 @@ class WukongService : Service() {
         Log.d(TAG, intent.getStringExtra("song"))
         if (currentSong != null && currentSong!!.toRequestSong().toString() == intent.getStringExtra("song")) {
             Log.d(TAG, "Downvote: $currentSong")
-            Thread(Runnable {
+            thread {
                 http.downvote(currentSong!!.toRequestSong())
-            }).start()
+            }
             downvoted = true
             setNotification(songStartTime)
         }
