@@ -5,39 +5,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.senorsen.wukong.activity.MainActivity">
+    tools:context="com.senorsen.wukong.ui.MainActivity">
 
     <include layout="@layout/toolbar" />
 
-    <TextView
-        android:id="@+id/textView"
+    <FrameLayout
+        android:id="@+id/fragment"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="" />
+        android:layout_height="match_parent" />
 
-    <EditText
-        android:id="@+id/channel_id"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:hint="@string/channel_id"
-        android:inputType="text" />
-
-    <Button
-        android:id="@+id/sign_in"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/sign_in" />
-
-    <Button
-        android:id="@+id/start_service"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Start service" />
-
-    <Button
-        android:id="@+id/stop_service"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Stop service" />
 </LinearLayout>

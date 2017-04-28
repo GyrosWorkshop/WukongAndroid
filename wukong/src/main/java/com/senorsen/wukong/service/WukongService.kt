@@ -1,7 +1,6 @@
 package com.senorsen.wukong.service
 
 import android.app.*
-import android.app.Notification
 import android.content.BroadcastReceiver
 import android.content.ContentValues.TAG
 import android.content.Intent
@@ -17,7 +16,7 @@ import android.media.MediaPlayer
 import android.os.*
 import android.support.v7.app.NotificationCompat
 import com.senorsen.wukong.R
-import com.senorsen.wukong.activity.MainActivity
+import com.senorsen.wukong.ui.MainActivity
 import com.senorsen.wukong.network.*
 import java.io.IOException
 import android.net.wifi.WifiManager

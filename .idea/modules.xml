@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/WukongAndroid.iml" filepath="$PROJECT_DIR$/WukongAndroid.iml" />
       <module fileurl="file://$PROJECT_DIR$/wukong/wukong.iml" filepath="$PROJECT_DIR$/wukong/wukong.iml" />
+      <module fileurl="file://$PROJECT_DIR$/wukong/wukong.iml" filepath="$PROJECT_DIR$/wukong/wukong.iml" />
     </modules>
   </component>
 </project>

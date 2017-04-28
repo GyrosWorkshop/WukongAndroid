@@ -15,28 +15,24 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".activity.MainActivity">
+        <activity android:name=".ui.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".activity.WebViewActivity" />
-
-        <meta-data
-            android:name="com.google.android.gms.car.application"
-            android:resource="@xml/automotive_app_desc" />
+        <activity android:name=".ui.WebViewActivity" />
 
         <service
-            android:name="com.senorsen.wukong.service.WukongMusicService"
+            android:name=".service.WukongMusicService"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
         <service
-            android:name="com.senorsen.wukong.service.WukongService"
+            android:name=".service.WukongService"
             android:exported="false"
             android:process=":wukongsrv" />
     </application>
