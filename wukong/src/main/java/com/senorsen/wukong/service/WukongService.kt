@@ -123,8 +123,8 @@ class WukongService : Service() {
             Log.i(TAG, "socket disconnect")
             threadHandler?.post {
                 socket?.disconnect()
+                thread?.interrupt()
             }
-            thread?.interrupt()
         }
 
         currentSong = null
