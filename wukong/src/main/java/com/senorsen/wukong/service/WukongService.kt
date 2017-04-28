@@ -323,7 +323,7 @@ class WukongService : Service() {
             startConnect(intent)
         }
 
-        return START_STICKY
+        return START_REDELIVER_INTENT
     }
 
     override fun onDestroy() {
