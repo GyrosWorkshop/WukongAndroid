@@ -51,7 +51,8 @@ class MainFragment : Fragment() {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
             REQUEST_COOKIES -> {
-                cookies = data!!.getStringExtra("cookies")
+                if (data == null) return
+                cookies = data.getStringExtra("cookies")
                 Toast.makeText(activity.applicationContext, "Sign in successfully.", Toast.LENGTH_SHORT).show()
 
                 val sharedPref = activity.applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE)
