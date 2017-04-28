@@ -71,7 +71,7 @@ class MainFragment : Fragment() {
 
         view.findViewById(R.id.button_settings).setOnClickListener {
             fragmentManager.beginTransaction()
-                    .replace(R.id.fragment, SettingsFragment())
+                    .replace(R.id.fragment, SettingsFragment(), "SETTINGS")
                     .addToBackStack("tag")
                     .commit()
         }

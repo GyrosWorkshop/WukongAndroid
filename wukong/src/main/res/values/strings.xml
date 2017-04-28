@@ -13,4 +13,7 @@
     <string name="pref_preferAudioQualityData_default">high</string>
     <string name="pref_preferAudioQualityWifi_default">high</string>
     <string name="settings">Settings</string>
+
+    <string name="drawer_open">Open Drawer</string>
+    <string name="drawer_close">Close Drawer</string>
 </resources>
