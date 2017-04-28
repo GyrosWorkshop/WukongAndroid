@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <CheckBoxPreference
+        android:key="pref_useCdn"
+        android:title="Use media CDN"
+        android:summary="May help you get rid of network problem, or not."
+        android:defaultValue="false" />
+    <ListPreference
+        android:key="pref_preferAudioQualityData"
+        android:title="Preferred Audio Quality (cellular)"
+        android:dialogTitle="Preferred Audio Quality (cellular)"
+        android:entries="@array/pref_preferAudioQuality_entries"
+        android:entryValues="@array/pref_preferAudioQuality_values"
+        android:defaultValue="@string/pref_preferAudioQualityData_default"
+        android:summary="%s"/>
+    <ListPreference
+        android:key="pref_preferAudioQualityWifi"
+        android:title="Preferred Audio Quality (Wifi) 未实现"
+        android:dialogTitle="Preferred Audio Quality (Wifi)"
+        android:entries="@array/pref_preferAudioQuality_entries"
+        android:entryValues="@array/pref_preferAudioQuality_values"
+        android:defaultValue="@string/pref_preferAudioQualityWifi_default"
+        android:summary="%s"/>
+</PreferenceScreen>

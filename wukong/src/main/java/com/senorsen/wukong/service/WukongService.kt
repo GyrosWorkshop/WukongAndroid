@@ -1,13 +1,10 @@
 package com.senorsen.wukong.service
 
 import android.app.*
-import android.content.BroadcastReceiver
+import android.content.*
 import android.content.ContentValues.TAG
-import android.content.Intent
 import android.util.Log
 import android.widget.Toast
-import android.content.Context
-import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -24,6 +21,7 @@ import android.net.wifi.WifiManager.WifiLock
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import com.senorsen.wukong.media.MediaCacheSelector
+import com.senorsen.wukong.media.MediaSourceSelector
 import com.senorsen.wukong.model.*
 import com.senorsen.wukong.utils.ResourceHelper
 import java.lang.System.currentTimeMillis
@@ -36,6 +34,7 @@ class WukongService : Service() {
 
     val albumArtCache = AlbumArtCache()
 
+    lateinit var mediaSourceSelector: MediaSourceSelector
     lateinit var http: HttpWrapper
     var socket: SocketWrapper? = null
     lateinit var currentUser: User
@@ -49,6 +48,7 @@ class WukongService : Service() {
     var isPaused = false
 
     var currentSong: Song? = null
+    var currentFile: File? = null
     var downvoted = false
     var songStartTime: Long = 0
 
@@ -70,6 +70,8 @@ class WukongService : Service() {
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate")
+
+        mediaSourceSelector = MediaSourceSelector(applicationContext)
 
         val filter = IntentFilter()
         filter.addAction(ACTION_DOWNVOTE)
@@ -159,6 +161,8 @@ class WukongService : Service() {
 
                 val receiver = object : SocketWrapper.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
+                        // FIXME: 该分层了。。。
+
                         when (protocol.eventName) {
 
                             Protocol.USER_LIST_UPDATE -> {
@@ -170,10 +174,10 @@ class WukongService : Service() {
 
                             Protocol.PRELOAD -> {
 
-                                Log.d(TAG, "preload " + protocol.song)
+                                Log.d(TAG, "preload image " + protocol.song)
 
                                 // Preload artwork image.
-                                if (protocol.song?.artwork?.file != null)
+                                if (protocol.song?.artwork != null)
                                     albumArtCache.fetch(protocol.song.artwork?.file!!, null)
 
                             }
@@ -194,12 +198,13 @@ class WukongService : Service() {
 
                                 var mediaSrc: String? = mediaCacheSelector.getValidMedia(song)
                                 if (mediaSrc == null) {
-                                    val originalUrl = song.musics!!.sortedByDescending(File::audioBitrate).first().file!!
-                                    Log.d(TAG, "originalUrl: $originalUrl")
+                                    val (currentFile, originalUrl) = mediaSourceSelector.selectFromMultipleMediaFiles(song.musics!!)
+                                    Log.i(TAG, "file audio quality: ${currentFile.audioQuality}")
+                                    Log.i(TAG, "originalUrl: $originalUrl")
                                     mediaSrc = MediaProvider().resolveRedirect(originalUrl)
-                                    Log.d(TAG, "resolved media url: $mediaSrc")
+                                    Log.i(TAG, "resolved media url: $mediaSrc")
                                 } else {
-                                    Log.d(TAG, "use cached media: $mediaSrc")
+                                    Log.i(TAG, "use local media: $mediaSrc")
                                 }
                                 handler.post {
                                     mediaPlayer.reset()
@@ -334,7 +339,7 @@ class WukongService : Service() {
         wifiLock.release()
 
         super.onDestroy()
-        unregisterReceiver(receiver);
+        unregisterReceiver(receiver)
         Log.d(TAG, "onDestroy")
     }
 
@@ -409,13 +414,17 @@ class WukongService : Service() {
             notificationBuilder.addAction(action)
         }
 
-        val fetchArtUrl = currentSong?.artwork?.file
         var art: Bitmap? = null
-        if (fetchArtUrl != null) {
-            // This sample assumes the iconUri will be a valid URL formatted String, but
-            // it can actually be any valid Android Uri formatted String.
-            // async fetch the album art icon
-            art = albumArtCache.getBigImage(fetchArtUrl)
+        var fetchArtUrl: String ?= null
+        if (currentSong != null) {
+//            fetchArtUrl = mediaSourceSelector.selectMediaUrlByCdnSettings(currentSong?.artwork!!)
+            fetchArtUrl = currentSong!!.artwork?.file
+            if (fetchArtUrl != null) {
+                // This sample assumes the iconUri will be a valid URL formatted String, but
+                // it can actually be any valid Android Uri formatted String.
+                // async fetch the album art icon
+                art = albumArtCache.getBigImage(fetchArtUrl)
+            }
         }
 
         if (art == null) {
