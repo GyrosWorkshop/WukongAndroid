@@ -9,3 +9,4 @@
 .externalNativeBuild
 *.apk
 signing.gradle
+wukong/src/main/res/values/idp_configs.xml

@@ -3,11 +3,13 @@ package com.senorsen.wukong.activity
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.app.Activity
 import android.app.AlertDialog
-import android.app.PendingIntent.getActivity
+import android.app.PendingIntent
+import android.app.PendingIntent.*
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.Snackbar
@@ -19,13 +21,17 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import com.senorsen.wukong.R
+import com.senorsen.wukong.model.getProvider
 import com.senorsen.wukong.service.WukongService
+import net.openid.appauth.*
 
 class MainActivity : AppCompatActivity() {
 
     lateinit var serviceIntent: Intent
 
     private val REQUEST_COOKIES = 0
+
+    private val authorizationService: AuthorizationService = AuthorizationService(this)
 
     var cookies: String? = null
 
@@ -37,7 +43,7 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         findViewById(R.id.sign_in).setOnClickListener {
-            startActivityForResult(Intent(this, WebViewActivity::class.java), REQUEST_COOKIES)
+            login()
         }
 
         val channelEdit = findViewById(R.id.channel_id) as EditText
@@ -106,6 +112,31 @@ class MainActivity : AppCompatActivity() {
         }
         requestPermissions(arrayOf(WRITE_EXTERNAL_STORAGE), REQUEST_WRITE_EXTERNAL_STORAGE)
         return false
+    }
+
+    private fun login() {
+        val provider = getProvider(this)
+
+        AuthorizationServiceConfiguration.fetchFromUrl(provider.getDeiscoveryEndpoint()) {
+            config, ex ->
+            val configuration = config?.let { it } ?: return@fetchFromUrl
+            val intent = Intent(this, MainActivity.javaClass)
+            val authState = AuthState()
+            intent.putExtra("authState", authState.jsonSerializeString())
+            intent.putExtra("serviceDiscovery", configuration.discoveryDoc.toString())
+            val authRequest = AuthorizationRequest.Builder(
+                    configuration,
+                    provider.clientId,
+                    ResponseTypeValues.CODE,
+                    provider.redirectUri?:Uri.EMPTY)
+                    .setScope(provider.scope)
+                    .build()
+
+            authorizationService.performAuthorizationRequest(
+                    authRequest,
+                    PendingIntent.getActivity(this, authRequest.hashCode(), intent, 0)
+            )
+        }
     }
 
     /**

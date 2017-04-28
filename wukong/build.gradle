@@ -13,6 +13,9 @@ android {
         versionCode 0
         versionName "0.1.1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders = [
+                'appAuthRedirectScheme': 'com.senorsen.wukong'
+        ]
     }
     buildTypes {
         debug {
@@ -34,6 +37,7 @@ dependencies {
     compile 'com.google.code.gson:gson:2.8.0'
     compile 'com.github.satyan:sugar:1.4'
     compile 'com.danikula:videocache:2.7.0'
+    compile 'net.openid:appauth:0.6.0'
     testCompile 'junit:junit:4.12'
 }
 repositories {
