@@ -41,7 +41,7 @@ class WukongService : Service() {
 
     val handler = Handler()
     var thread: Thread? = null
-    lateinit var threadHandler: Handler
+    var threadHandler: Handler? = null
     lateinit var mediaPlayer: MediaPlayer
     private val mediaCacheSelector = MediaCacheSelector()
     lateinit var wifiLock: WifiLock
@@ -120,11 +120,7 @@ class WukongService : Service() {
 
     private fun stopPrevConnect() {
         if (thread != null) {
-            threadHandler.post {
-                Log.i(TAG, "socket disconnect")
-                socket?.disconnect()
-            }
-            Thread.sleep(1000)
+            Log.i(TAG, "socket disconnect")
             thread?.interrupt()
         }
 
@@ -154,10 +150,10 @@ class WukongService : Service() {
         thread = Thread(Runnable {
 
             Looper.prepare()
-
             threadHandler = Handler()
 
             try {
+
                 currentUser = http.getUserInfo()
                 Log.d(TAG, "User: " + currentUser.toString())
 
@@ -206,22 +202,28 @@ class WukongService : Service() {
                                 }
                                 handler.post {
                                     mediaPlayer.reset()
-                                    mediaPlayer.setDataSource(mediaSrc)
-                                    mediaPlayer.prepare()
-                                    mediaPlayer.seekTo((protocol.elapsed!! * 1000).toInt())
+                                    try {
+                                        mediaPlayer.setDataSource(mediaSrc)
+                                        mediaPlayer.prepare()
+                                        mediaPlayer.seekTo((protocol.elapsed!! * 1000).toInt())
 
-                                    if (!isPaused)
-                                        mediaPlayer.start()
+                                        if (!isPaused)
+                                            mediaPlayer.start()
 
-                                    mediaPlayer.setOnCompletionListener {
-                                        Log.d(TAG, "finished")
-                                        threadHandler.post {
-                                            try {
-                                                http.reportFinish(song.toRequestSong())
-                                            } catch (e: HttpWrapper.InvalidRequestException) {
-                                                e.printStackTrace()
+                                        mediaPlayer.setOnCompletionListener {
+                                            Log.d(TAG, "finished")
+                                            threadHandler!!.post {
+                                                try {
+                                                    http.reportFinish(song.toRequestSong())
+                                                } catch (e: HttpWrapper.InvalidRequestException) {
+                                                    e.printStackTrace()
+                                                }
                                             }
                                         }
+                                    } catch (e: Exception) {
+                                        Toast.makeText(applicationContext, "Wukong play error: " + e.message, Toast.LENGTH_LONG).show()
+                                        Log.e(TAG, "play")
+                                        e.printStackTrace()
                                     }
                                 }
                             }
@@ -270,6 +272,9 @@ class WukongService : Service() {
                     Toast.makeText(applicationContext, "Unknown Exception: " + e.message, Toast.LENGTH_SHORT).show()
                 }
             }
+
+            Looper.loop()
+
         })
         thread!!.start()
     }
