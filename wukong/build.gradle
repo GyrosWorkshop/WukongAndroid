@@ -1,7 +1,11 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
-apply from: 'signing.gradle'
+if (System.getenv("TRAVIS"))
+    apply from: 'signing-ci.gradle'
+else
+    apply from: 'signing.gradle'
+
 
 android {
     compileSdkVersion 25
@@ -19,6 +23,9 @@ android {
             debuggable true
             signingConfig signingConfigs.config
         }
+    }
+    lintOptions {
+        abortOnError false
     }
 }
 
