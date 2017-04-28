@@ -121,6 +121,9 @@ class WukongService : Service() {
     private fun stopPrevConnect() {
         if (thread != null) {
             Log.i(TAG, "socket disconnect")
+            threadHandler?.post {
+                socket?.disconnect()
+            }
             thread?.interrupt()
         }
 
