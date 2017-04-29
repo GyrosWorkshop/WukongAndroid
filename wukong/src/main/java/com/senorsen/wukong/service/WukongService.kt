@@ -206,31 +206,29 @@ class WukongService : Service() {
                                 } else {
                                     Log.i(TAG, "use local media: $mediaSrc")
                                 }
-                                handler.post {
-                                    mediaPlayer.reset()
-                                    try {
-                                        mediaPlayer.setDataSource(mediaSrc)
-                                        mediaPlayer.prepare()
-                                        mediaPlayer.seekTo((protocol.elapsed!! * 1000).toInt())
+                                mediaPlayer.reset()
+                                try {
+                                    mediaPlayer.setDataSource(mediaSrc)
+                                    mediaPlayer.prepare()
+                                    mediaPlayer.seekTo((protocol.elapsed!! * 1000).toInt())
 
-                                        if (!isPaused)
-                                            mediaPlayer.start()
+                                    if (!isPaused)
+                                        mediaPlayer.start()
 
-                                        mediaPlayer.setOnCompletionListener {
-                                            Log.d(TAG, "finished")
-                                            thread {
-                                                try {
-                                                    http.reportFinish(song.toRequestSong())
-                                                } catch (e: HttpWrapper.InvalidRequestException) {
-                                                    e.printStackTrace()
-                                                }
+                                    mediaPlayer.setOnCompletionListener {
+                                        Log.d(TAG, "finished")
+                                        thread {
+                                            try {
+                                                http.reportFinish(song.toRequestSong())
+                                            } catch (e: HttpWrapper.InvalidRequestException) {
+                                                e.printStackTrace()
                                             }
                                         }
-                                    } catch (e: Exception) {
-                                        Toast.makeText(applicationContext, "Wukong play error: " + e.message, Toast.LENGTH_LONG).show()
-                                        Log.e(TAG, "play")
-                                        e.printStackTrace()
                                     }
+                                } catch (e: Exception) {
+                                    Toast.makeText(applicationContext, "Wukong play error: " + e.message, Toast.LENGTH_LONG).show()
+                                    Log.e(TAG, "play")
+                                    e.printStackTrace()
                                 }
                             }
 
@@ -415,7 +413,7 @@ class WukongService : Service() {
         }
 
         var art: Bitmap? = null
-        var fetchArtUrl: String ?= null
+        var fetchArtUrl: String? = null
         if (currentSong != null) {
 //            fetchArtUrl = mediaSourceSelector.selectMediaUrlByCdnSettings(currentSong?.artwork!!)
             fetchArtUrl = currentSong!!.artwork?.file
