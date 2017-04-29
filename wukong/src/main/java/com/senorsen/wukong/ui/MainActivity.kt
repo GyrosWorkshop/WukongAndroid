@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.ActionBarDrawerToggle
@@ -81,14 +82,18 @@ class MainActivity : AppCompatActivity(),
             return true
         }
         if (checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            PreferenceManager.getDefaultSharedPreferences(applicationContext).edit().putBoolean(KEY_PREF_USE_LOCAL_MEDIA, true).apply()
             return true
         }
         if (shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE)) {
-            AlertDialog.Builder(this).setMessage(R.string.permission_warning)
-                    .setTitle(R.string.warning)
+            AlertDialog.Builder(this).setMessage(R.string.permission_request_description)
+                    .setTitle(R.string.permission_request)
                     .setPositiveButton(R.string.ok) { _, _ ->
-                        requestPermissions(arrayOf(WRITE_EXTERNAL_STORAGE), REQUEST_WRITE_EXTERNAL_STORAGE) }
-                    .setNegativeButton(R.string.cancel) { _, _ -> }
+                        requestPermissions(arrayOf(WRITE_EXTERNAL_STORAGE), REQUEST_WRITE_EXTERNAL_STORAGE)
+                    }
+                    .setNegativeButton(R.string.cancel) { _, _ ->
+                        PreferenceManager.getDefaultSharedPreferences(applicationContext).edit().putBoolean(KEY_PREF_USE_LOCAL_MEDIA, false).apply()
+                    }
                     .show()
         } else {
             requestPermissions(arrayOf(WRITE_EXTERNAL_STORAGE), REQUEST_WRITE_EXTERNAL_STORAGE)
@@ -104,7 +109,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     companion object {
-        private val REQUEST_WRITE_EXTERNAL_STORAGE = 0
-
+        val REQUEST_WRITE_EXTERNAL_STORAGE = 0
+        val KEY_PREF_USE_LOCAL_MEDIA = "pref_useLocalMedia"
     }
 }

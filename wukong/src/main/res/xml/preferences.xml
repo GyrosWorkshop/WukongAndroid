@@ -5,6 +5,14 @@
         android:title="Use media CDN"
         android:summary="May help you get rid of network problem, or not."
         android:defaultValue="false" />
+
+    <CheckBoxPreference
+        android:key="pref_useLocalMedia"
+        android:title="Use local media"
+        android:summary="Load local media in your external storage."
+        android:defaultValue="false" />
+    <!-- After user grant WRITE_EXTERNAL_STORAGE permission, this will be changed to true automatically. -->
+
     <ListPreference
         android:key="pref_preferAudioQualityData"
         android:title="Preferred Audio Quality (cellular)"
@@ -13,6 +21,7 @@
         android:entryValues="@array/pref_preferAudioQuality_values"
         android:defaultValue="@string/pref_preferAudioQualityData_default"
         android:summary="%s"/>
+
     <ListPreference
         android:key="pref_preferAudioQualityWifi"
         android:title="Preferred Audio Quality (Wifi) 未实现"

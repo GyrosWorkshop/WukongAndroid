@@ -5,9 +5,8 @@
     <string name="channel_id">Channel</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
-    <string name="permission_warning">Wukong Music needs the permission to r/w media files and etc.\n
-        Otherwise, performance and data usages may be highly impacted, or the App will crash.</string>
-    <string name="warning">Warning</string>
+    <string name="permission_request">Permission request</string>
+    <string name="permission_request_description">Wukong Music needs to r/w media files in external storage.\nOtherwise, performance and data usages may be impacted.</string>
     <string name="title_activity_settings">Settings</string>
 
     <string name="pref_preferAudioQualityData_default">high</string>

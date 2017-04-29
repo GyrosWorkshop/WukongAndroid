@@ -20,7 +20,6 @@ import android.net.wifi.WifiManager
 import android.net.wifi.WifiManager.WifiLock
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.media.session.MediaSessionCompat
-import com.senorsen.wukong.media.MediaCacheSelector
 import com.senorsen.wukong.media.MediaSourceSelector
 import com.senorsen.wukong.model.*
 import com.senorsen.wukong.utils.ResourceHelper
@@ -41,9 +40,13 @@ class WukongService : Service() {
 
     val handler = Handler()
     var workThread: Thread? = null
-    lateinit var mediaPlayer: MediaPlayer
-    private val mediaCacheSelector = MediaCacheSelector()
-    lateinit var wifiLock: WifiLock
+    
+    private lateinit var mAm: AudioManager
+    private lateinit var mediaPlayer: MediaPlayer
+    private lateinit var mSessionCompat: MediaSessionCompat
+    private lateinit var mSession: MediaSessionCompat.Token
+
+    private lateinit var wifiLock: WifiLock
 
     var isPaused = false
 
@@ -104,6 +107,19 @@ class WukongService : Service() {
         createMedia()
 
     }
+
+    private fun createMedia() {
+        mediaPlayer = MediaPlayer()
+        mediaPlayer.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
+
+        mSessionCompat = MediaSessionCompat(this, "WukongMusicService")
+        mSession = mSessionCompat.sessionToken
+
+        mAm = getSystemService(AUDIO_SERVICE) as AudioManager
+    }
+
+    
 
     private val mNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -196,7 +212,7 @@ class WukongService : Service() {
 
                                 setNotification(songStartTime)
 
-                                var mediaSrc: String? = mediaCacheSelector.getValidMedia(song)
+                                var mediaSrc: String? = mediaSourceSelector.getValidLocalMedia(song)
                                 if (mediaSrc == null) {
                                     val (currentFile, originalUrl) = mediaSourceSelector.selectFromMultipleMediaFiles(song.musics!!)
                                     Log.i(TAG, "file audio quality: ${currentFile.audioQuality}")
@@ -339,18 +355,6 @@ class WukongService : Service() {
         super.onDestroy()
         unregisterReceiver(receiver)
         Log.d(TAG, "onDestroy")
-    }
-
-    private lateinit var mSessionCompat: MediaSessionCompat
-    private lateinit var mSession: MediaSessionCompat.Token
-
-    private fun createMedia() {
-        mediaPlayer = MediaPlayer()
-        mediaPlayer.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
-
-        mSessionCompat = MediaSessionCompat(this, "WukongMusicService")
-        mSession = mSessionCompat.sessionToken
     }
 
     private lateinit var mNotificationManager: NotificationManagerCompat

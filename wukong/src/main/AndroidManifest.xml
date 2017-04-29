@@ -15,14 +15,18 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".ui.MainActivity">
+        <activity
+            android:name=".ui.MainActivity"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ui.WebViewActivity" />
+        <activity
+            android:name=".ui.WebViewActivity"
+            android:launchMode="singleTop" />
 
         <service
             android:name=".service.WukongMusicService"
@@ -34,7 +38,6 @@
         <service
             android:name=".service.WukongService"
             android:exported="false" />
-        <!--android:process=":wukongsrv"-->
     </application>
 
 </manifest>
