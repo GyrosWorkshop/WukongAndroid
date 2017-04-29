@@ -41,7 +41,7 @@ class AlbumArtCache(private val context: Context) {
     private lateinit var mDiskLruCache: DiskLruCache
     private var mDiskCacheStarting = false
     private val mDiskCacheLock = Object()
-    private lateinit var mMemoryCache: LruCache<String, Array<Bitmap>>
+    private val mMemoryCache: LruCache<String, Array<Bitmap>>
 
     init {
         val cacheDir = getDiskCacheDir(DISK_CACHE_SUBDIR)
