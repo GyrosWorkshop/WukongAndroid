@@ -57,7 +57,7 @@ class HttpWrapper(private val cookies: String) {
         post(ApiUrls.channelReportFinishedEndpoint, Gson().toJson(song))
     }
 
-    fun updateNextSong(song: RequestSong) {
+    fun updateNextSong(song: RequestSong? = null) {
         post(ApiUrls.channelUpdateNextSongEndpoint, Gson().toJson(song))
     }
 

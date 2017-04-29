@@ -15,6 +15,7 @@ import android.support.v7.widget.Toolbar
 import android.view.View
 import android.widget.LinearLayout
 import com.senorsen.wukong.R
+import com.senorsen.wukong.network.SongList
 
 
 class MainActivity : AppCompatActivity(){
@@ -66,7 +67,46 @@ class MainActivity : AppCompatActivity(){
             }
         }
 
-        fragmentManager.beginTransaction().add(R.id.fragment, MainFragment()).commit()
+        findViewById(R.id.drawer_sync_playlist).setOnClickListener {
+            mDrawerLayout.closeDrawer(GravityCompat.START)
+            val currentFragment = fragmentManager.findFragmentByTag("MAIN")
+            if (currentFragment != null) {
+                val fragment = currentFragment as MainFragment
+                val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
+                if (childFragment != null) {
+                    val songListFragment = childFragment as SongListFragment
+                    songListFragment.fetchSongList()
+                }
+            }
+        }
+
+        findViewById(R.id.drawer_shuffle_playlist).setOnClickListener {
+            mDrawerLayout.closeDrawer(GravityCompat.START)
+            val currentFragment = fragmentManager.findFragmentByTag("MAIN")
+            if (currentFragment != null) {
+                val fragment = currentFragment as MainFragment
+                val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
+                if (childFragment != null) {
+                    val songListFragment = childFragment as SongListFragment
+                    songListFragment.shuffleSongList()
+                }
+            }
+        }
+
+        findViewById(R.id.drawer_clear_playlist).setOnClickListener {
+            mDrawerLayout.closeDrawer(GravityCompat.START)
+            val currentFragment = fragmentManager.findFragmentByTag("MAIN")
+            if (currentFragment != null) {
+                val fragment = currentFragment as MainFragment
+                val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
+                if (childFragment != null) {
+                    val songListFragment = childFragment as SongListFragment
+                    songListFragment.clearSongList()
+                }
+            }
+        }
+
+        fragmentManager.beginTransaction().add(R.id.fragment, MainFragment(), "MAIN").commit()
 
         mayRequestPermission()
     }

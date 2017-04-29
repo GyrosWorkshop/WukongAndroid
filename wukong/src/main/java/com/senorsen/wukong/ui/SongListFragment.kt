@@ -19,12 +19,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.Song
-import com.senorsen.wukong.network.SongList
 import com.senorsen.wukong.service.WukongService
 import com.senorsen.wukong.utils.ObjectSerializer
-import kotlin.concurrent.thread
+import java.util.*
 
 
 class SongListFragment : Fragment() {
@@ -48,7 +48,7 @@ class SongListFragment : Fragment() {
             wukongService.songListUpdateCallback = this@SongListFragment::onSongListUpdate
 
             if (adapter.list == null) {
-                fetchSongList(wukongService)
+                fetchSongList()
             } else {
                 wukongService.userSongList = adapter.list!!
                 if (wukongService.connected)
@@ -97,12 +97,19 @@ class SongListFragment : Fragment() {
         return manager.getRunningServices(Integer.MAX_VALUE).any { it.service.className.contains(WukongService::class.simpleName!!) }
     }
 
-    fun fetchSongList(service: WukongService) {
+    fun fetchSongList() {
+        if (wukongService == null) {
+            Toast.makeText(activity, "Wukong: service not start, cannot fetch", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        Toast.makeText(activity, "Wukong: sync...", Toast.LENGTH_SHORT).show()
+
         object : AsyncTask<Void, Void, List<Song>>() {
             override fun doInBackground(vararg params: Void?): List<Song>? {
-                val configuration = service.fetchConfiguration()
+                val configuration = wukongService!!.fetchConfiguration()
                 if (configuration != null && configuration.syncPlaylists != null) {
-                    return service.getSongLists(configuration.syncPlaylists!!, configuration.cookies)
+                    return wukongService!!.getSongLists(configuration.syncPlaylists!!, configuration.cookies)
                 } else {
                     return listOf()
                 }
@@ -111,9 +118,27 @@ class SongListFragment : Fragment() {
             override fun onPostExecute(result: List<Song>?) {
                 super.onPostExecute(result)
                 adapter.list = result?.toMutableList()
-                service.doUpdateNextSong()
+                wukongService!!.doUpdateNextSong()
             }
         }.execute()
+    }
+
+    fun shuffleSongList() {
+        if (adapter.list != null) {
+            val list = adapter.list!!
+            Collections.shuffle(list, Random(System.nanoTime()))
+            adapter.list = list
+            wukongService?.userSongList = list
+            wukongService?.doUpdateNextSong()
+        }
+    }
+
+    fun clearSongList() {
+        if (adapter.list != null) {
+            adapter.list = mutableListOf()
+            wukongService?.userSongList = adapter.list!!
+            wukongService?.doUpdateNextSong()
+        }
     }
 
     override fun onStart() {

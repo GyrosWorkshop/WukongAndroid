@@ -28,6 +28,7 @@ import com.senorsen.wukong.R
 import com.senorsen.wukong.media.AlbumArtCache
 import com.senorsen.wukong.media.MediaSourceSelector
 import com.senorsen.wukong.model.File
+import com.senorsen.wukong.model.RequestSong
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.model.User
 import com.senorsen.wukong.network.*
@@ -115,19 +116,17 @@ class WukongService : Service() {
     }
 
     fun doUpdateNextSong() {
-        if (userSongList.isNotEmpty()) {
-            val song = userSongList.first().toRequestSong()
-            song.withCookie = configuration?.cookies
-            thread {
-                try {
-                    http.updateNextSong(song)
-                } catch (e: Exception) {
-                    Log.e(WukongService::class.simpleName, "doUpdateNextSong")
-                    e.printStackTrace()
-                }
+        val song = userSongList.firstOrNull()?.toRequestSong() ?: RequestSong(null, null, null)
+        song.withCookie = configuration?.cookies
+        thread {
+            try {
+                http.updateNextSong(song)
+            } catch (e: Exception) {
+                Log.e(WukongService::class.simpleName, "doUpdateNextSong")
+                e.printStackTrace()
             }
-            Log.d(WukongService::class.simpleName, "updateNextSong $song")
         }
+        Log.d(WukongService::class.simpleName, "updateNextSong $song")
     }
 
     override fun onCreate() {

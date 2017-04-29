@@ -29,7 +29,8 @@
         android:background="#eee"
         android:choiceMode="singleChoice"
         android:divider="@android:color/transparent"
-        android:dividerHeight="0dp">
+        android:dividerHeight="0dp"
+        android:orientation="vertical">
 
         <RelativeLayout
             android:id="@+id/drawer_settings"
@@ -54,9 +55,99 @@
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:layout_toEndOf="@+id/icon_drawer_settings"
-                android:paddingStart="10dp"
                 android:paddingEnd="10dp"
+                android:paddingStart="10dp"
                 android:text="@string/settings"
+                android:textAppearance="?android:attr/textAppearanceListItemSmall" />
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/drawer_sync_playlist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/activatedBackgroundIndicator"
+            android:minHeight="?android:attr/listPreferredItemHeightSmall"
+            android:padding="10dp">
+
+            <ImageView
+                android:id="@+id/icon_drawer_sync_playlist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:background="@drawable/ic_sync_playlist"
+                android:paddingEnd="10dp" />
+
+            <TextView
+                android:id="@+id/text_drawer_sync_playlist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@+id/icon_drawer_sync_playlist"
+                android:paddingEnd="10dp"
+                android:paddingStart="10dp"
+                android:text="@string/sync_playlists"
+                android:textAppearance="?android:attr/textAppearanceListItemSmall" />
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/drawer_shuffle_playlist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/activatedBackgroundIndicator"
+            android:minHeight="?android:attr/listPreferredItemHeightSmall"
+            android:padding="10dp">
+
+            <ImageView
+                android:id="@+id/icon_drawer_shuffle_playlist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:background="@drawable/ic_shuffle_playlist"
+                android:paddingEnd="10dp" />
+
+            <TextView
+                android:id="@+id/text_drawer_shuffle_playlist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@+id/icon_drawer_shuffle_playlist"
+                android:paddingEnd="10dp"
+                android:paddingStart="10dp"
+                android:text="@string/shuffle"
+                android:textAppearance="?android:attr/textAppearanceListItemSmall" />
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/drawer_clear_playlist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/activatedBackgroundIndicator"
+            android:minHeight="?android:attr/listPreferredItemHeightSmall"
+            android:padding="10dp">
+
+            <ImageView
+                android:id="@+id/icon_drawer_clear_playlist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:background="@drawable/ic_clear_playlist"
+                android:paddingEnd="10dp" />
+
+            <TextView
+                android:id="@+id/text_drawer_clear_playlist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@+id/icon_drawer_clear_playlist"
+                android:paddingEnd="10dp"
+                android:paddingStart="10dp"
+                android:text="@string/clear"
                 android:textAppearance="?android:attr/textAppearanceListItemSmall" />
 
         </RelativeLayout>
