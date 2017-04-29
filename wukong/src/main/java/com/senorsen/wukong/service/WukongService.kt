@@ -276,7 +276,9 @@ class WukongService : Service() {
                                 downvoted = protocol.downVote ?: false
                                 songStartTime = currentTimeMillis() - (protocol.elapsed!! * 1000).toLong()
 
-                                setNotification(songStartTime)
+                                handler.post {
+                                    setNotification(songStartTime)
+                                }
 
                                 var mediaSrc: String? = mediaSourceSelector.getValidLocalMedia(song)
                                 if (mediaSrc == null) {
