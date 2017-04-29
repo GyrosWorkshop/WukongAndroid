@@ -6,6 +6,7 @@ import com.google.gson.Gson
 import com.senorsen.wukong.BuildConfig
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.RequestSong
+import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.model.User
 import okhttp3.*
 import java.net.URLEncoder
@@ -54,6 +55,11 @@ class HttpWrapper(private val cookies: String) {
 
     fun reportFinish(song: RequestSong) {
         post(ApiUrls.channelReportFinishedEndpoint, Gson().toJson(song))
+    }
+
+    fun getSongListWithUrl(url: String, cookies: String?): SongList {
+        val ret = post(ApiUrls.providerSongListWithUrlEndpoint, Gson().toJson(SongListWithUrlRequest(url, cookies)))
+        return Gson().fromJson(ret, SongList::class.java)
     }
 
     private fun get(url: String): String {
