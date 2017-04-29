@@ -115,9 +115,15 @@ class WukongService : Service() {
 
     fun getSongLists(urls: String, cookies: String?): List<Song> {
         val songLists = urls.split('\n').map { it.trim() }.filter { it.isNotBlank() }.map { url ->
-            http.getSongListWithUrl(url, cookies)
+            try {
+                http.getSongListWithUrl(url, cookies)
+            } catch (e: Exception) {
+                Log.e(HttpWrapper::class.simpleName, "getSongLists")
+                e.printStackTrace()
+                null
+            }
         }
-        userSongList = songLists.map { it.songs!! }.flatMap { it }.toMutableList()
+        userSongList = songLists.map { it?.songs ?: listOf() }.flatMap { it }.toMutableList()
         return userSongList
     }
 
