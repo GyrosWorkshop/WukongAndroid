@@ -61,10 +61,15 @@ class WukongService : Service() {
 
     var isPaused = false
 
-    var currentSong: Song? = null
-    var currentFile: File? = null
-    var downvoted = false
-    var songStartTime: Long = 0
+    @Volatile var connected = false
+    @Volatile var currentSong: Song? = null
+    @Volatile var currentFile: File? = null
+    @Volatile var downvoted = false
+    @Volatile var songStartTime: Long = 0
+    @Volatile var userSongList: MutableList<Song> = mutableListOf()
+    var configuration: Configuration? = null
+
+    var songListUpdateCallback: ((List<Song>) -> Unit)? = null
 
     private val ACTION_DOWNVOTE = "com.senorsen.wukong.DOWNVOTE"
     private val ACTION_PAUSE = "com.senorsen.wukong.PAUSE"
@@ -83,12 +88,46 @@ class WukongService : Service() {
         return binder
     }
 
-    fun getConfiguration(): Configuration {
-        return http.getConfiguration()
+    fun fetchConfiguration(): Configuration? {
+        configuration = http.getConfiguration()
+        return configuration
     }
 
-    fun getSongList(url: String, cookies: String?): SongList {
-        return http.getSongListWithUrl(url, cookies)
+    fun getSongLists(urls: String, cookies: String?): List<Song> {
+        val songLists = urls.split('\n').map { url ->
+            http.getSongListWithUrl(url, cookies)
+        }
+        userSongList = songLists.map { it.songs!! }.flatMap { it }.toMutableList()
+        return userSongList
+    }
+
+    fun mayLoopSongList(song: Song) {
+        if (userSongList.isNotEmpty()) {
+            val first = userSongList.first()
+            if (first.siteId == song.siteId && first.songId == song.songId) {
+                userSongList.remove(first)
+                userSongList.add(first)
+                handler.post {
+                    songListUpdateCallback?.invoke(userSongList)
+                }
+            }
+        }
+    }
+
+    fun doUpdateNextSong() {
+        if (userSongList.isNotEmpty()) {
+            val song = userSongList.first().toRequestSong()
+            song.withCookie = configuration?.cookies
+            thread {
+                try {
+                    http.updateNextSong(song)
+                } catch (e: Exception) {
+                    Log.e(WukongService::class.simpleName, "doUpdateNextSong")
+                    e.printStackTrace()
+                }
+            }
+            Log.d(WukongService::class.simpleName, "updateNextSong $song")
+        }
     }
 
     override fun onCreate() {
@@ -227,6 +266,12 @@ class WukongService : Service() {
                                 }
 
                                 val song = protocol.song!!
+
+                                if (currentUser.id == protocol.user) {
+                                    mayLoopSongList(song)
+                                    doUpdateNextSong()
+                                }
+
                                 currentSong = song
                                 downvoted = protocol.downVote ?: false
                                 songStartTime = currentTimeMillis() - (protocol.elapsed!! * 1000).toLong()
@@ -284,7 +329,10 @@ class WukongService : Service() {
 
                 val doConnect = fun() {
                     http.channelJoin(channelId)
+                    fetchConfiguration()
                     socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, channelId, reconnectCallback as SocketWrapper.Callback, receiver, handler, applicationContext)
+                    connected = true
+                    doUpdateNextSong()
                 }
 
                 reconnectCallback = object : SocketWrapper.Callback {

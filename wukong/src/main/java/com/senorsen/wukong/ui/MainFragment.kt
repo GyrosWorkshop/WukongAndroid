@@ -42,13 +42,6 @@ class MainFragment : Fragment() {
 
         val view = inflater.inflate(R.layout.fragment_main, container, false)
 
-        view.findViewById(R.id.button_settings).setOnClickListener {
-            fragmentManager.beginTransaction()
-                    .replace(R.id.fragment, SettingsFragment(), "SETTINGS")
-                    .addToBackStack(MainFragment::class.simpleName)
-                    .commit()
-        }
-
         view.findViewById(R.id.sign_in).setOnClickListener {
             startActivityForResult(Intent(activity, WebViewActivity::class.java), REQUEST_COOKIES)
         }

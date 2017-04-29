@@ -57,9 +57,16 @@ class HttpWrapper(private val cookies: String) {
         post(ApiUrls.channelReportFinishedEndpoint, Gson().toJson(song))
     }
 
-    fun getConfiguration(): Configuration {
+    fun updateNextSong(song: RequestSong) {
+        post(ApiUrls.channelUpdateNextSongEndpoint, Gson().toJson(song))
+    }
+
+    fun getConfiguration(): Configuration? {
         val ret = get(ApiUrls.userConfigurationUri)
-        return Gson().fromJson(ret, Configuration::class.java)
+        if (ret.isEmpty())
+            return null
+        else
+            return Gson().fromJson(ret, Configuration::class.java)
     }
 
     fun getSongListWithUrl(url: String, cookies: String?): SongList {
