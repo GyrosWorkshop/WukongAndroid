@@ -22,3 +22,8 @@ data class OtherSiteUser(
         var gender: Int? = null,
         var avatar: String? = null
 )
+
+data class Configuration(
+        var cookies: String? = null,
+        var syncPlaylists: String? = null
+)

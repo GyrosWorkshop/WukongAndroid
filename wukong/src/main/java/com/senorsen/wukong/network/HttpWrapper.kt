@@ -5,6 +5,7 @@ import android.util.Log
 import com.google.gson.Gson
 import com.senorsen.wukong.BuildConfig
 import com.senorsen.wukong.R
+import com.senorsen.wukong.model.Configuration
 import com.senorsen.wukong.model.RequestSong
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.model.User
@@ -67,6 +68,10 @@ class HttpWrapper(private val cookies: String) {
             return null
         else
             return Gson().fromJson(ret, Configuration::class.java)
+    }
+
+    fun uploadConfiguration(configuration: Configuration) {
+        post(ApiUrls.userConfigurationUri, Gson().toJson(configuration))
     }
 
     fun getSongListWithUrl(url: String, cookies: String?): SongList {

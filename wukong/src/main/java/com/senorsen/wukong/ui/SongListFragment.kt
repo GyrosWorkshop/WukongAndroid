@@ -31,8 +31,8 @@ class SongListFragment : Fragment() {
 
     private val handler = Handler()
     private val adapter = SongListAdapter(this)
-    private var connected = false
-    private var wukongService: WukongService? = null
+    var connected = false
+    var wukongService: WukongService? = null
 
     val serviceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -147,8 +147,9 @@ class SongListFragment : Fragment() {
     }
 
     override fun onStop() {
-        super.onStop()
+        handler.removeCallbacks(bindRunnable)
         if (connected) activity.unbindService(serviceConnection)
+        super.onStop()
     }
 
     private class SongListAdapter(val fragment: SongListFragment) : RecyclerView.Adapter<SongListAdapter.ViewHolder>() {

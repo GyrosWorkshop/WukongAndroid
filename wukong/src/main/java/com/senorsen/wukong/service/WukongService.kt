@@ -18,6 +18,7 @@ import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
 import android.os.PowerManager
+import android.preference.PreferenceManager
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
@@ -27,10 +28,7 @@ import android.widget.Toast
 import com.senorsen.wukong.R
 import com.senorsen.wukong.media.AlbumArtCache
 import com.senorsen.wukong.media.MediaSourceSelector
-import com.senorsen.wukong.model.File
-import com.senorsen.wukong.model.RequestSong
-import com.senorsen.wukong.model.Song
-import com.senorsen.wukong.model.User
+import com.senorsen.wukong.model.*
 import com.senorsen.wukong.network.*
 import com.senorsen.wukong.ui.MainActivity
 import com.senorsen.wukong.utils.ResourceHelper
@@ -83,6 +81,9 @@ class WukongService : Service() {
         }
     }
 
+    private val KEY_PREF_COOKIES = "pref_cookies"
+    private val KEY_PREF_SYNC_PLAYLISTS = "pref_syncPlaylists"
+
     val binder = WukongServiceBinder()
 
     override fun onBind(intent: Intent): IBinder? {
@@ -91,11 +92,29 @@ class WukongService : Service() {
 
     fun fetchConfiguration(): Configuration? {
         configuration = http.getConfiguration()
+        if (configuration != null) {
+            val editor = PreferenceManager.getDefaultSharedPreferences(this).edit()
+            if (configuration!!.cookies != null) {
+                editor.putString(KEY_PREF_COOKIES, configuration!!.cookies)
+            }
+            if (configuration!!.syncPlaylists != null) {
+                editor.putString(KEY_PREF_SYNC_PLAYLISTS, configuration!!.syncPlaylists)
+            }
+            editor.apply()
+        }
         return configuration
     }
 
+    fun uploadConfiguration(configuration: Configuration) {
+        this.configuration = configuration
+        Log.i(WukongService::class.simpleName, "uploadConfiguration $configuration")
+        thread {
+            http.uploadConfiguration(configuration)
+        }
+    }
+
     fun getSongLists(urls: String, cookies: String?): List<Song> {
-        val songLists = urls.split('\n').map { url ->
+        val songLists = urls.split('\n').map { it.trim() }.filter { it.isNotBlank() }.map { url ->
             http.getSongListWithUrl(url, cookies)
         }
         userSongList = songLists.map { it.songs!! }.flatMap { it }.toMutableList()
@@ -222,7 +241,6 @@ class WukongService : Service() {
         intentFilter.addAction(AudioManager.ACTION_HEADSET_PLUG)
         applicationContext.registerReceiver(mNoisyReceiver, intentFilter)
 
-        isPaused = false
         downvoted = false
 
         workThread = Thread(Runnable {
@@ -401,6 +419,7 @@ class WukongService : Service() {
 
     private fun switchPlay() {
         try {
+            mediaPlayer.seekTo((currentTimeMillis() - songStartTime).toInt())
             mediaPlayer.start()
             isPaused = false
             setNotification(songStartTime)

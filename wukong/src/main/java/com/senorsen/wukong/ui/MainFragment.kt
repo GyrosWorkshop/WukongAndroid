@@ -50,27 +50,7 @@ class MainFragment : Fragment() {
 
         val startServiceButton = view.findViewById(R.id.start_service) as Button
         startServiceButton.setOnClickListener {
-            if (cookies == null) {
-                cookies = activity.applicationContext
-                        .getSharedPreferences("wukong", Context.MODE_PRIVATE)
-                        .getString("cookies", "")
-            }
-
-            if (channelEdit.text.isNullOrBlank()) {
-                channelEdit.error = "required"
-                return@setOnClickListener
-            }
-
-            activity.applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE)
-                    .edit()
-                    .putString("channel", channelEdit.text.toString()).apply()
-
-            activity.stopService(Intent(activity, WukongService::class.java))
-
-            serviceIntent = Intent(activity, WukongService::class.java)
-                    .putExtra("cookies", cookies)
-                    .putExtra("channel", channelEdit.text.toString().trim())
-            activity.startService(serviceIntent)
+            startService(view)
         }
 
         val stopServiceButton = view.findViewById(R.id.stop_service) as Button
@@ -86,6 +66,31 @@ class MainFragment : Fragment() {
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        childFragmentManager.beginTransaction().add(R.id.main_fragment_container, SongListFragment::class.createInstance(), "SONGLIST").commit()
+        childFragmentManager.beginTransaction().add(R.id.main_fragment_container, SongListFragment::class.createInstance()).commit()
+    }
+
+    fun startService(view: View, restart: Boolean = false) {
+        val channelEdit = view.findViewById(R.id.channel_id) as EditText
+        if (cookies == null) {
+            cookies = activity.applicationContext
+                    .getSharedPreferences("wukong", Context.MODE_PRIVATE)
+                    .getString("cookies", "")
+        }
+
+        if (channelEdit.text.isNullOrBlank()) {
+            channelEdit.error = "required"
+            return
+        }
+
+        activity.applicationContext.getSharedPreferences("wukong", Context.MODE_PRIVATE)
+                .edit()
+                .putString("channel", channelEdit.text.toString()).apply()
+
+        activity.stopService(Intent(activity, WukongService::class.java))
+
+        serviceIntent = Intent(activity, WukongService::class.java)
+                .putExtra("cookies", cookies)
+                .putExtra("channel", channelEdit.text.toString().trim())
+        activity.startService(serviceIntent)
     }
 }
