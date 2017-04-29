@@ -66,7 +66,7 @@ class MainFragment : Fragment() {
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        childFragmentManager.beginTransaction().add(R.id.main_fragment_container, SongListFragment::class.createInstance()).commit()
+        childFragmentManager.beginTransaction().add(R.id.main_fragment_container, SongListFragment::class.createInstance(), "SONGLIST").commit()
     }
 
     fun startService(view: View, restart: Boolean = false) {
