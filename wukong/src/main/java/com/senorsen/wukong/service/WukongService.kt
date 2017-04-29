@@ -20,6 +20,7 @@ import android.net.wifi.WifiManager
 import android.net.wifi.WifiManager.WifiLock
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.media.session.MediaSessionCompat
+import com.senorsen.wukong.media.AlbumArtCache
 import com.senorsen.wukong.media.MediaSourceSelector
 import com.senorsen.wukong.model.*
 import com.senorsen.wukong.utils.ResourceHelper
@@ -31,7 +32,7 @@ class WukongService : Service() {
 
     private val NOTIFICATION_ID = 1
 
-    val albumArtCache = AlbumArtCache()
+    private lateinit var albumArtCache: AlbumArtCache
 
     lateinit var mediaSourceSelector: MediaSourceSelector
     lateinit var http: HttpWrapper
@@ -40,7 +41,7 @@ class WukongService : Service() {
 
     val handler = Handler()
     var workThread: Thread? = null
-    
+
     private lateinit var mAm: AudioManager
     private lateinit var mediaPlayer: MediaPlayer
     private lateinit var mSessionCompat: MediaSessionCompat
@@ -105,7 +106,6 @@ class WukongService : Service() {
 
         prepareNotification()
         createMedia()
-
     }
 
     private fun createMedia() {
@@ -117,9 +117,10 @@ class WukongService : Service() {
         mSession = mSessionCompat.sessionToken
 
         mAm = getSystemService(AUDIO_SERVICE) as AudioManager
+
+        albumArtCache = AlbumArtCache(this)
     }
 
-    
 
     private val mNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -190,11 +191,11 @@ class WukongService : Service() {
 
                             Protocol.PRELOAD -> {
 
-                                Log.d(TAG, "preload image " + protocol.song)
+                                Log.d(TAG, "preload ${protocol.song?.songKey} image " + protocol.song)
 
                                 // Preload artwork image.
                                 if (protocol.song?.artwork != null)
-                                    albumArtCache.fetch(protocol.song.artwork?.file!!, null)
+                                    albumArtCache.fetch(protocol.song.artwork?.file!!, null, protocol.song.songKey)
 
                             }
 
@@ -242,7 +243,9 @@ class WukongService : Service() {
                                         }
                                     }
                                 } catch (e: Exception) {
-                                    Toast.makeText(applicationContext, "Wukong play error: " + e.message, Toast.LENGTH_LONG).show()
+                                    handler.post {
+                                        Toast.makeText(applicationContext, "Wukong play error: " + e.message, Toast.LENGTH_LONG).show()
+                                    }
                                     Log.e(TAG, "play")
                                     e.printStackTrace()
                                 }
@@ -425,7 +428,7 @@ class WukongService : Service() {
                 // This sample assumes the iconUri will be a valid URL formatted String, but
                 // it can actually be any valid Android Uri formatted String.
                 // async fetch the album art icon
-                art = albumArtCache.getBigImage(fetchArtUrl)
+                art = albumArtCache.getBigImage(fetchArtUrl, currentSong!!.songKey)
             }
         }
 
@@ -478,7 +481,7 @@ class WukongService : Service() {
                     mNotificationManager.notify(NOTIFICATION_ID, builder.build())
                 }
             }
-        })
+        }, song.songKey)
     }
 
 }

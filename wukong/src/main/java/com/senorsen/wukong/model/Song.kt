@@ -41,6 +41,9 @@ data class Song(
     fun toRequestSong(): RequestSong {
         return RequestSong(siteId = siteId, songId = songId, withCookie = null)
     }
+
+    val songKey: String
+        get() = "$siteId.$songId"
 }
 
 // A File is an object which contains uri and other required metadata.
