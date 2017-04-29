@@ -1,5 +1,8 @@
 package com.senorsen.wukong.model
 
+import android.graphics.Bitmap
+import android.support.v4.media.MediaMetadataCompat
+
 object SongQuality {
     val LOSSLESS: String
         get() = "lossless"
@@ -44,6 +47,17 @@ data class Song(
 
     val songKey: String
         get() = "$siteId.$songId"
+
+    fun toMediaMetaData(bitmap: Bitmap): MediaMetadataCompat {
+        val builder = MediaMetadataCompat.Builder()
+        return builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap)
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, title)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, "$artist - $album")
+                .build()
+    }
 }
 
 // A File is an object which contains uri and other required metadata.

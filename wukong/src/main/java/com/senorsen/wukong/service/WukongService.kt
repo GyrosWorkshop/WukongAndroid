@@ -26,6 +26,8 @@ import com.senorsen.wukong.model.*
 import com.senorsen.wukong.utils.ResourceHelper
 import java.lang.System.currentTimeMillis
 import kotlin.concurrent.thread
+import android.media.session.PlaybackState
+import android.support.v4.media.session.PlaybackStateCompat
 
 
 class WukongService : Service() {
@@ -436,13 +438,15 @@ class WukongService : Service() {
             // use a placeholder art while the remote art is being downloaded
             art = BitmapFactory.decodeResource(resources,
                     R.mipmap.ic_default_art)
+
+            if (fetchArtUrl != null) {
+                fetchBitmapFromURLAsync(fetchArtUrl, currentSong!!, notificationBuilder)
+            }
+        } else {
+            updateMediaSession(art)
         }
 
         notificationBuilder.setLargeIcon(art)
-
-        if (fetchArtUrl != null) {
-            fetchBitmapFromURLAsync(fetchArtUrl, currentSong!!, notificationBuilder)
-        }
         return notificationBuilder
     }
 
@@ -471,6 +475,17 @@ class WukongService : Service() {
         startForeground(NOTIFICATION_ID, notification)
     }
 
+    private fun updateMediaSession(bitmap: Bitmap) {
+        mSessionCompat.setMetadata(currentSong!!.toMediaMetaData(bitmap))
+
+        val stateBuilder = PlaybackStateCompat.Builder()
+        stateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE or PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_REWIND or PlaybackStateCompat.ACTION_FAST_FORWARD)
+        stateBuilder.setState(if (isPaused) PlaybackStateCompat.STATE_PAUSED else PlaybackStateCompat.STATE_PLAYING, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1.0f)
+
+        mSessionCompat.setPlaybackState(stateBuilder.build())
+        mSessionCompat.isActive = true
+    }
+
     private fun fetchBitmapFromURLAsync(bitmapUrl: String, song: Song, builder: NotificationCompat.Builder) {
         albumArtCache.fetch(bitmapUrl, object : AlbumArtCache.FetchListener() {
             override fun onFetched(artUrl: String, bigImage: Bitmap, iconImage: Bitmap) {
@@ -479,6 +494,8 @@ class WukongService : Service() {
                     Log.d(TAG, "fetchBitmapFromURLAsync: set bitmap to " + artUrl)
                     builder.setLargeIcon(bigImage)
                     mNotificationManager.notify(NOTIFICATION_ID, builder.build())
+
+                    updateMediaSession(bigImage)
                 }
             }
         }, song.songKey)
