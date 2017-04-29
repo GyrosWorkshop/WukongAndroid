@@ -17,9 +17,7 @@ import android.widget.LinearLayout
 import com.senorsen.wukong.R
 
 
-class MainActivity : AppCompatActivity(),
-        MainFragment.OnFragmentInteractionListener,
-        SettingsFragment.OnFragmentInteractionListener {
+class MainActivity : AppCompatActivity(){
 
     private lateinit var mDrawerLayout: DrawerLayout
     private lateinit var mDrawerList: LinearLayout
@@ -37,7 +35,7 @@ class MainActivity : AppCompatActivity(),
 
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START)
 
-        supportActionBar!!.setDisplayHomeAsUpEnabled(true);
+        supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         supportActionBar!!.setHomeButtonEnabled(true)
 
         mDrawerToggle = object : ActionBarDrawerToggle(
@@ -73,10 +71,6 @@ class MainActivity : AppCompatActivity(),
         mayRequestPermission()
     }
 
-    override fun onFragmentInteraction(uri: Uri) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
     private fun mayRequestPermission(): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return true
@@ -99,13 +93,6 @@ class MainActivity : AppCompatActivity(),
             requestPermissions(arrayOf(WRITE_EXTERNAL_STORAGE), REQUEST_WRITE_EXTERNAL_STORAGE)
         }
         return false
-    }
-
-    /**
-     * Callback received when a permissions request has been completed.
-     */
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
-                                            grantResults: IntArray) {
     }
 
     companion object {
