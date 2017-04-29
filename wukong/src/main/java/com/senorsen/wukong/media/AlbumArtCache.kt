@@ -101,9 +101,7 @@ class AlbumArtCache(private val context: Context) {
 
     fun addBitmapToCache(key: String, bitmaps: Array<Bitmap>) {
         // Add to memory cache as before
-        if (getBitmapFromMemCache(key) == null) {
-            mMemoryCache.put(key, bitmaps)
-        }
+        addBitmapToMemoryCache(key, bitmaps)
 
         // Also add to disk cache
         synchronized(mDiskCacheLock) {
@@ -136,12 +134,12 @@ class AlbumArtCache(private val context: Context) {
     }
 
     fun getBigImage(artUrl: String, key: String = artUrl): Bitmap? {
-        val result = getBitmapFromDiskCache(key)
+        val result = getBitmapFromCache(key)
         return if (result == null) null else result[BIG_BITMAP_INDEX]
     }
 
     fun getIconImage(artUrl: String, key: String = artUrl): Bitmap? {
-        val result = getBitmapFromDiskCache(key)
+        val result = getBitmapFromCache(key)
         return if (result == null) null else result[ICON_BITMAP_INDEX]
     }
 
