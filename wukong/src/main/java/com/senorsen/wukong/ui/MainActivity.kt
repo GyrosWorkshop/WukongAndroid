@@ -2,26 +2,18 @@ package com.senorsen.wukong.ui
 
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.app.AlertDialog
-import android.app.Fragment
-import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.support.annotation.DrawableRes
 import android.support.v4.view.GravityCompat
-import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v4.widget.DrawerLayout
+import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
-import android.text.SpannableStringBuilder
 import android.view.View
-import android.widget.*
+import android.widget.LinearLayout
 import com.senorsen.wukong.R
-import com.senorsen.wukong.service.WukongService
-import android.widget.AdapterView
-import android.widget.AdapterView.OnItemClickListener
 
 
 class MainActivity : AppCompatActivity(),
@@ -75,8 +67,7 @@ class MainActivity : AppCompatActivity(),
             }
         }
 
-        fragmentManager.beginTransaction()
-                .replace(R.id.fragment, MainFragment()).commit()
+        fragmentManager.beginTransaction().add(R.id.fragment, MainFragment()).commit()
 
         mayRequestPermission()
     }
@@ -93,11 +84,15 @@ class MainActivity : AppCompatActivity(),
             return true
         }
         if (shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE)) {
-
+            AlertDialog.Builder(this).setMessage(R.string.permission_warning)
+                    .setTitle(R.string.warning)
+                    .setPositiveButton(R.string.ok) { _, _ ->
+                        requestPermissions(arrayOf(WRITE_EXTERNAL_STORAGE), REQUEST_WRITE_EXTERNAL_STORAGE) }
+                    .setNegativeButton(R.string.cancel) { _, _ -> }
+                    .show()
         } else {
             requestPermissions(arrayOf(WRITE_EXTERNAL_STORAGE), REQUEST_WRITE_EXTERNAL_STORAGE)
         }
-        requestPermissions(arrayOf(WRITE_EXTERNAL_STORAGE), REQUEST_WRITE_EXTERNAL_STORAGE)
         return false
     }
 
@@ -106,23 +101,10 @@ class MainActivity : AppCompatActivity(),
      */
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
                                             grantResults: IntArray) {
-        if (requestCode == REQUEST_WRITE_EXTERNAL_STORAGE) {
-            if (grantResults.size == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                mayRequestPermission()
-            } else {
-                val builder = AlertDialog.Builder(this)
-                builder.setMessage(R.string.permission_warning)
-                        .setTitle(R.string.warning)
-                        .setPositiveButton(R.string.ok) { dialog, id -> mayRequestPermission() }
-                        .setNegativeButton(R.string.cancel) { dialog, id -> }
-                val dialog = builder.create()
-                dialog.show()
-            }
-        }
     }
 
     companion object {
-        private val REQUEST_WRITE_EXTERNAL_STORAGE = 0;
+        private val REQUEST_WRITE_EXTERNAL_STORAGE = 0
 
     }
 }
