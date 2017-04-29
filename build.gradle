@@ -5,8 +5,12 @@ buildscript {
     repositories {
         jcenter()
     }
+
+    // Workaround for missing deps.
+    ext.android_gradle_version = System.getenv('TRAVIS') ? '2.4.0-alpha6' : '2.4.0-alpha7'
+
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.4.0-alpha7'
+        classpath "com.android.tools.build:gradle:$android_gradle_version"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 
         // NOTE: Do not place your application dependencies here; they belong
