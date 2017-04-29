@@ -10,7 +10,7 @@
         android:key="pref_useLocalMedia"
         android:title="Use local media"
         android:summary="Load local media in your external storage."
-        android:defaultValue="false" />
+        android:defaultValue="true" />
     <!-- After user grant WRITE_EXTERNAL_STORAGE permission, this will be changed to true automatically. -->
 
     <ListPreference
