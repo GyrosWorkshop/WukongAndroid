@@ -1,33 +1,41 @@
 package com.senorsen.wukong.service
 
-import android.app.*
-import android.content.*
+import android.app.PendingIntent
+import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.ContentValues.TAG
-import android.util.Log
-import android.widget.Toast
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.AudioManager
 import android.media.MediaPlayer
-import android.os.*
-import android.support.v7.app.NotificationCompat
-import com.senorsen.wukong.R
-import com.senorsen.wukong.ui.MainActivity
-import com.senorsen.wukong.network.*
-import java.io.IOException
 import android.net.wifi.WifiManager
 import android.net.wifi.WifiManager.WifiLock
+import android.os.Binder
+import android.os.Handler
+import android.os.IBinder
+import android.os.PowerManager
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
+import android.support.v7.app.NotificationCompat
+import android.util.Log
+import android.widget.Toast
+import com.senorsen.wukong.R
 import com.senorsen.wukong.media.AlbumArtCache
 import com.senorsen.wukong.media.MediaSourceSelector
-import com.senorsen.wukong.model.*
+import com.senorsen.wukong.model.File
+import com.senorsen.wukong.model.Song
+import com.senorsen.wukong.model.User
+import com.senorsen.wukong.network.*
+import com.senorsen.wukong.ui.MainActivity
 import com.senorsen.wukong.utils.ResourceHelper
+import java.io.IOException
 import java.lang.System.currentTimeMillis
 import kotlin.concurrent.thread
-import android.media.session.PlaybackState
-import android.support.v4.media.session.PlaybackStateCompat
 
 
 class WukongService : Service() {
@@ -69,8 +77,18 @@ class WukongService : Service() {
         }
     }
 
+    val binder = WukongServiceBinder()
+
     override fun onBind(intent: Intent): IBinder? {
-        return null
+        return binder
+    }
+
+    fun getConfiguration(): Configuration {
+        return http.getConfiguration()
+    }
+
+    fun getSongList(url: String, cookies: String?): SongList {
+        return http.getSongListWithUrl(url, cookies)
     }
 
     override fun onCreate() {

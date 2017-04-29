@@ -13,6 +13,7 @@ import android.widget.EditText
 import android.widget.Toast
 import com.senorsen.wukong.R
 import com.senorsen.wukong.service.WukongService
+import kotlin.reflect.full.createInstance
 
 class MainFragment : Fragment() {
 
@@ -88,5 +89,10 @@ class MainFragment : Fragment() {
         channelEdit.setSelection(channelEdit.text.toString().length)
 
         return view
+    }
+
+    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        childFragmentManager.beginTransaction().add(R.id.main_fragment_container, SongListFragment::class.createInstance()).commit()
     }
 }

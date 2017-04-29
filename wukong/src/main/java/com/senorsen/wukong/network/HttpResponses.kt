@@ -15,3 +15,8 @@ data class SongList(
         var songCount: Int? = null,
         var songs: List<Song>? = null
 )
+
+data class Configuration(
+        var cookies: String? = null,
+        var syncPlaylists: String? = null
+)
