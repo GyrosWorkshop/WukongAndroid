@@ -22,6 +22,7 @@ import android.widget.EditText
 import android.widget.Toast
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.getProvider
+import com.senorsen.wukong.network.createPostAuthenticationIntent
 import com.senorsen.wukong.service.WukongService
 import net.openid.appauth.*
 
@@ -42,9 +43,9 @@ class MainActivity : AppCompatActivity() {
         val toolbar = findViewById(R.id.toolbar) as Toolbar
         setSupportActionBar(toolbar)
 
-        findViewById(R.id.sign_in).setOnClickListener {
-            login()
-        }
+//        findViewById(R.id.sign_in).setOnClickListener {
+//            login()
+//        }
 
         val channelEdit = findViewById(R.id.channel_id) as EditText
 
@@ -120,10 +121,6 @@ class MainActivity : AppCompatActivity() {
         AuthorizationServiceConfiguration.fetchFromUrl(provider.getDeiscoveryEndpoint()) {
             config, ex ->
             val configuration = config?.let { it } ?: return@fetchFromUrl
-            val intent = Intent(this, MainActivity.javaClass)
-            val authState = AuthState()
-            intent.putExtra("authState", authState.jsonSerializeString())
-            intent.putExtra("serviceDiscovery", configuration.discoveryDoc.toString())
             val authRequest = AuthorizationRequest.Builder(
                     configuration,
                     provider.clientId,
@@ -134,7 +131,7 @@ class MainActivity : AppCompatActivity() {
 
             authorizationService.performAuthorizationRequest(
                     authRequest,
-                    PendingIntent.getActivity(this, authRequest.hashCode(), intent, 0)
+                    createPostAuthenticationIntent(this, authRequest, AuthState())
             )
         }
     }
