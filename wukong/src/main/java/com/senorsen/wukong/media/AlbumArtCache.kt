@@ -73,7 +73,6 @@ class AlbumArtCache(private val context: Context) {
         mDiskCacheStarting = false // Finished initialization
     }
 
-    @Suppress("UNCHECKED_CAST")
     fun getBitmapFromDiskCache(key: String): Array<Bitmap>? {
         synchronized(mDiskCacheLock) {
             // Wait while disk cache is started from background thread
