@@ -91,7 +91,11 @@ class WukongService : Service() {
     }
 
     fun fetchConfiguration(): Configuration? {
-        configuration = http.getConfiguration()
+        try {
+            configuration = http.getConfiguration()
+        } catch (e: HttpWrapper.UserUnauthorizedException) {
+            Log.d(WukongService::class.simpleName, e.message)
+        }
         if (configuration != null) {
             val editor = PreferenceManager.getDefaultSharedPreferences(this).edit()
             if (configuration!!.cookies != null) {
