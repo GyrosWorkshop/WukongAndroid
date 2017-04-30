@@ -15,7 +15,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 25
         versionCode 0
-        versionName "0.1.13"
+        versionName "0.1.14"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -44,9 +44,13 @@ dependencies {
     compile 'com.danikula:videocache:2.7.0'
     compile 'com.android.support:support-v4:25.3.1'
     compile 'com.github.bumptech.glide:glide:3.7.0'
+    compile 'com.github.javiersantos:AppUpdater:2.6.1'
 
     testCompile 'junit:junit:4.12'
 }
 repositories {
     jcenter()
+    maven {
+        url "https://jitpack.io"
+    }
 }

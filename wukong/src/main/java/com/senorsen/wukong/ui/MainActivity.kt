@@ -14,6 +14,8 @@ import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.view.View
 import android.widget.LinearLayout
+import com.github.javiersantos.appupdater.AppUpdater
+import com.github.javiersantos.appupdater.enums.UpdateFrom
 import com.senorsen.wukong.R
 import com.senorsen.wukong.network.SongList
 
@@ -109,6 +111,15 @@ class MainActivity : AppCompatActivity(){
         fragmentManager.beginTransaction().replace(R.id.fragment, MainFragment(), "MAIN").commit()
 
         mayRequestPermission()
+
+        AppUpdater(this)
+                .setTitleOnUpdateAvailable("Update available")
+                .setTitleOnUpdateNotAvailable("Update not available")
+                .setButtonDoNotShowAgain("")
+                .showEvery(3)
+                .setUpdateFrom(UpdateFrom.GITHUB)
+                .setGitHubUserAndRepo("GyrosWorkshop", "WukongAndroid")
+                .start()
     }
 
     private fun mayRequestPermission(): Boolean {
