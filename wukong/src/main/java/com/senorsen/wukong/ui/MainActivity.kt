@@ -106,7 +106,7 @@ class MainActivity : AppCompatActivity(){
             }
         }
 
-        fragmentManager.beginTransaction().add(R.id.fragment, MainFragment(), "MAIN").commit()
+        fragmentManager.beginTransaction().replace(R.id.fragment, MainFragment(), "MAIN").commit()
 
         mayRequestPermission()
     }

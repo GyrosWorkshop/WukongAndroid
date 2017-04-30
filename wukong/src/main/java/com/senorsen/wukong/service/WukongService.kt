@@ -30,6 +30,8 @@ import com.senorsen.wukong.media.AlbumArtCache
 import com.senorsen.wukong.media.MediaSourceSelector
 import com.senorsen.wukong.model.*
 import com.senorsen.wukong.network.*
+import com.senorsen.wukong.store.ConfigurationLocalStore
+import com.senorsen.wukong.store.SongListLocalStore
 import com.senorsen.wukong.ui.MainActivity
 import com.senorsen.wukong.utils.ResourceHelper
 import java.io.IOException
@@ -67,6 +69,8 @@ class WukongService : Service() {
     @Volatile var songStartTime: Long = 0
     @Volatile var userSongList: MutableList<Song> = mutableListOf()
     var configuration: Configuration? = null
+    lateinit var configurationLocalStore: ConfigurationLocalStore
+    lateinit var songListLocalStore: SongListLocalStore
 
     var songListUpdateCallback: ((List<Song>) -> Unit)? = null
 
@@ -81,9 +85,6 @@ class WukongService : Service() {
         }
     }
 
-    private val KEY_PREF_COOKIES = "pref_cookies"
-    private val KEY_PREF_SYNC_PLAYLISTS = "pref_syncPlaylists"
-
     val binder = WukongServiceBinder()
 
     override fun onBind(intent: Intent): IBinder? {
@@ -97,14 +98,7 @@ class WukongService : Service() {
             Log.d(WukongService::class.simpleName, e.message)
         }
         if (configuration != null) {
-            val editor = PreferenceManager.getDefaultSharedPreferences(this).edit()
-            if (configuration!!.cookies != null) {
-                editor.putString(KEY_PREF_COOKIES, configuration!!.cookies)
-            }
-            if (configuration!!.syncPlaylists != null) {
-                editor.putString(KEY_PREF_SYNC_PLAYLISTS, configuration!!.syncPlaylists)
-            }
-            editor.apply()
+            configurationLocalStore.save(configuration)
         }
         return configuration
     }
@@ -138,7 +132,12 @@ class WukongService : Service() {
                 userSongList.remove(first)
                 userSongList.add(first)
                 handler.post {
-                    songListUpdateCallback?.invoke(userSongList)
+                    try {
+                        songListUpdateCallback?.invoke(userSongList)
+                    } catch (e: Exception) {
+                        // Activity may exited.
+                        songListLocalStore.save(userSongList)
+                    }
                 }
             }
         }
@@ -162,7 +161,9 @@ class WukongService : Service() {
         super.onCreate()
         Log.d(TAG, "onCreate")
 
-        mediaSourceSelector = MediaSourceSelector(applicationContext)
+        configurationLocalStore = ConfigurationLocalStore(this)
+        songListLocalStore = SongListLocalStore(this)
+        mediaSourceSelector = MediaSourceSelector(this)
 
         val filter = IntentFilter()
         filter.addAction(ACTION_DOWNVOTE)
@@ -539,7 +540,7 @@ class WukongService : Service() {
                 fetchBitmapFromURLAsync(fetchArtUrl, currentSong!!, notificationBuilder)
             }
         } else {
-            updateMediaSession(art)
+            updateMediaSessionMeta(art)
         }
 
         notificationBuilder.setLargeIcon(art)
@@ -571,9 +572,13 @@ class WukongService : Service() {
         startForeground(NOTIFICATION_ID, notification)
     }
 
-    private fun updateMediaSession(bitmap: Bitmap) {
+    private fun updateMediaSessionMeta(bitmap: Bitmap) {
         mSessionCompat.setMetadata(currentSong!!.toMediaMetaData(bitmap))
+        mSessionCompat.isActive = true
+        updateMediaSessionState()
+    }
 
+    private fun updateMediaSessionState() {
         val stateBuilder = PlaybackStateCompat.Builder()
         stateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE or PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_REWIND or PlaybackStateCompat.ACTION_FAST_FORWARD)
         stateBuilder.setState(if (isPaused) PlaybackStateCompat.STATE_PAUSED else PlaybackStateCompat.STATE_PLAYING, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1.0f)
@@ -591,7 +596,7 @@ class WukongService : Service() {
                     builder.setLargeIcon(bigImage)
                     mNotificationManager.notify(NOTIFICATION_ID, builder.build())
 
-                    updateMediaSession(bigImage)
+                    updateMediaSessionMeta(bigImage)
                 }
             }
         }, song.songKey)

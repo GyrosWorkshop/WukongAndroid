@@ -23,6 +23,7 @@ import android.widget.Toast
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.service.WukongService
+import com.senorsen.wukong.store.SongListLocalStore
 import com.senorsen.wukong.utils.ObjectSerializer
 import java.util.*
 
@@ -33,6 +34,7 @@ class SongListFragment : Fragment() {
     private val adapter = SongListAdapter(this)
     var connected = false
     var wukongService: WukongService? = null
+    private lateinit var songListLocalStore: SongListLocalStore
 
     val serviceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -50,7 +52,13 @@ class SongListFragment : Fragment() {
             if (adapter.list == null) {
                 fetchSongList()
             } else {
-                wukongService.userSongList = adapter.list!!
+                // If song list in service is empty, service is not setup.
+                // Otherwise, service is set up, and ui list may be old.
+                if (wukongService.userSongList.isEmpty()) {
+                    wukongService.userSongList = adapter.list!!
+                } else {
+                    adapter.list = wukongService.userSongList
+                }
                 if (wukongService.connected)
                     wukongService.doUpdateNextSong()
             }
@@ -83,11 +91,7 @@ class SongListFragment : Fragment() {
         recyclerView.layoutManager = LinearLayoutManager(activity)
         recyclerView.setHasFixedSize(true)
 
-        @Suppress("UNCHECKED_CAST")
-        val localList = (ObjectSerializer.deserialize(activity.getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("song_list", "")) as Array<Song>?)?.toMutableList()
-        if (localList != null)
-            adapter.list = localList
-        Log.d(SongListFragment::class.simpleName, "localList $localList")
+        songListLocalStore = SongListLocalStore(this.activity)
 
         return recyclerView
     }
@@ -143,10 +147,17 @@ class SongListFragment : Fragment() {
 
     override fun onStart() {
         super.onStart()
+
+        // Load local list first.
+        val localList = songListLocalStore.load()
+        if (localList != null)
+            adapter.list = localList.toMutableList()
+
         bindService()
     }
 
     override fun onStop() {
+        wukongService?.songListUpdateCallback = null
         handler.removeCallbacks(bindRunnable)
         if (connected) activity.unbindService(serviceConnection)
         super.onStop()
@@ -158,16 +169,9 @@ class SongListFragment : Fragment() {
             get() = field
             set(value) {
                 field = value
-                saveSongList(value)
                 notifyDataSetChanged()
+                fragment.songListLocalStore.save(value)
             }
-
-        private fun saveSongList(songList: List<Song>?) {
-            fragment.activity.getSharedPreferences("wukong", Context.MODE_PRIVATE)
-                    .edit()
-                    .putString("song_list", ObjectSerializer.serialize(songList?.toTypedArray()))
-                    .apply()
-        }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val song = list?.get(position) ?: return
