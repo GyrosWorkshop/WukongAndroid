@@ -134,7 +134,7 @@ class WukongService : Service() {
                 handler.post {
                     try {
                         songListUpdateCallback?.invoke(userSongList)
-                    } catch (e: Exception) {
+                    } finally {
                         // Activity may exited.
                         songListLocalStore.save(userSongList)
                     }
