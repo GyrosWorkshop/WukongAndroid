@@ -33,6 +33,65 @@
         android:orientation="vertical">
 
         <RelativeLayout
+            android:id="@+id/drawer_user"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/activatedBackgroundIndicator"
+            android:minHeight="?android:attr/listPreferredItemHeightSmall"
+            android:padding="10dp">
+
+            <ImageView
+                android:id="@+id/icon_drawer_user"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:background="@drawable/ic_drawer_user"
+                android:paddingEnd="10dp" />
+
+            <TextView
+                android:id="@+id/text_drawer_user"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@+id/icon_drawer_user"
+                android:paddingEnd="10dp"
+                android:paddingStart="10dp"
+                android:text="Sign in"
+                android:textAppearance="?android:attr/textAppearanceListItemSmall" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/drawer_channel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/activatedBackgroundIndicator"
+            android:minHeight="?android:attr/listPreferredItemHeightSmall"
+            android:padding="10dp">
+
+            <ImageView
+                android:id="@+id/icon_drawer_channel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:background="@drawable/ic_drawer_channel"
+                android:paddingEnd="10dp" />
+
+            <TextView
+                android:id="@+id/text_drawer_channel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@+id/icon_drawer_channel"
+                android:paddingEnd="10dp"
+                android:paddingStart="10dp"
+                android:text="Channel"
+                android:textAppearance="?android:attr/textAppearanceListItemSmall" />
+
+        </RelativeLayout>
+
+        <RelativeLayout
             android:id="@+id/drawer_settings"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -32,6 +32,7 @@ import com.senorsen.wukong.model.*
 import com.senorsen.wukong.network.*
 import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore
+import com.senorsen.wukong.store.UserInfoLocalStore
 import com.senorsen.wukong.ui.MainActivity
 import com.senorsen.wukong.utils.ResourceHelper
 import java.io.IOException
@@ -71,6 +72,7 @@ class WukongService : Service() {
     var configuration: Configuration? = null
     lateinit var configurationLocalStore: ConfigurationLocalStore
     lateinit var songListLocalStore: SongListLocalStore
+    lateinit var userInfoLocalStore: UserInfoLocalStore
 
     var songListUpdateCallback: ((List<Song>) -> Unit)? = null
 
@@ -163,6 +165,7 @@ class WukongService : Service() {
 
         configurationLocalStore = ConfigurationLocalStore(this)
         songListLocalStore = SongListLocalStore(this)
+        userInfoLocalStore = UserInfoLocalStore(this)
         mediaSourceSelector = MediaSourceSelector(this)
 
         val filter = IntentFilter()
@@ -239,6 +242,12 @@ class WukongService : Service() {
         mediaPlayer.reset()
     }
 
+    var onUserInfoUpdate: (() -> Unit)? = null
+
+    fun registerUpdateUserInfo(callback: (() -> Unit)?) {
+        onUserInfoUpdate = callback
+    }
+
     private fun startConnect(intent: Intent) {
         val cookies = intent.getStringExtra("cookies")
         val channelId = intent.getStringExtra("channel")
@@ -260,6 +269,26 @@ class WukongService : Service() {
 
                 currentUser = http.getUserInfo()
                 Log.d(TAG, "User: " + currentUser.toString())
+                userInfoLocalStore.save(currentUser)
+                try {
+                    onUserInfoUpdate?.invoke()
+                } catch (e: Exception) {
+
+                }
+                // FIXME: !!
+                if (currentUser.avatar != null) {
+                    albumArtCache.fetch(currentUser.avatar!!, object: AlbumArtCache.FetchListener() {
+                        override fun onFetched(artUrl: String, bigImage: Bitmap, iconImage: Bitmap) {
+                            Log.d(TAG, "onFetched avatar $artUrl")
+                            userInfoLocalStore.save(avatar = bigImage)
+                            try {
+                                onUserInfoUpdate?.invoke()
+                            } catch (e: Exception) {
+
+                            }
+                        }
+                    })
+                }
 
                 var userList: ArrayList<User>? = null
 
@@ -394,6 +423,7 @@ class WukongService : Service() {
             } catch (e: HttpWrapper.UserUnauthorizedException) {
                 handler.post {
                     Toast.makeText(applicationContext, "Please sign in to continue.", Toast.LENGTH_SHORT).show()
+                    userInfoLocalStore.save(user = null)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

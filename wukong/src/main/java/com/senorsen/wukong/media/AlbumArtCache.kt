@@ -31,6 +31,8 @@ import android.support.v4.graphics.BitmapCompat
 import java.io.*
 import java.nio.Buffer
 import java.nio.ByteBuffer
+import android.graphics.BitmapFactory
+import android.util.Base64
 
 
 /**
@@ -143,7 +145,7 @@ class AlbumArtCache(private val context: Context) {
         return if (result == null) null else result[ICON_BITMAP_INDEX]
     }
 
-    fun fetch(artUrl: String, listener: FetchListener?, key: String = artUrl) {
+    fun fetch(artUrl: String, listener: FetchListener?, key: String = artUrl.hashCode().toString()) {
         // WARNING: for the sake of simplicity, simultaneous multi-workThread fetch requests
         // are not handled properly: they may cause redundant costly operations, like HTTP
         // requests and bitmap rescales. For production-level apps, we recommend you use
@@ -167,6 +169,7 @@ class AlbumArtCache(private val context: Context) {
                     bitmaps = arrayOf<Bitmap>(bitmap, icon)
                     addBitmapToCache(key, bitmaps)
                 } catch (e: IOException) {
+                    e.printStackTrace()
                     return null
                 }
 
@@ -209,6 +212,28 @@ class AlbumArtCache(private val context: Context) {
 
         private val BIG_BITMAP_INDEX = 0
         private val ICON_BITMAP_INDEX = 1
+
+        fun stringToBitMap(encodedString: String): Bitmap? {
+            try {
+                val encodeByte = Base64.decode(encodedString, Base64.DEFAULT)
+                val bitmap = BitmapFactory.decodeByteArray(encodeByte, 0,
+                        encodeByte.size)
+                return bitmap
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return null
+            }
+        }
+
+        fun bitMapToString(bitmap: Bitmap?): String {
+            if (bitmap == null) return ""
+
+            val baos = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)
+            val b = baos.toByteArray()
+            val temp = Base64.encodeToString(b, Base64.DEFAULT)
+            return temp
+        }
 
     }
 }
