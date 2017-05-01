@@ -55,7 +55,7 @@ class SongListFragment : Fragment() {
                 // If song list in service is empty, service is not setup.
                 // Otherwise, service is set up, and ui list may be old.
                 if (wukongService.userSongList.isEmpty()) {
-                    wukongService.userSongList = adapter.list!!
+                    wukongService.userSongList = adapter.list!!.toMutableList()
                 } else {
                     adapter.list = wukongService.userSongList
                 }
@@ -66,8 +66,10 @@ class SongListFragment : Fragment() {
     }
 
     fun onSongListUpdate(list: List<Song>) {
-        Log.d(SongListFragment::class.simpleName, "onSongListUpdate ${list.firstOrNull()}")
-        adapter.list = list.toMutableList()
+        handler.post {
+            Log.d(SongListFragment::class.simpleName, "onSongListUpdate ${list.firstOrNull()}")
+            adapter.list = list.toMutableList()
+        }
     }
 
     val bindRunnable = object : Runnable {
@@ -132,7 +134,7 @@ class SongListFragment : Fragment() {
             val list = adapter.list!!
             Collections.shuffle(list, Random(System.nanoTime()))
             adapter.list = list
-            wukongService?.userSongList = list
+            wukongService?.userSongList = list.toMutableList()
             wukongService?.doUpdateNextSong()
         }
     }
@@ -140,7 +142,7 @@ class SongListFragment : Fragment() {
     fun clearSongList() {
         if (adapter.list != null) {
             adapter.list = mutableListOf()
-            wukongService?.userSongList = adapter.list!!
+            wukongService?.userSongList = adapter.list!!.toMutableList()
             wukongService?.doUpdateNextSong()
         }
     }
@@ -165,7 +167,7 @@ class SongListFragment : Fragment() {
 
     private class SongListAdapter(val fragment: SongListFragment) : RecyclerView.Adapter<SongListAdapter.ViewHolder>() {
 
-        var list: MutableList<Song>? = null
+        var list: List<Song>? = null
             get() = field
             set(value) {
                 field = value
@@ -199,24 +201,24 @@ class SongListFragment : Fragment() {
             init {
                 upIcon.setOnClickListener {
                     Log.d(TAG, "up $id")
-                    val tempList = list!!
+                    val tempList = list!!.toMutableList()
                     val song = tempList[id]
                     tempList.remove(song)
                     tempList.add(0, song)
                     list = tempList
 
-                    fragment.wukongService?.userSongList = list!!
+                    fragment.wukongService?.userSongList = tempList
                     fragment.wukongService?.doUpdateNextSong()
                 }
 
                 removeIcon.setOnClickListener {
                     Log.d(TAG, "remove $id")
-                    val tempList = list!!
+                    val tempList = list!!.toMutableList()
                     val song = tempList[id]
                     tempList.remove(song)
                     list = tempList
 
-                    fragment.wukongService?.userSongList = list!!
+                    fragment.wukongService?.userSongList = tempList
                     fragment.wukongService?.doUpdateNextSong()
                 }
             }

@@ -57,6 +57,7 @@ class MainActivity : AppCompatActivity() {
             connected = false
             wukongService?.onUpdateChannelInfo = null
             wukongService = null
+            updateChannelInfo(false, null, null)
             bindService()
         }
 
@@ -68,6 +69,7 @@ class MainActivity : AppCompatActivity() {
             wukongService.onUpdateChannelInfo = this@MainActivity::updateChannelInfo
             if (wukongService.connected) {
                 updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
+                updateChannelInfo(wukongService.connected, wukongService.userList, wukongService.currentPlayUserId)
             }
         }
     }
@@ -253,28 +255,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun updateChannelInfo(connected: Boolean, users: List<User>?, currentPlayUserId: String? = null) {
-        Log.d(TAG, "updateChannelInfo $connected, $currentPlayUserId")
-        (findViewById(R.id.channel_info) as TextView).text = if (connected && users != null)
-            Html.fromHtml("<b>${users.size}</b> player${if (users.size > 1) "s" else ""}: "
-                    + users.map { if (it.id == currentPlayUserId) "<b>${it.userName}</b>" else it.userName }.joinToString())
-        else
-            Html.fromHtml("disconnected")
+        handler.post {
+            Log.d(TAG, "updateChannelInfo $connected, $currentPlayUserId")
+            (findViewById(R.id.channel_info) as TextView).text = if (connected && users != null)
+                Html.fromHtml("<b>${users.size}</b> player${if (users.size > 1) "s" else ""}: "
+                        + users.map { if (it.id == currentPlayUserId) "<b>${it.userName}</b>" else it.userName }.joinToString())
+            else
+                Html.fromHtml("disconnected")
+        }
     }
 
     fun updateUserTextAndAvatar(user: User?, avatar: Bitmap?) {
-        Log.d(TAG, "$user, $avatar")
-        if (user?.userName != null) {
-            (findViewById(R.id.text_drawer_user) as TextView).text = user.userName
-        }
-        if (avatar != null) {
-            (findViewById(R.id.icon_drawer_user) as ImageView).setImageBitmap(avatar)
+        handler.post {
+            Log.d(TAG, "$user, $avatar")
+            if (user?.userName != null) {
+                (findViewById(R.id.text_drawer_user) as TextView).text = user.userName
+            }
+            if (avatar != null) {
+                (findViewById(R.id.icon_drawer_user) as ImageView).setImageBitmap(avatar)
+            }
         }
     }
 
     fun updateChannelText() {
-        val channelId = getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", "")
-        if (channelId.isNotBlank()) {
-            (findViewById(R.id.text_drawer_channel) as TextView).text = Html.fromHtml("Channel: $channelId")
+        handler.post {
+            val channelId = getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", "")
+            if (channelId.isNotBlank()) {
+                (findViewById(R.id.text_drawer_channel) as TextView).text = Html.fromHtml("Channel: $channelId")
+            }
         }
     }
 

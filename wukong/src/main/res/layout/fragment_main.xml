@@ -45,7 +45,7 @@
             android:singleLine="true"
             android:textAppearance="@style/TextAppearance.AppCompat.Caption"
             android:text="disconnected" />
-        <LinearLayout
+        <!--<LinearLayout
             android:id="@+id/channel_people"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
@@ -59,7 +59,7 @@
                 android:layout_height="32dp"
                 android:layout_margin="10dp"
                 tools:src="@drawable/ic_sample_avatar" />
-        </LinearLayout>
+        </LinearLayout>-->
 
 
     </LinearLayout>
