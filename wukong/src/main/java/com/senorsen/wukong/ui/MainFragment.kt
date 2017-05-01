@@ -22,14 +22,12 @@ class MainFragment : Fragment() {
 
         val view = inflater.inflate(R.layout.fragment_main, container, false)
 
-        val startServiceButton = view.findViewById(R.id.start_service) as Button
-        startServiceButton.setOnClickListener {
-            (activity as MainActivity).startWukongService()
-        }
-
-        val stopServiceButton = view.findViewById(R.id.stop_service) as Button
-        stopServiceButton.setOnClickListener {
-            activity.stopService(Intent(activity, WukongService::class.java))
+        view.findViewById(R.id.song_list_shuffle).setOnClickListener {
+            val childFragment = childFragmentManager.findFragmentByTag("SONGLIST")
+            if (childFragment != null) {
+                val songListFragment = childFragment as SongListFragment
+                songListFragment.shuffleSongList()
+            }
         }
 
         return view

@@ -1,21 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <Button
-        android:id="@+id/start_service"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Restart service" />
+        android:gravity="start"
+        android:minHeight="50dp"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp"
+        android:paddingEnd="16dp"
+        android:paddingStart="16dp">
 
-    <Button
-        android:id="@+id/stop_service"
+        <ImageView
+            android:id="@+id/song_list_shuffle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_weight="0"
+            android:src="@drawable/ic_shuffle_playlist"
+            android:contentDescription="@string/shuffle_playlist"
+            tools:ignore="InefficientWeight" />
+
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Stop service" />
+        android:gravity="start"
+        android:minHeight="72dp"
+        android:orientation="horizontal"
+        android:paddingEnd="16dp"
+        android:paddingStart="16dp">
+
+        <TextView
+            android:id="@+id/channel_info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:text="disconnected" />
+        <LinearLayout
+            android:id="@+id/channel_people"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="start"
+            android:orientation="horizontal"
+            android:paddingEnd="16dp"
+            android:paddingStart="16dp">
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_margin="10dp"
+                tools:src="@drawable/ic_sample_avatar" />
+        </LinearLayout>
+
+
+    </LinearLayout>
 
     <FrameLayout
         android:id="@+id/main_fragment_container"

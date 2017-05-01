@@ -3,7 +3,6 @@ package com.senorsen.wukong.service
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -42,6 +41,8 @@ import kotlin.concurrent.thread
 
 class WukongService : Service() {
 
+    private val TAG = javaClass.simpleName
+
     private val NOTIFICATION_ID = 1
 
     private lateinit var albumArtCache: AlbumArtCache
@@ -66,6 +67,9 @@ class WukongService : Service() {
     @Volatile var connected = false
     @Volatile var currentSong: Song? = null
     @Volatile var currentFile: File? = null
+    @Volatile var userList: List<User>? = null
+    @Volatile var currentPlayUser: User? = null
+    @Volatile var currentPlayUserId: String? = null
     @Volatile var downvoted = false
     @Volatile var songStartTime: Long = 0
     @Volatile var userSongList: MutableList<Song> = mutableListOf()
@@ -75,6 +79,7 @@ class WukongService : Service() {
     lateinit var userInfoLocalStore: UserInfoLocalStore
 
     var songListUpdateCallback: ((List<Song>) -> Unit)? = null
+    var onUpdateChannelInfo: ((Boolean, List<User>?, String?) -> Unit)? = null
 
     private val ACTION_DOWNVOTE = "com.senorsen.wukong.DOWNVOTE"
     private val ACTION_PAUSE = "com.senorsen.wukong.PAUSE"
@@ -136,7 +141,7 @@ class WukongService : Service() {
                 handler.post {
                     try {
                         songListUpdateCallback?.invoke(userSongList)
-                    } finally {
+                    } catch (e: Exception) {
                         // Activity may exited.
                         songListLocalStore.save(userSongList)
                     }
@@ -233,6 +238,7 @@ class WukongService : Service() {
             Log.i(TAG, "socket disconnect")
             socket?.disconnect()
             workThread?.interrupt()
+            connected = false
         }
 
         currentSong = null
@@ -242,9 +248,9 @@ class WukongService : Service() {
         mediaPlayer.reset()
     }
 
-    var onUserInfoUpdate: (() -> Unit)? = null
+    var onUserInfoUpdate: ((user: User?, avatar: Bitmap?) -> Unit)? = null
 
-    fun registerUpdateUserInfo(callback: (() -> Unit)?) {
+    fun registerUpdateUserInfo(callback: ((user: User?, avatar: Bitmap?) -> Unit)?) {
         onUserInfoUpdate = callback
     }
 
@@ -271,7 +277,7 @@ class WukongService : Service() {
                 Log.d(TAG, "User: " + currentUser.toString())
                 userInfoLocalStore.save(currentUser)
                 try {
-                    onUserInfoUpdate?.invoke()
+                    onUserInfoUpdate?.invoke(currentUser, null)
                 } catch (e: Exception) {
 
                 }
@@ -282,15 +288,13 @@ class WukongService : Service() {
                             Log.d(TAG, "onFetched avatar $artUrl")
                             userInfoLocalStore.save(avatar = bigImage)
                             try {
-                                onUserInfoUpdate?.invoke()
+                                onUserInfoUpdate?.invoke(currentUser, bigImage)
                             } catch (e: Exception) {
 
                             }
                         }
                     })
                 }
-
-                var userList: ArrayList<User>? = null
 
                 val receiver = object : SocketWrapper.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
@@ -300,8 +304,14 @@ class WukongService : Service() {
 
                             Protocol.USER_LIST_UPDATE -> {
                                 userList = protocol.users!! as ArrayList<User>
+                                currentPlayUser = User.getUserFromList(userList, currentPlayUserId) ?: currentPlayUser
                                 handler.post {
                                     Toast.makeText(applicationContext, "Wukong $channelId: " + userList!!.map { it.userName }.joinToString(), Toast.LENGTH_SHORT).show()
+                                }
+                                try {
+                                    onUpdateChannelInfo?.invoke(connected, userList, currentPlayUserId)
+                                } catch (e: Exception) {
+
                                 }
                             }
 
@@ -322,7 +332,16 @@ class WukongService : Service() {
                                     return
                                 }
 
-                                val song = protocol.song!!
+                                val song = protocol.song
+
+                                currentPlayUserId = protocol.user
+                                currentPlayUser = User.getUserFromList(userList, currentPlayUserId) ?: currentPlayUser
+
+                                try {
+                                    onUpdateChannelInfo?.invoke(connected, userList, currentPlayUserId)
+                                } catch (e: Exception) {
+
+                                }
 
                                 if (currentUser.id == protocol.user) {
                                     mayLoopSongList(song)
@@ -351,7 +370,7 @@ class WukongService : Service() {
                                 try {
                                     mediaPlayer.setDataSource(mediaSrc)
                                     mediaPlayer.prepare()
-                                    mediaPlayer.seekTo((protocol.elapsed!! * 1000).toInt())
+                                    mediaPlayer.seekTo((protocol.elapsed * 1000).toInt())
 
                                     if (!isPaused)
                                         mediaPlayer.start()
@@ -484,6 +503,12 @@ class WukongService : Service() {
         mediaPlayer.release()
         wifiLock.release()
 
+        try {
+            onUpdateChannelInfo?.invoke(connected, null, null)
+        } catch (e: Exception) {
+
+        }
+
         super.onDestroy()
         unregisterReceiver(receiver)
         Log.d(TAG, "onDestroy")
@@ -502,7 +527,7 @@ class WukongService : Service() {
         var content = nContent
         if (nContent == null && currentSong != null) {
             title = currentSong?.title!!
-            content = "${currentSong?.artist} - ${currentSong?.album}"
+            content = "${currentPlayUser?.displayName ?: currentPlayUser?.userName}: ${currentSong?.artist} - ${currentSong?.album}"
         }
 
         val intent = Intent(this, MainActivity::class.java)

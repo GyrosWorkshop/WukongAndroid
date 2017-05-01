@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
-    android:minHeight="72dp"
+    android:minHeight="50dp"
     android:orientation="horizontal"
     android:paddingEnd="16dp"
     android:paddingStart="16dp">
@@ -53,6 +53,6 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_weight="0"
-        android:src="@drawable/ic_remove_circle_black_24px" />
+        android:src="@drawable/ic_remove_song_24dp" />
 
 </LinearLayout>

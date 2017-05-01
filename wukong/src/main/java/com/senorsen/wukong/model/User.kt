@@ -10,11 +10,14 @@ data class User(
         var fromSite: String? = null,
         var siteUserId: String? = null,
         var url: String? = null
-) : Serializable
-
-fun getUserFromList(userList: List<User>?, id: String?): User? {
-    return userList?.find { it.id == id }
+) : Serializable {
+    companion object {
+        fun getUserFromList(userList: List<User>?, id: String?): User? {
+            return userList?.find { it.id == id }
+        }
+    }
 }
+
 
 data class OtherSiteUser(
         var siteId: String? = null,

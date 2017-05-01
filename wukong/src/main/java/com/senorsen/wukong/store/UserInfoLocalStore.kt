@@ -4,10 +4,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.senorsen.wukong.media.AlbumArtCache
 import com.senorsen.wukong.model.User
-import com.senorsen.wukong.utils.ObjectSerializer
-import java.io.Serializable
 
 class UserInfoLocalStore(context: Context) : PrefLocalStore(context, PREF_NAME) {
+
+    private val TAG = javaClass.simpleName
 
     fun save(avatar: Bitmap?) {
         pref.edit()
@@ -16,18 +16,14 @@ class UserInfoLocalStore(context: Context) : PrefLocalStore(context, PREF_NAME) 
     }
 
     fun save(user: User?) {
-        pref.edit()
-                .putString(KEY_PREF_USER, ObjectSerializer.serialize(user))
-                .apply()
+        saveToJson(KEY_PREF_USER, user)
     }
 
     fun load(): User? {
-        @Suppress("UNCHECKED_CAST")
-        return ObjectSerializer.deserialize(pref.getString(KEY_PREF_USER, "")) as User?
+        return loadFromJson(KEY_PREF_USER, User::class.java)
     }
 
     fun loadUserAvatar() : Bitmap? {
-        @Suppress("UNCHECKED_CAST")
         return AlbumArtCache.stringToBitMap(pref.getString(KEY_PREF_USER_AVATAR, ""))
     }
 

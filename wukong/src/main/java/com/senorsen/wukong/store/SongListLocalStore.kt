@@ -1,21 +1,18 @@
 package com.senorsen.wukong.store
 
 import android.content.Context
+import com.google.gson.reflect.TypeToken
 import com.senorsen.wukong.model.Song
-import com.senorsen.wukong.utils.ObjectSerializer
 
+@Suppress("UNCHECKED_CAST")
 class SongListLocalStore(context: Context) : PrefLocalStore(context, PREF_NAME) {
 
     fun save(songList: List<Song>?) {
-        pref.edit()
-                .putString(KEY_PREF_SONGLIST, ObjectSerializer.serialize(songList?.toTypedArray()))
-                .apply()
-
+        saveToJson(KEY_PREF_SONGLIST, songList)
     }
 
     fun load(): List<Song>? {
-        @Suppress("UNCHECKED_CAST")
-        return (ObjectSerializer.deserialize(pref.getString(KEY_PREF_SONGLIST, "")) as Array<Song>?)?.toMutableList()
+        return loadFromJson(KEY_PREF_SONGLIST, object : TypeToken<List<Song>?>() {}.type)
     }
 
     companion object {

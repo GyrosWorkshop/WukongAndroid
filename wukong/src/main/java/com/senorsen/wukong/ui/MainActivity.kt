@@ -3,7 +3,10 @@ package com.senorsen.wukong.ui
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.app.ActivityManager
 import android.app.AlertDialog
-import android.content.*
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
@@ -24,16 +27,19 @@ import com.senorsen.wukong.network.SongList
 import com.senorsen.wukong.service.WukongService
 import android.os.Handler
 import android.os.IBinder
+import android.text.Html
 import android.text.InputType
 import android.text.SpannableStringBuilder
 import android.util.Log
 import android.widget.*
-import com.senorsen.wukong.store.SongListLocalStore
+import com.senorsen.wukong.model.User
 import com.senorsen.wukong.store.UserInfoLocalStore
-import com.senorsen.wukong.utils.ObjectSerializer
+import kotlin.concurrent.thread
 
 
 class MainActivity : AppCompatActivity() {
+
+    private val TAG = javaClass.simpleName
 
     private lateinit var mDrawerLayout: DrawerLayout
     private lateinit var mDrawerList: LinearLayout
@@ -49,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     val serviceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
             connected = false
+            wukongService?.onUpdateChannelInfo = null
             wukongService = null
             bindService()
         }
@@ -57,8 +64,10 @@ class MainActivity : AppCompatActivity() {
             connected = true
             val wukongService = (service as WukongService.WukongServiceBinder).getService()
             this@MainActivity.wukongService = wukongService
+            wukongService.registerUpdateUserInfo(this@MainActivity::updateUserTextAndAvatar)
+            wukongService.onUpdateChannelInfo = this@MainActivity::updateChannelInfo
             if (wukongService.connected) {
-                wukongService.registerUpdateUserInfo(this@MainActivity::updateUserTextAndAvatar)
+                updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
             }
         }
     }
@@ -152,7 +161,7 @@ class MainActivity : AppCompatActivity() {
             mDrawerLayout.closeDrawer(GravityCompat.START)
             startActivityForResult(Intent(this, WebViewActivity::class.java), REQUEST_COOKIES)
         }
-        updateUserTextAndAvatar()
+        updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
 
         val drawerChannel = findViewById(R.id.drawer_channel)
         drawerChannel.setOnClickListener {
@@ -172,6 +181,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        findViewById(R.id.drawer_start_service).setOnClickListener {
+            mDrawerLayout.closeDrawer(GravityCompat.START)
+            startWukongService()
+        }
+
+        findViewById(R.id.drawer_stop_service).setOnClickListener {
+            mDrawerLayout.closeDrawer(GravityCompat.START)
+            stopService(Intent(this, WukongService::class.java))
+        }
+
         findViewById(R.id.drawer_sync_playlist).setOnClickListener {
             mDrawerLayout.closeDrawer(GravityCompat.START)
             val currentFragment = fragmentManager.findFragmentByTag("MAIN")
@@ -181,19 +200,6 @@ class MainActivity : AppCompatActivity() {
                 if (childFragment != null) {
                     val songListFragment = childFragment as SongListFragment
                     songListFragment.fetchSongList()
-                }
-            }
-        }
-
-        findViewById(R.id.drawer_shuffle_playlist).setOnClickListener {
-            mDrawerLayout.closeDrawer(GravityCompat.START)
-            val currentFragment = fragmentManager.findFragmentByTag("MAIN")
-            if (currentFragment != null) {
-                val fragment = currentFragment as MainFragment
-                val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
-                if (childFragment != null) {
-                    val songListFragment = childFragment as SongListFragment
-                    songListFragment.shuffleSongList()
                 }
             }
         }
@@ -246,21 +252,29 @@ class MainActivity : AppCompatActivity() {
         return false
     }
 
-    fun updateUserTextAndAvatar() {
-        val user = userInfoLocalStore.load()
-        val userAvatar = userInfoLocalStore.loadUserAvatar()
+    fun updateChannelInfo(connected: Boolean, users: List<User>?, currentPlayUserId: String? = null) {
+        Log.d(TAG, "updateChannelInfo $connected, $currentPlayUserId")
+        (findViewById(R.id.channel_info) as TextView).text = if (connected && users != null)
+            Html.fromHtml("<b>${users.size}</b> player${if (users.size > 1) "s" else ""}: "
+                    + users.map { if (it.id == currentPlayUserId) "<b>${it.userName}</b>" else it.userName }.joinToString())
+        else
+            Html.fromHtml("disconnected")
+    }
+
+    fun updateUserTextAndAvatar(user: User?, avatar: Bitmap?) {
+        Log.d(TAG, "$user, $avatar")
         if (user?.userName != null) {
             (findViewById(R.id.text_drawer_user) as TextView).text = user.userName
         }
-        if (userAvatar != null) {
-            (findViewById(R.id.icon_drawer_user) as ImageView).background = BitmapDrawable(userAvatar)
+        if (avatar != null) {
+            (findViewById(R.id.icon_drawer_user) as ImageView).setImageBitmap(avatar)
         }
     }
 
     fun updateChannelText() {
         val channelId = getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", "")
         if (channelId.isNotBlank()) {
-            (findViewById(R.id.text_drawer_channel) as TextView).text = "Channel: $channelId"
+            (findViewById(R.id.text_drawer_channel) as TextView).text = Html.fromHtml("Channel: $channelId")
         }
     }
 
