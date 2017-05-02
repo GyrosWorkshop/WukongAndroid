@@ -3,10 +3,7 @@ package com.senorsen.wukong.ui
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.app.ActivityManager
 import android.app.AlertDialog
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
@@ -27,6 +24,7 @@ import com.senorsen.wukong.network.SongList
 import com.senorsen.wukong.service.WukongService
 import android.os.Handler
 import android.os.IBinder
+import android.support.v4.content.LocalBroadcastManager
 import android.text.Html
 import android.text.InputType
 import android.text.SpannableStringBuilder
@@ -34,6 +32,7 @@ import android.util.Log
 import android.widget.*
 import com.senorsen.wukong.model.User
 import com.senorsen.wukong.store.UserInfoLocalStore
+import com.senorsen.wukong.utils.ObjectSerializer
 import kotlin.concurrent.thread
 
 
@@ -48,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     val handler = Handler()
     var connected = false
     var wukongService: WukongService? = null
+    private var broadcastReceiver: BroadcastReceiver? = null
 
     private lateinit var userInfoLocalStore: UserInfoLocalStore
 
@@ -55,7 +55,6 @@ class MainActivity : AppCompatActivity() {
     val serviceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
             connected = false
-            wukongService?.onUpdateChannelInfo = null
             wukongService = null
             updateChannelInfo(false, null, null)
             bindService()
@@ -66,7 +65,6 @@ class MainActivity : AppCompatActivity() {
             val wukongService = (service as WukongService.WukongServiceBinder).getService()
             this@MainActivity.wukongService = wukongService
             wukongService.registerUpdateUserInfo(this@MainActivity::updateUserTextAndAvatar)
-            wukongService.onUpdateChannelInfo = this@MainActivity::updateChannelInfo
             if (wukongService.connected) {
                 updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
                 updateChannelInfo(wukongService.connected, wukongService.userList, wukongService.currentPlayUserId)
@@ -230,6 +228,29 @@ class MainActivity : AppCompatActivity() {
                 .start()
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (broadcastReceiver == null) broadcastReceiver = ChannelUpdateBroadcastReceiver()
+        val intentFilter = IntentFilter(UPDATE_CHANNEL_INFO_INTENT)
+        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, intentFilter)
+    }
+
+    override fun onPause() {
+        if (broadcastReceiver != null) LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
+        super.onPause()
+    }
+
+    inner class ChannelUpdateBroadcastReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                UPDATE_CHANNEL_INFO_INTENT ->
+                        updateChannelInfo(intent.getBooleanExtra("connected", false),
+                                ObjectSerializer.deserialize(intent.getStringExtra("users")) as List<User>?,
+                                intent.getStringExtra("currentPlayUserId"))
+            }
+        }
+    }
+
     private fun mayRequestPermission(): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return true
@@ -326,5 +347,6 @@ class MainActivity : AppCompatActivity() {
     companion object {
         val REQUEST_WRITE_EXTERNAL_STORAGE = 0
         val KEY_PREF_USE_LOCAL_MEDIA = "pref_useLocalMedia"
+        val UPDATE_CHANNEL_INFO_INTENT = "UPDATE_CHANNEL_INFO"
     }
 }

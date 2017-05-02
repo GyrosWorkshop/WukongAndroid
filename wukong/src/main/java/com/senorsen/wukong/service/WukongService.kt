@@ -19,6 +19,7 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.preference.PreferenceManager
 import android.support.v4.app.NotificationManagerCompat
+import android.support.v4.content.LocalBroadcastManager
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v7.app.NotificationCompat
@@ -33,8 +34,10 @@ import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore
 import com.senorsen.wukong.store.UserInfoLocalStore
 import com.senorsen.wukong.ui.MainActivity
+import com.senorsen.wukong.utils.ObjectSerializer
 import com.senorsen.wukong.utils.ResourceHelper
 import java.io.IOException
+import java.io.Serializable
 import java.lang.System.currentTimeMillis
 import kotlin.concurrent.thread
 
@@ -79,7 +82,6 @@ class WukongService : Service() {
     lateinit var userInfoLocalStore: UserInfoLocalStore
 
     var songListUpdateCallback: ((List<Song>) -> Unit)? = null
-    var onUpdateChannelInfo: ((Boolean, List<User>?, String?) -> Unit)? = null
 
     private val ACTION_DOWNVOTE = "com.senorsen.wukong.DOWNVOTE"
     private val ACTION_PAUSE = "com.senorsen.wukong.PAUSE"
@@ -96,6 +98,14 @@ class WukongService : Service() {
 
     override fun onBind(intent: Intent): IBinder? {
         return binder
+    }
+
+    fun onUpdateChannelInfo(connected: Boolean, users: List<User>?, currentPlayUserId: String? = null) {
+        val intent = Intent(MainActivity.UPDATE_CHANNEL_INFO_INTENT)
+        intent.putExtra("connected", connected)
+        intent.putExtra("users", ObjectSerializer.serialize(if (users == null) null else users as Serializable))
+        intent.putExtra("currentPlayUserId", currentPlayUserId)
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     fun fetchConfiguration(): Configuration? {
@@ -283,7 +293,7 @@ class WukongService : Service() {
                 }
                 // FIXME: !!
                 if (currentUser.avatar != null) {
-                    albumArtCache.fetch(currentUser.avatar!!, object: AlbumArtCache.FetchListener() {
+                    albumArtCache.fetch(currentUser.avatar!!, object : AlbumArtCache.FetchListener() {
                         override fun onFetched(artUrl: String, bigImage: Bitmap, iconImage: Bitmap) {
                             Log.d(TAG, "onFetched avatar $artUrl")
                             userInfoLocalStore.save(avatar = bigImage)
@@ -308,11 +318,7 @@ class WukongService : Service() {
                                 handler.post {
                                     Toast.makeText(applicationContext, "Wukong $channelId: " + userList!!.map { it.userName }.joinToString(), Toast.LENGTH_SHORT).show()
                                 }
-                                try {
-                                    onUpdateChannelInfo?.invoke(connected, userList, currentPlayUserId)
-                                } catch (e: Exception) {
-
-                                }
+                                onUpdateChannelInfo(connected, userList, currentPlayUserId)
                             }
 
                             Protocol.PRELOAD -> {
@@ -337,11 +343,7 @@ class WukongService : Service() {
                                 currentPlayUserId = protocol.user
                                 currentPlayUser = User.getUserFromList(userList, currentPlayUserId) ?: currentPlayUser
 
-                                try {
-                                    onUpdateChannelInfo?.invoke(connected, userList, currentPlayUserId)
-                                } catch (e: Exception) {
-
-                                }
+                                onUpdateChannelInfo(connected, userList, currentPlayUserId)
 
                                 if (currentUser.id == protocol.user) {
                                     mayLoopSongList(song)
@@ -381,6 +383,7 @@ class WukongService : Service() {
                                             try {
                                                 http.reportFinish(song.toRequestSong())
                                             } catch (e: HttpWrapper.InvalidRequestException) {
+                                            } catch (e: Exception) {
                                                 e.printStackTrace()
                                             }
                                         }
@@ -503,11 +506,7 @@ class WukongService : Service() {
         mediaPlayer.release()
         wifiLock.release()
 
-        try {
-            onUpdateChannelInfo?.invoke(connected, null, null)
-        } catch (e: Exception) {
-
-        }
+        onUpdateChannelInfo(connected, null, null)
 
         super.onDestroy()
         unregisterReceiver(receiver)
