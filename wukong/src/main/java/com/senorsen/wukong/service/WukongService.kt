@@ -234,8 +234,7 @@ class WukongService : Service() {
             when (intent?.action) {
                 AudioManager.ACTION_AUDIO_BECOMING_NOISY ->
                     if (mediaPlayer.isPlaying) handler.post {
-                        isPaused = true
-                        mediaPlayer.pause()
+                        switchPause()
                         Toast.makeText(context, "Wukong paused.", Toast.LENGTH_SHORT).show()
                     }
             }
@@ -355,7 +354,7 @@ class WukongService : Service() {
                                 songStartTime = currentTimeMillis() - (protocol.elapsed!! * 1000).toLong()
 
                                 handler.post {
-                                    setNotification(songStartTime)
+                                    setNotification()
                                 }
 
                                 var mediaSrc: String? = mediaSourceSelector.getValidLocalMedia(song)
@@ -467,7 +466,7 @@ class WukongService : Service() {
                 http.downvote(currentSong!!.toRequestSong())
             }
             downvoted = true
-            setNotification(songStartTime)
+            setNotification()
         }
     }
 
@@ -475,7 +474,8 @@ class WukongService : Service() {
         try {
             mediaPlayer.pause()
             isPaused = true
-            setNotification(songStartTime)
+            setNotification()
+            updateMediaSessionState()
         } catch (e: Exception) {
         }
     }
@@ -485,7 +485,8 @@ class WukongService : Service() {
             mediaPlayer.seekTo((currentTimeMillis() - songStartTime).toInt())
             mediaPlayer.start()
             isPaused = false
-            setNotification(songStartTime)
+            setNotification()
+            updateMediaSessionState()
         } catch (e: Exception) {
         }
     }
@@ -601,7 +602,7 @@ class WukongService : Service() {
         return notificationBuilder
     }
 
-    private fun setNotification(songStartTime: Long) {
+    private fun setNotification() {
         val notification = makeNotificationBuilder(null)
                 .setWhen(songStartTime).build()
 
