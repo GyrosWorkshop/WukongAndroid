@@ -40,6 +40,8 @@ import android.util.Base64
  */
 class AlbumArtCache(private val context: Context) {
 
+    private val TAG = javaClass.simpleName
+
     private lateinit var mDiskLruCache: DiskLruCache
     private var mDiskCacheStarting = false
     private val mDiskCacheLock = Object()
