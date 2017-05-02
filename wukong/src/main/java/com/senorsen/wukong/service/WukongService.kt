@@ -193,7 +193,7 @@ class WukongService : Service() {
                 if (intent != null) {
                     Log.d(TAG, intent.action)
                     when (intent.action) {
-                        ACTION_DOWNVOTE -> sendDownvote(intent)
+                        ACTION_DOWNVOTE -> sendDownvote(ObjectSerializer.deserialize(intent.getStringExtra("song")) as RequestSong)
 
                         ACTION_PAUSE -> switchPause()
 
@@ -221,6 +221,30 @@ class WukongService : Service() {
 
         mSessionCompat = MediaSessionCompat(this, "WukongMusicService")
         mSession = mSessionCompat.sessionToken
+        mSessionCompat.setCallback(object : MediaSessionCompat.Callback() {
+            override fun onPause() {
+                Log.d(TAG, "onPause")
+                switchPause()
+            }
+
+            override fun onPlay() {
+                Log.d(TAG, "onPlay")
+                switchPlay()
+            }
+
+            override fun onSkipToNext() {
+                Log.d(TAG, "onSkipToNext")
+                shuffleSongList()
+            }
+
+            override fun onSkipToPrevious() {
+                Log.d(TAG, "onSkipToPrevious")
+                if (currentSong != null) {
+                    sendDownvote(currentSong!!.toRequestSong())
+                }
+            }
+        })
+        mSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
         mAm = getSystemService(AUDIO_SERVICE) as AudioManager
 
@@ -255,6 +279,9 @@ class WukongService : Service() {
             mediaPlayer.stop()
         }
         mediaPlayer.reset()
+
+        mSessionCompat.isActive = false
+        mSessionCompat.release()
     }
 
     var onUserInfoUpdate: ((user: User?, avatar: Bitmap?) -> Unit)? = null
@@ -457,13 +484,13 @@ class WukongService : Service() {
         workThread!!.start()
     }
 
-    private fun sendDownvote(intent: Intent) {
+    private fun sendDownvote(song: RequestSong) {
         Log.d(TAG, currentSong!!.toRequestSong().toString())
-        Log.d(TAG, intent.getStringExtra("song"))
-        if (currentSong != null && currentSong!!.toRequestSong().toString() == intent.getStringExtra("song")) {
-            Log.d(TAG, "Downvote: $currentSong")
+        Log.d(TAG, song.toString())
+        if (currentSong != null && currentSong!!.toRequestSong().toString() == song.toString()) {
+            Log.d(TAG, "Downvote: $song")
             thread {
-                http.downvote(currentSong!!.toRequestSong())
+                http.downvote(song)
             }
             downvoted = true
             setNotification()
@@ -489,6 +516,11 @@ class WukongService : Service() {
             updateMediaSessionState()
         } catch (e: Exception) {
         }
+    }
+
+    private fun shuffleSongList() {
+        val intent = Intent(MainActivity.SHUFFLE_SONG_LIST_INTENT)
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -527,13 +559,11 @@ class WukongService : Service() {
         var content = nContent
         if (nContent == null && currentSong != null) {
             title = currentSong?.title!!
-            content = "${currentPlayUser?.displayName ?: currentPlayUser?.userName}: ${currentSong?.artist} - ${currentSong?.album}"
+            content = "(${currentPlayUser?.displayName ?: currentPlayUser?.userName}) ${currentSong?.artist} - ${currentSong?.album}"
         }
 
         val intent = Intent(this, MainActivity::class.java)
         val contextIntent = PendingIntent.getActivity(this, 0, intent, 0)
-
-        val playPauseButtonPosition = 0
 
         val notificationBuilder = NotificationCompat.Builder(this)
                 .setStyle(NotificationCompat.MediaStyle()
@@ -548,19 +578,6 @@ class WukongService : Service() {
                 .setContentTitle(title)
                 .setContentText(content) as android.support.v7.app.NotificationCompat.Builder
 
-        if (currentSong != null) {
-            val serviceIntent = Intent(ACTION_DOWNVOTE).setPackage(packageName)
-            serviceIntent.putExtra("song", currentSong!!.toRequestSong().toString())
-            val downvoteIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
-            val action = android.support.v4.app.NotificationCompat.Action(R.drawable.ic_downvote, "Downvote", downvoteIntent)
-            if (downvoted) {
-                val f = action.javaClass.getDeclaredField("mAllowGeneratedReplies")
-                f.isAccessible = true
-                f.set(action, false)
-            }
-            notificationBuilder.addAction(action)
-        }
-
         if (!isPaused) {
             val serviceIntent = Intent(ACTION_PAUSE).setPackage(packageName)
             val pauseIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
@@ -573,15 +590,19 @@ class WukongService : Service() {
             notificationBuilder.addAction(action)
         }
 
+        if (currentSong != null && !downvoted) {
+            val serviceIntent = Intent(ACTION_DOWNVOTE).setPackage(packageName)
+            serviceIntent.putExtra("song", ObjectSerializer.serialize(currentSong!!.toRequestSong()))
+            val downvoteIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
+            val action = android.support.v4.app.NotificationCompat.Action(R.drawable.ic_downvote, "Downvote", downvoteIntent)
+            notificationBuilder.addAction(action)
+        }
+
         var art: Bitmap? = null
         var fetchArtUrl: String? = null
         if (currentSong != null) {
-//            fetchArtUrl = mediaSourceSelector.selectMediaUrlByCdnSettings(currentSong?.artwork!!)
             fetchArtUrl = currentSong!!.artwork?.file
             if (fetchArtUrl != null) {
-                // This sample assumes the iconUri will be a valid URL formatted String, but
-                // it can actually be any valid Android Uri formatted String.
-                // async fetch the album art icon
                 art = albumArtCache.getBigImage(fetchArtUrl, currentSong!!.songKey)
             }
         }
@@ -635,7 +656,9 @@ class WukongService : Service() {
 
     private fun updateMediaSessionState() {
         val stateBuilder = PlaybackStateCompat.Builder()
-        stateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE or PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_REWIND or PlaybackStateCompat.ACTION_FAST_FORWARD)
+        stateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                        PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
         stateBuilder.setState(if (isPaused) PlaybackStateCompat.STATE_PAUSED else PlaybackStateCompat.STATE_PLAYING, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1.0f)
 
         mSessionCompat.setPlaybackState(stateBuilder.build())

@@ -232,6 +232,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (broadcastReceiver == null) broadcastReceiver = ChannelUpdateBroadcastReceiver()
         val intentFilter = IntentFilter(UPDATE_CHANNEL_INFO_INTENT)
+        intentFilter.addAction(SHUFFLE_SONG_LIST_INTENT)
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, intentFilter)
     }
 
@@ -244,9 +245,13 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 UPDATE_CHANNEL_INFO_INTENT ->
-                        updateChannelInfo(intent.getBooleanExtra("connected", false),
-                                ObjectSerializer.deserialize(intent.getStringExtra("users")) as List<User>?,
-                                intent.getStringExtra("currentPlayUserId"))
+                    @Suppress("UNCHECKED_CAST")
+                    updateChannelInfo(intent.getBooleanExtra("connected", false),
+                            ObjectSerializer.deserialize(intent.getStringExtra("users")) as List<User>?,
+                            intent.getStringExtra("currentPlayUserId"))
+
+                SHUFFLE_SONG_LIST_INTENT ->
+                    shuffleSongList()
             }
         }
     }
@@ -276,13 +281,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun updateChannelInfo(connected: Boolean, users: List<User>?, currentPlayUserId: String? = null) {
-        handler.post {
-            Log.d(TAG, "updateChannelInfo $connected, $currentPlayUserId")
-            (findViewById(R.id.channel_info) as TextView).text = if (connected && users != null)
-                Html.fromHtml("<b>${users.size}</b> player${if (users.size > 1) "s" else ""}: "
-                        + users.map { if (it.id == currentPlayUserId) "<b>${it.userName}</b>" else it.userName }.joinToString())
-            else
-                Html.fromHtml("disconnected")
+        Log.d(TAG, "updateChannelInfo $connected, $currentPlayUserId")
+        (findViewById(R.id.channel_info) as TextView).text = if (connected && users != null)
+            Html.fromHtml("<b>${users.size}</b> player${if (users.size > 1) "s" else ""}: "
+                    + users.map { if (it.id == currentPlayUserId) "<b>${it.userName}</b>" else it.userName }.joinToString())
+        else
+            Html.fromHtml("disconnected")
+    }
+
+    fun shuffleSongList() {
+        val currentFragment = fragmentManager.findFragmentByTag("MAIN")
+        if (currentFragment != null) {
+            val fragment = currentFragment as MainFragment
+            val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
+            if (childFragment != null) {
+                val songListFragment = childFragment as SongListFragment
+                songListFragment.shuffleSongList()
+            }
         }
     }
 
@@ -348,5 +363,6 @@ class MainActivity : AppCompatActivity() {
         val REQUEST_WRITE_EXTERNAL_STORAGE = 0
         val KEY_PREF_USE_LOCAL_MEDIA = "pref_useLocalMedia"
         val UPDATE_CHANNEL_INFO_INTENT = "UPDATE_CHANNEL_INFO"
+        val SHUFFLE_SONG_LIST_INTENT = "SHUFFLE_SONG_LIST"
     }
 }

@@ -26,7 +26,7 @@ data class RequestSong(
         // The `withCookie` contains a cookie string, which helps music providers to fetch more data,
         // based on user identity of the music site.
         var withCookie: String?
-)
+) : Serializable
 
 // A Song is an object contains all the data of a song.
 data class Song(
