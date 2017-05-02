@@ -1,8 +1,7 @@
 *.iml
 .gradle
 /local.properties
-/.idea/workspace.xml
-/.idea/libraries
+.idea
 .DS_Store
 /build
 /captures
@@ -10,3 +9,4 @@
 *.apk
 signing.gradle
 wukong/src/main/res/values/idp_configs.xml
+*.jks

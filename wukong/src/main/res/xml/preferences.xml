@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="pref_useCdn"
+        android:summary="May help you get rid of network problem, or not."
+        android:title="Use media CDN" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="pref_useLocalMedia"
+        android:summary="Load local media in your external storage."
+        android:title="Use local media" />
+    <!-- After user grant WRITE_EXTERNAL_STORAGE permission, this will be changed to true automatically. -->
+
+    <ListPreference
+        android:defaultValue="@string/pref_preferAudioQualityData_default"
+        android:dialogTitle="Preferred Audio Quality (cellular)"
+        android:entries="@array/pref_preferAudioQuality_entries"
+        android:entryValues="@array/pref_preferAudioQuality_values"
+        android:key="pref_preferAudioQualityData"
+        android:summary="%s"
+        android:title="Preferred Audio Quality (cellular)" />
+
+    <ListPreference
+        android:defaultValue="@string/pref_preferAudioQualityWifi_default"
+        android:dialogTitle="Preferred Audio Quality (Wifi)"
+        android:entries="@array/pref_preferAudioQuality_entries"
+        android:entryValues="@array/pref_preferAudioQuality_values"
+        android:key="pref_preferAudioQualityWifi"
+        android:summary="%s"
+        android:title="Preferred Audio Quality (Wifi) 未实现" />
+
+    <EditTextPreference
+        android:key="pref_syncPlaylists"
+        android:title="Sync Playlists (separated by line)" />
+
+    <EditTextPreference
+        android:key="pref_cookies"
+        android:title="Music Provider Cookies" />
+</PreferenceScreen>

@@ -1,5 +1,9 @@
 package com.senorsen.wukong.model
 
+import android.graphics.Bitmap
+import android.support.v4.media.MediaMetadataCompat
+import java.io.Serializable
+
 object SongQuality {
     val LOSSLESS: String
         get() = "lossless"
@@ -37,9 +41,23 @@ data class Song(
         var mvId: String? = null,
         var mvWebUrl: String? = null,
         var musics: List<File>? = null
-) {
+) : Serializable {
     fun toRequestSong(): RequestSong {
         return RequestSong(siteId = siteId, songId = songId, withCookie = null)
+    }
+
+    val songKey: String
+        get() = "$siteId.$songId"
+
+    fun toMediaMetaData(bitmap: Bitmap): MediaMetadataCompat {
+        val builder = MediaMetadataCompat.Builder()
+        return builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap)
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, title)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, "$artist - $album")
+                .build()
     }
 }
 
@@ -50,11 +68,11 @@ data class File(
         var format: String? = null,
         var audioQuality: String? = null,
         var audioBitrate: Int? = null
-)
+) : Serializable
 
 // A lovely lyric.
 class Lyric(
         var lrc: Boolean? = null,
         var translated: Boolean? = null,
         var data: String? = null
-)
+) : Serializable

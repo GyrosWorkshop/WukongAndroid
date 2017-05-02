@@ -1,0 +1,39 @@
+language: android
+jdk: oraclejdk8
+sudo: false
+before_cache:
+- rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -rf $HOME/.gradle/caches/*/plugin-resolution/
+cache:
+  directories:
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
+env:
+  global:
+  - ANDROID_API=25
+  - ANDROID_BUILD_TOOLS=25.0.2
+  - secure: d45prmw8JOI6EQehfv9uvFhMM7DqTa6ozoLbPWjuKOtOxRRBiuPBqp57VedjlCWAoEMdErucD1ehXwoIgJgj+yadtvZTF2C2wftoNofZAygp4EZbdvXXMACRVtrSBr4NmQb3UklNshfvmizvMtw2y2l4kAC1EpcD/d6MNoXSMuPQ6wZOZ4P9tFXDWCupkbuTzz1NBxXk+GF1b5Td6eMDqJyQdRYfqCZ7LuOqJ4LQQicFqxoEkub7H4s5RDe+6xpmDH44cZBOkjN27HeY7kkn9KmXro6JATitNUXk3CsR3sBnPrHavDkLakB6duoZb05ybvAMyWEYGId76Un0RVwyHy52Cou0Hi9veOMiREHbyVkuKWOC7K+Z2dheTGxRbnR+da2esBYZkY8G2UKkNGe749nrLQePQO9JX/xqkC2CJ1ZVmgoEw1pSwpt3SDAw20jqPQuPpkpVkfua2ZsvPrbhC8np0kqRr5MDYI35LArH+6aSOgIDPDxwA+pRk09Opkuwcu90CqXMYMY1eqm6wexkZs6+TyOMsFNXbKRK4q4LsMMIw6LYGg0n105dIVu3mkPIsXLqicXuKJhhM/VkFB0x4QkIhUY1m6iBOY1nusojRSryEGH17jbRkPvR4tAL59rhPPMoVUWTeBr2lgvK3T6/jQrr48C6dc9Mg/rze2c8Xc8=
+  - secure: QzKMmRuTolRL3IzS5rE2otkrWrzYMq1PMeU4hlsaP0yQXTCTpsnKLOWnI9IvFlcuz5gIj4ZNLBasC6ju9E6WoTKDWyaDoQTgnUsSqMtSSdJtOqikn+5IjvvgYeYKha4MPr/RhtNHXS+NbBQX9l/5WCsfL6Xd6+MbHeNA1t8WXA+3OnZ1TcHDClMX/au32YVxo3An2GXjLpWFrhQaEo78sM+bt3XvRiMgFfjrVbWOzRMf6s8d8U0Ho2f7v57imZgJiFfQuh3z+b9K1pib4WN/u7pKMNKGB/ii3dSv/QgTJkFH0dcDiwTd7IMk/tt0VucEIfzICT4yKDdWb2qrmqhUS6oHbsOKI6qNPfiwFpXc06jCuVPY2C94sj/mjY0PsERN8cvYvCQe0geqvmuSPtmzGjeCMFUF76fjnAvmfwPUNz5uoYcBvpU7vh+Zstr/mkt3NhERfwdojjP3oSB3q54hMmpAlABgUgk+BmJy4BFbSQXJps8FWH4JNhzK0/RgW7Qtya0sfmg+FWiYBexx8NhLrrOHdEG7RZxICiFmKVWSL3hB/MbCpgBUKv5MxPq7vRA0d8r1sKK0uUgDjP/pL3+Ju/JKdnM1dEaF13goQ8ckzL85rgsg5JVfdmuVwV5SYKsYQF1773t2zzm9BLzSNfzFUkFa+f8TlMBYXW0+Z0jXbbs=
+  - secure: mGYj6Sy1XmCW8F1upWPEDrXbXAeNSdDkL1Axhj3/ms1H/jFjetbOupfeEMcbe1HT4mQrSQFt/R3jyJtaEodxKAyIO6/vGKHeO5TH+fiYtuK0UAXIm18upUDPgqjIjrGuCsskgnD/XCsI9PB0yk6TlOofjzZVV2HNcfpZwNE359qMWyQPfdoovX5MN50XllQ7B7XQN7fmb4lNGyPEEjpbyiePfIkdCajsDGddlB91gGsaKgQUrdvB2hLEm/qM8WLaitsRd/0VFbedJ683Meu21GksYW6pACU6IYLTx0PZftv2YpefLDM1PDAAbvyZyBnzOy9/L8ORVXTVuaKx+0Zo2xf5oJ8sXu1Bd01L59pQHX1YP+OkvgSSQWM1jhGmel+950W7sBufm2y2l3j8hbdoBsgYOk+3yQ4de4yS1ky4L+uXiUf88Rh1YTkJFyyLaxkjMi4voizY4i01dKtUITdsw7nWIShnoX3pwKHu/p0+C+iphJlqhxAU6G1U7ntZDJ9/toPOHQZPKqQwVhK6iEvNltt6EKGd+b0dYKBGXlapCyBDFwVzHDFK2yJfzKeXci5I2jkjGDjap8lZZIeq4vCzJ0dCQKCIqVINtD2L59MVWr6pU1l6cfpjHMNmhtLHz4Ts3QBAWdL8FXvI9/eiJ6BE95BopbGsQBLFluRQsgqHRD0=
+android:
+  components:
+  - build-tools-$ANDROID_BUILD_TOOLS
+  - android-$ANDROID_API
+before_install:
+- openssl aes-256-cbc -K $encrypted_204758af0f09_key -iv $encrypted_204758af0f09_iv
+  -in wukong.jks.enc -out wukong.jks -d
+- mkdir "$ANDROID_HOME/licenses" || true
+- echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > "$ANDROID_HOME/licenses/android-sdk-license"
+- echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+- chmod +x gradlew
+- ./gradlew dependencies || true
+script:
+- ./gradlew clean build
+deploy:
+  provider: releases
+  api_key:
+    secure: PpEqCtZguVge5D7d1q1RfAJbnxvoBsuf1+aRINeaQS3LNM4n4YQfNCzDfj4Iv0/s6H9skyj2o3PNbn6xt9/IeVwsitS6KQQIfvHjB8cgu0Xv/mWWpo4SFz/F6SZk8ZtWyLXVLWMskTDWP+A7pxT9PltOrLGcvQPPS76LqHBXEqe6sFPk3OyLZr1t7xL523QHXd184Ga+Hu1NOSCd/aCtA+K0WPA2Y94OIcO7RXNsZUmI1job7EF9/VR7QyT1fXgbkcJAs1a4s1uAi5ZhglsTs4DZOirJbysE6o8Owf2DT3ZNCM8AZRCOm+FFdCu7keid14QFenS+Vp6KliE+B//nm8g81/NzABcwuGWXa45TzOuRFfPOFkE0V3nuvpFX6BfYCkbzKEgMRaz2fXWPGF4s7ZBPJVc2wVl/HxJYUgfZGgkmQrxhOdWVYHZTaDfSQWyV2nOZ/rShnZ0tb3j6IGt8GM/5cupkllzmUcXHzlcccNT8e7VlHObaynNrouh75KP6FEw8rfwnZyjQlCn5Hx8nIegDgNobW0ZgffrM7bMPLpHOSL+XyBRKrJtojrx6pUpGW8MKhxbRITRg0xM1VBSL0gRl5aCOJt9SHcq60/xnexJSPKQsDFmVYjl7GT/az1A2S/Je/EY6fS8Ij9B+aNe9HiacBYcwhLxXM2zhRuFDXak=
+  file: wukong/build/outputs/apk/wukong-debug.apk
+  on:
+    tags: true
+  skip_cleanup: true

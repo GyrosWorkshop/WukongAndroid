@@ -8,6 +8,7 @@ import android.widget.Toast
 import com.google.gson.Gson
 import okhttp3.*
 import okio.ByteString
+import java.io.EOFException
 import java.util.*
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -103,9 +104,13 @@ class SocketWrapper(
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-            t.printStackTrace()
-            Log.i(TAG, "Reconnection onFailure")
-            reconnectCallBack.call()
+            if (t is EOFException) {
+                Log.i(TAG, "Ignore EOFException")
+            } else {
+                t.printStackTrace()
+                Log.i(TAG, "Reconnection onFailure")
+                reconnectCallBack.call()
+            }
         }
 
     }
