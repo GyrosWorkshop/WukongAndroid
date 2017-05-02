@@ -5,9 +5,8 @@ import android.app.ActivityManager
 import android.app.AlertDialog
 import android.content.*
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceManager
@@ -20,29 +19,31 @@ import android.view.View
 import com.github.javiersantos.appupdater.AppUpdater
 import com.github.javiersantos.appupdater.enums.UpdateFrom
 import com.senorsen.wukong.R
-import com.senorsen.wukong.network.SongList
 import com.senorsen.wukong.service.WukongService
 import android.os.Handler
 import android.os.IBinder
+import android.support.design.widget.NavigationView
 import android.support.v4.content.LocalBroadcastManager
 import android.text.Html
 import android.text.InputType
 import android.text.SpannableStringBuilder
 import android.util.Log
+import android.view.MenuItem
 import android.widget.*
 import com.senorsen.wukong.model.User
 import com.senorsen.wukong.store.UserInfoLocalStore
 import com.senorsen.wukong.utils.ObjectSerializer
-import kotlin.concurrent.thread
 
 
 class MainActivity : AppCompatActivity() {
 
     private val TAG = javaClass.simpleName
 
+    private lateinit var navigationView: NavigationView
     private lateinit var mDrawerLayout: DrawerLayout
-    private lateinit var mDrawerList: LinearLayout
+    private lateinit var mDrawerView: NavigationView
     private lateinit var mDrawerToggle: ActionBarDrawerToggle
+    private lateinit var headerLayout: View
 
     val handler = Handler()
     var connected = false
@@ -133,17 +134,13 @@ class MainActivity : AppCompatActivity() {
         userInfoLocalStore = UserInfoLocalStore(this)
 
         mDrawerLayout = findViewById(R.id.main) as DrawerLayout
-        mDrawerList = findViewById(R.id.left_drawer) as LinearLayout
+        mDrawerView = findViewById(R.id.left_drawer) as NavigationView
 
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START)
-
-        supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        supportActionBar!!.setHomeButtonEnabled(true)
 
         mDrawerToggle = object : ActionBarDrawerToggle(
                 this, /* host Activity */
                 mDrawerLayout, /* DrawerLayout object */
-                toolbar, /* nav drawer image to replace 'Up' caret */
                 R.string.drawer_open, /* "open drawer" description for accessibility */
                 R.string.drawer_close  /* "close drawer" description for accessibility */
         ) {
@@ -156,67 +153,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
         mDrawerLayout.addDrawerListener(mDrawerToggle)
+        mDrawerToggle.isDrawerIndicatorEnabled = true
+        supportActionBar!!.setDisplayHomeAsUpEnabled(true)
+        supportActionBar!!.setHomeButtonEnabled(true)
 
-        findViewById(R.id.drawer_user).setOnClickListener {
+        navigationView = findViewById(R.id.left_drawer) as NavigationView
+
+        headerLayout = navigationView.inflateHeaderView(R.layout.nav_header)
+        headerLayout.findViewById(R.id.drawer_user).setOnClickListener {
             mDrawerLayout.closeDrawer(GravityCompat.START)
             startActivityForResult(Intent(this, WebViewActivity::class.java), REQUEST_COOKIES)
         }
         updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
-
-        val drawerChannel = findViewById(R.id.drawer_channel)
-        drawerChannel.setOnClickListener {
-            mDrawerLayout.closeDrawer(GravityCompat.START)
-            showChannelDialog()
-        }
         updateChannelText()
-
-        findViewById(R.id.drawer_settings).setOnClickListener {
-            mDrawerLayout.closeDrawer(GravityCompat.START)
-            val currentFragment = fragmentManager.findFragmentByTag("SETTINGS")
-            if (currentFragment == null || !currentFragment.isVisible) {
-                fragmentManager.beginTransaction()
-                        .replace(R.id.fragment, SettingsFragment(), "SETTINGS")
-                        .addToBackStack("tag")
-                        .commit()
-            }
-        }
-
-        findViewById(R.id.drawer_start_service).setOnClickListener {
-            mDrawerLayout.closeDrawer(GravityCompat.START)
-            startWukongService()
-        }
-
-        findViewById(R.id.drawer_stop_service).setOnClickListener {
-            mDrawerLayout.closeDrawer(GravityCompat.START)
-            stopService(Intent(this, WukongService::class.java))
-        }
-
-        findViewById(R.id.drawer_sync_playlist).setOnClickListener {
-            mDrawerLayout.closeDrawer(GravityCompat.START)
-            val currentFragment = fragmentManager.findFragmentByTag("MAIN")
-            if (currentFragment != null) {
-                val fragment = currentFragment as MainFragment
-                val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
-                if (childFragment != null) {
-                    val songListFragment = childFragment as SongListFragment
-                    songListFragment.fetchSongList()
-                }
-            }
-        }
-
-        findViewById(R.id.drawer_clear_playlist).setOnClickListener {
-            mDrawerLayout.closeDrawer(GravityCompat.START)
-            val currentFragment = fragmentManager.findFragmentByTag("MAIN")
-            if (currentFragment != null) {
-                val fragment = currentFragment as MainFragment
-                val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
-                if (childFragment != null) {
-                    val songListFragment = childFragment as SongListFragment
-                    songListFragment.clearSongList()
-                }
-            }
-        }
-
         fragmentManager.beginTransaction().replace(R.id.fragment, MainFragment(), "MAIN").commit()
 
         mayRequestPermission()
@@ -226,6 +175,64 @@ class MainActivity : AppCompatActivity() {
                 .setUpdateFrom(UpdateFrom.GITHUB)
                 .setGitHubUserAndRepo("GyrosWorkshop", "WukongAndroid")
                 .start()
+    }
+
+    override fun onPostCreate(savedInstanceState: Bundle?) {
+        super.onPostCreate(savedInstanceState)
+        mDrawerToggle.syncState()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        mDrawerToggle.onConfigurationChanged(newConfig)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.nav_channel ->
+                showChannelDialog()
+
+            R.id.nav_settings -> {
+                val currentFragment = fragmentManager.findFragmentByTag("SETTINGS")
+                if (currentFragment == null || !currentFragment.isVisible) {
+                    fragmentManager.beginTransaction()
+                            .replace(R.id.fragment, SettingsFragment(), "SETTINGS")
+                            .addToBackStack("tag")
+                            .commit()
+                }
+            }
+
+            R.id.nav_start_service ->
+                startWukongService()
+
+            R.id.nav_stop_service ->
+                stopService(Intent(this, WukongService::class.java))
+
+            R.id.nav_sync_playlist -> {
+                val currentFragment = fragmentManager.findFragmentByTag("MAIN")
+                if (currentFragment != null) {
+                    val fragment = currentFragment as MainFragment
+                    val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
+                    if (childFragment != null) {
+                        val songListFragment = childFragment as SongListFragment
+                        songListFragment.fetchSongList()
+                    }
+                }
+            }
+
+            R.id.nav_clear_playlist -> {
+                val currentFragment = fragmentManager.findFragmentByTag("MAIN")
+                if (currentFragment != null) {
+                    val fragment = currentFragment as MainFragment
+                    val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
+                    if (childFragment != null) {
+                        val songListFragment = childFragment as SongListFragment
+                        songListFragment.clearSongList()
+                    }
+                }
+            }
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onResume() {
@@ -305,10 +312,10 @@ class MainActivity : AppCompatActivity() {
         handler.post {
             Log.d(TAG, "$user, $avatar")
             if (user?.userName != null) {
-                (findViewById(R.id.text_drawer_user) as TextView).text = user.userName
+                (headerLayout.findViewById(R.id.text_drawer_user) as TextView).text = user.userName
             }
             if (avatar != null) {
-                (findViewById(R.id.icon_drawer_user) as ImageView).setImageBitmap(avatar)
+                (headerLayout.findViewById(R.id.icon_drawer_user) as ImageView).setImageBitmap(avatar)
             }
         }
     }
@@ -317,7 +324,7 @@ class MainActivity : AppCompatActivity() {
         handler.post {
             val channelId = getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", "")
             if (channelId.isNotBlank()) {
-                (findViewById(R.id.text_drawer_channel) as TextView).text = Html.fromHtml("Channel: $channelId")
+                (findViewById(R.id.left_drawer) as NavigationView).menu.findItem(R.id.nav_channel).title = Html.fromHtml("Channel: $channelId")
             }
         }
     }
