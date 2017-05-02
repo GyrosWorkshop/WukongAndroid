@@ -243,6 +243,11 @@ class WukongService : Service() {
                     sendDownvote(currentSong!!.toRequestSong())
                 }
             }
+
+            override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
+                Log.d(TAG, "onMediaButtonEvent called: " + mediaButtonIntent)
+                return super.onMediaButtonEvent(mediaButtonIntent)
+            }
         })
         mSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
@@ -281,7 +286,6 @@ class WukongService : Service() {
         mediaPlayer.reset()
 
         mSessionCompat.isActive = false
-        mSessionCompat.release()
     }
 
     var onUserInfoUpdate: ((user: User?, avatar: Bitmap?) -> Unit)? = null
@@ -659,7 +663,7 @@ class WukongService : Service() {
         stateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE or
                         PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
                         PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
-        stateBuilder.setState(if (isPaused) PlaybackStateCompat.STATE_PAUSED else PlaybackStateCompat.STATE_PLAYING, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1.0f)
+        stateBuilder.setState(if (isPaused) PlaybackStateCompat.STATE_PAUSED else PlaybackStateCompat.STATE_PLAYING, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1f)
 
         mSessionCompat.setPlaybackState(stateBuilder.build())
         mSessionCompat.isActive = true
