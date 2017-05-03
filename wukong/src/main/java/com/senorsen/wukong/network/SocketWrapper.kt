@@ -46,7 +46,7 @@ class SocketWrapper(
 
         ws = client.newWebSocket(request, listener)
 
-//        client.dispatcher().executorService().shutdown()
+        client.dispatcher().executorService().shutdown()
     }
 
     fun disconnect() {
