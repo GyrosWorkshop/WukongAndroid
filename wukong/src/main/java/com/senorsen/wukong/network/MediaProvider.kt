@@ -1,13 +1,12 @@
 package com.senorsen.wukong.network
 
-import android.content.ContentValues.TAG
 import android.util.Log
-import com.senorsen.wukong.model.File
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
 
 class MediaProvider {
+
+    private val TAG = javaClass.simpleName
 
     val client = OkHttpClient()
 

@@ -15,7 +15,9 @@ import java.net.URLEncoder
 
 class HttpWrapper(private val cookies: String) {
 
-    val userAgent = "WukongAndroid/" + BuildConfig.VERSION_NAME
+    private val TAG = javaClass.simpleName
+
+    private val userAgent = "WukongAndroid/" + BuildConfig.VERSION_NAME
 
     class UserUnauthorizedException : Exception {
         constructor(e: Exception) : super(e)

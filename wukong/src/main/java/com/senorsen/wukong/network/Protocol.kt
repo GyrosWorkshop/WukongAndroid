@@ -1,6 +1,5 @@
 package com.senorsen.wukong.network
 
-import com.google.gson.Gson
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.model.User
 

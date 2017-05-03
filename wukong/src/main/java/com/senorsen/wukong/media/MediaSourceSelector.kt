@@ -1,7 +1,6 @@
 package com.senorsen.wukong.media
 
 import android.Manifest
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -9,12 +8,13 @@ import android.os.Build
 import android.os.Environment
 import android.preference.PreferenceManager
 import android.util.Log
-import com.senorsen.wukong.R
 import com.senorsen.wukong.model.File
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.ui.MainActivity
 
 class MediaSourceSelector(private val context: Context) {
+
+    private val TAG = javaClass.simpleName
 
     private val KEY_PREF_USE_CDN = "pref_useCdn"
     private val KEY_PREF_USE_LOCAL_MEDIA = "pref_useLocalMedia"

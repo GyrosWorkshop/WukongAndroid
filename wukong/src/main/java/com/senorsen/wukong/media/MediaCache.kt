@@ -1,13 +1,15 @@
 package com.senorsen.wukong.media
 
 import android.content.ContentValues
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.preference.PreferenceManager
 import android.util.Log
 import java.io.File
 
 class MediaCache(private val context: Context) {
+
+    private val TAG = javaClass.simpleName
+
     private lateinit var mDiskLruCache: DiskLruCache
     private var mDiskCacheStarting = false
     private val mDiskCacheLock = Object()
