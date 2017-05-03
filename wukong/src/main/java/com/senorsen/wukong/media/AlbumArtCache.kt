@@ -23,7 +23,6 @@ import android.os.Environment
 import android.util.Log
 import android.util.LruCache
 import com.senorsen.wukong.utils.BitmapHelper
-
 import java.io.File.separator
 import android.os.Environment.isExternalStorageRemovable
 import java.io.*

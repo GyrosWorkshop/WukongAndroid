@@ -4,13 +4,14 @@ import android.util.Log
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-class MediaProvider {
+object MediaProvider {
 
     private val TAG = javaClass.simpleName
 
     val client = OkHttpClient()
 
     fun resolveRedirect(url: String): String {
+        if (!url.startsWith("http")) return url
         val request = Request.Builder()
                 .head()
                 .url(url).build()

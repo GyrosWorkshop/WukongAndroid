@@ -69,7 +69,6 @@ class WukongService : Service() {
 
     @Volatile var connected = false
     @Volatile var currentSong: Song? = null
-    @Volatile var currentFile: File? = null
     @Volatile var userList: List<User>? = null
     @Volatile var currentPlayUser: User? = null
     @Volatile var currentPlayUserId: String? = null
@@ -388,42 +387,49 @@ class WukongService : Service() {
                                     setNotification()
                                 }
 
-                                var mediaSrc: String? = mediaSourceSelector.getValidLocalMedia(song)
-                                if (mediaSrc == null) {
-                                    val (currentFile, originalUrl) = mediaSourceSelector.selectFromMultipleMediaFiles(song.musics!!)
-                                    Log.i(TAG, "file audio quality: ${currentFile.audioQuality}")
-                                    Log.i(TAG, "originalUrl: $originalUrl")
-                                    mediaSrc = MediaProvider().resolveRedirect(originalUrl)
-                                    Log.i(TAG, "resolved media url: $mediaSrc")
-                                } else {
-                                    Log.i(TAG, "use local media: $mediaSrc")
-                                }
-                                mediaPlayer.reset()
-                                try {
-                                    mediaPlayer.setDataSource(mediaSrc)
-                                    mediaPlayer.prepare()
-                                    mediaPlayer.seekTo((protocol.elapsed * 1000).toInt())
+                                val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song)
+                                Log.d(TAG, "all media sources: $mediaSources")
+                                var mediaSourceIndex = 0
+                                var succeed = false
+                                while (!succeed && mediaSourceIndex < mediaSources.size) {
+                                    val mediaSource = mediaSources[mediaSourceIndex]
+                                    Log.i(TAG, "try media: $mediaSource")
+                                    val resolvedMediaSource = MediaProvider.resolveRedirect(mediaSource)
+                                    Log.i(TAG, "resolved media: $resolvedMediaSource")
+                                    try {
+                                        mediaPlayer.reset()
+                                        mediaPlayer.setDataSource(resolvedMediaSource)
+                                        mediaPlayer.prepare()
+                                        mediaPlayer.seekTo((protocol.elapsed * 1000).toInt())
 
-                                    if (!isPaused)
-                                        mediaPlayer.start()
+                                        if (!isPaused)
+                                            mediaPlayer.start()
 
-                                    mediaPlayer.setOnCompletionListener {
-                                        Log.d(TAG, "finished")
-                                        thread {
-                                            try {
-                                                http.reportFinish(song.toRequestSong())
-                                            } catch (e: HttpWrapper.InvalidRequestException) {
-                                            } catch (e: Exception) {
-                                                e.printStackTrace()
+                                        mediaPlayer.setOnCompletionListener {
+                                            Log.d(TAG, "finished")
+                                            thread {
+                                                try {
+                                                    http.reportFinish(song.toRequestSong())
+                                                } catch (e: HttpWrapper.InvalidRequestException) {
+                                                    Log.d(TAG, "reportFinish invalid request, means data not sync. But server will save us.")
+                                                    e.printStackTrace()
+                                                } catch (e: Exception) {
+                                                    e.printStackTrace()
+                                                }
                                             }
                                         }
+                                        succeed = true
+                                    } catch (e: Exception) {
+                                        Log.e(TAG, "play")
+                                        e.printStackTrace()
+                                        succeed = false
+                                        mediaSourceIndex++
                                     }
-                                } catch (e: Exception) {
+                                }
+                                if (!succeed) {
                                     handler.post {
-                                        Toast.makeText(applicationContext, "Wukong play error: " + e.message, Toast.LENGTH_LONG).show()
+                                        Toast.makeText(applicationContext, "Wukong: playback error, all media sources tried. See log for details.", Toast.LENGTH_LONG).show()
                                     }
-                                    Log.e(TAG, "play")
-                                    e.printStackTrace()
                                 }
                             }
 
@@ -661,8 +667,8 @@ class WukongService : Service() {
     private fun updateMediaSessionState() {
         val stateBuilder = PlaybackStateCompat.Builder()
         stateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE or
-                        PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
+                PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
         stateBuilder.setState(if (isPaused) PlaybackStateCompat.STATE_PAUSED else PlaybackStateCompat.STATE_PLAYING, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1f)
 
         mSessionCompat.setPlaybackState(stateBuilder.build())

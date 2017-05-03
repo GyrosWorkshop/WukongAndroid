@@ -41,20 +41,30 @@ class MediaSourceSelector(private val context: Context) {
         }
     }
 
-    fun selectMediaUrlByCdnSettings(file: File, pullSettings: Boolean = true): String? {
+    fun selectMediaUrlByCdnSettings(files: List<File>, pullSettings: Boolean = true): List<String> {
         if (pullSettings) pullSettings()
-        return if (file.fileViaCdn == null || !useCdn)
-            file.file
-        else
-            file.fileViaCdn
+        return files.map { file ->
+            if (file.fileViaCdn == null || !useCdn)
+                file.file
+            else
+                file.fileViaCdn
+        }.filterNotNull()
     }
 
-    fun selectFromMultipleMediaFiles(files: List<File>): Pair<File, String> {
+    fun selectFromMultipleMediaFiles(song: Song): Pair<List<File>, List<String>> {
         pullSettings()
         val defaultQualityIndex = qualities.indexOf(preferAudioQualityData)
-        val originalFiles = files.sortedByDescending(File::audioBitrate)
-        val file = originalFiles.filter { qualities.indexOf(it.audioQuality) >= defaultQualityIndex }.firstOrNull() ?: originalFiles.first()
-        return Pair(file, selectMediaUrlByCdnSettings(file, false)!!)
+        val originalFiles = song.musics?.sortedByDescending(File::audioBitrate) ?:
+                return Pair(listOf(), listOf())
+
+        val resultFiles = originalFiles.filter { qualities.indexOf(it.audioQuality) >= defaultQualityIndex }.toMutableList()
+        resultFiles.addAll(originalFiles.filter { qualities.indexOf(it.audioQuality) < defaultQualityIndex })
+        val urls = selectMediaUrlByCdnSettings(resultFiles, false).toMutableList()
+        val localFile = getValidLocalMedia(song)
+        if (localFile != null) {
+            urls.add(0, localFile)
+        }
+        return Pair(resultFiles, urls)
     }
 
     private val mediaDirectoryPrefixes = arrayOf(

@@ -17,10 +17,7 @@ package com.senorsen.wukong.utils
  */
 
 import android.content.Context
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.content.res.Resources
-import android.content.res.TypedArray
 
 /**
  * Generic reusable methods to handle resources.
