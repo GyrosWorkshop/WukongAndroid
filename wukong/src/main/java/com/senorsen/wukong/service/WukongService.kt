@@ -411,7 +411,7 @@ class WukongService : Service() {
                                                 try {
                                                     http.reportFinish(song.toRequestSong())
                                                 } catch (e: HttpWrapper.InvalidRequestException) {
-                                                    Log.d(TAG, "reportFinish invalid request, means data not sync. But server will save us.")
+                                                    Log.e(TAG, "reportFinish invalid request, means data not sync. But server will save us.")
                                                     e.printStackTrace()
                                                 } catch (e: Exception) {
                                                     e.printStackTrace()
@@ -500,7 +500,12 @@ class WukongService : Service() {
         if (currentSong != null && currentSong!!.toRequestSong().toString() == song.toString()) {
             Log.d(TAG, "Downvote: $song")
             thread {
-                http.downvote(song)
+                try {
+                    http.downvote(song)
+                } catch (e: Exception) {
+                    Log.e(TAG, "sendDownvote")
+                    e.printStackTrace()
+                }
             }
             downvoted = true
             setNotification()
