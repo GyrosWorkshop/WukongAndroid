@@ -159,6 +159,11 @@ class MainActivity : AppCompatActivity() {
 
         navigationView = findViewById(R.id.left_drawer) as NavigationView
 
+        navigationView.setNavigationItemSelectedListener { item ->
+            mDrawerLayout.closeDrawer(GravityCompat.START)
+            onOptionsItemSelected(item)
+        }
+
         headerLayout = navigationView.inflateHeaderView(R.layout.nav_header)
         headerLayout.findViewById(R.id.drawer_user).setOnClickListener {
             mDrawerLayout.closeDrawer(GravityCompat.START)
@@ -188,7 +193,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        Log.d(TAG, "onOptionsItemSelected $item")
         when (item.itemId) {
+            android.R.id.home ->
+                mDrawerLayout.openDrawer(GravityCompat.START)
+
             R.id.nav_channel ->
                 showChannelDialog()
 
