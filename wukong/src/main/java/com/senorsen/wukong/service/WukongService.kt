@@ -27,6 +27,8 @@ import android.util.Log
 import android.widget.Toast
 import com.senorsen.wukong.R
 import com.senorsen.wukong.media.AlbumArtCache
+import com.senorsen.wukong.media.MediaCache
+import com.senorsen.wukong.media.MediaSourcePreparer
 import com.senorsen.wukong.media.MediaSourceSelector
 import com.senorsen.wukong.model.*
 import com.senorsen.wukong.network.*
@@ -62,6 +64,9 @@ class WukongService : Service() {
     private lateinit var mediaPlayer: MediaPlayer
     private lateinit var mSessionCompat: MediaSessionCompat
     private lateinit var mSession: MediaSessionCompat.Token
+    private lateinit var mediaPlayerForPreloadVerification: MediaPlayer
+
+    private lateinit var mediaCache: MediaCache
 
     private lateinit var wifiLock: WifiLock
 
@@ -76,6 +81,7 @@ class WukongService : Service() {
     @Volatile var songStartTime: Long = 0
     @Volatile var userSongList: MutableList<Song> = mutableListOf()
     var configuration: Configuration? = null
+
     lateinit var configurationLocalStore: ConfigurationLocalStore
     lateinit var songListLocalStore: SongListLocalStore
     lateinit var userInfoLocalStore: UserInfoLocalStore
@@ -160,8 +166,7 @@ class WukongService : Service() {
     }
 
     fun doUpdateNextSong() {
-        val song = userSongList.firstOrNull()?.toRequestSong() ?: RequestSong(null, null, null)
-        song.withCookie = configuration?.cookies
+        val song = userSongList.firstOrNull()?.toRequestSong(configuration?.cookies) ?: RequestSong(null, null, null)
         thread {
             try {
                 http.updateNextSong(song)
@@ -173,6 +178,20 @@ class WukongService : Service() {
         Log.d(WukongService::class.simpleName, "updateNextSong $song")
     }
 
+    private val mNoisyReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+
+            when (intent?.action) {
+                AudioManager.ACTION_AUDIO_BECOMING_NOISY ->
+                    if (mediaPlayer.isPlaying) handler.post {
+                        switchPause()
+                        Toast.makeText(context, "Wukong paused.", Toast.LENGTH_SHORT).show()
+                    }
+            }
+            Log.d(TAG, "noisy receiver: " + intent?.action + ", ${mediaPlayer.isPlaying}")
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate")
@@ -181,6 +200,7 @@ class WukongService : Service() {
         songListLocalStore = SongListLocalStore(this)
         userInfoLocalStore = UserInfoLocalStore(this)
         mediaSourceSelector = MediaSourceSelector(this)
+        mediaCache = MediaCache(this)
 
         val filter = IntentFilter()
         filter.addAction(ACTION_DOWNVOTE)
@@ -217,6 +237,10 @@ class WukongService : Service() {
         mediaPlayer = MediaPlayer()
         mediaPlayer.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
+
+        mediaPlayerForPreloadVerification = MediaPlayer()
+        mediaPlayerForPreloadVerification.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
+        mediaPlayerForPreloadVerification.setAudioStreamType(AudioManager.STREAM_MUSIC)
 
         mSessionCompat = MediaSessionCompat(this, "WukongMusicService")
         mSession = mSessionCompat.sessionToken
@@ -255,21 +279,6 @@ class WukongService : Service() {
         albumArtCache = AlbumArtCache(this)
     }
 
-
-    private val mNoisyReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-
-            when (intent?.action) {
-                AudioManager.ACTION_AUDIO_BECOMING_NOISY ->
-                    if (mediaPlayer.isPlaying) handler.post {
-                        switchPause()
-                        Toast.makeText(context, "Wukong paused.", Toast.LENGTH_SHORT).show()
-                    }
-            }
-            Log.d(TAG, "noisy receiver: " + intent?.action + ", ${mediaPlayer.isPlaying}")
-        }
-    }
-
     private fun stopPrevConnect() {
         if (workThread != null) {
             Log.i(TAG, "socket disconnect")
@@ -283,6 +292,7 @@ class WukongService : Service() {
             mediaPlayer.stop()
         }
         mediaPlayer.reset()
+        mediaPlayerForPreloadVerification.reset()
 
         mSessionCompat.isActive = false
     }
@@ -335,6 +345,20 @@ class WukongService : Service() {
                     })
                 }
 
+                mediaPlayer.setOnCompletionListener {
+                    Log.d(TAG, "finished")
+                    thread {
+                        try {
+                            http.reportFinish(currentSong!!.toRequestSong())
+                        } catch (e: HttpWrapper.InvalidRequestException) {
+                            Log.e(TAG, "reportFinish invalid request, means data not sync. But server will save us.")
+                            e.printStackTrace()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
                 val receiver = object : SocketWrapper.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
                         // FIXME: 该分层了。。。
@@ -357,6 +381,28 @@ class WukongService : Service() {
                                 // Preload artwork image.
                                 if (protocol.song?.artwork != null)
                                     albumArtCache.fetch(protocol.song.artwork?.file!!, null, protocol.song.songKey)
+
+                                val song = protocol.song!!
+
+                                val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song)
+                                Log.d(TAG, "preload media sources: $mediaSources")
+
+                                try {
+                                    val source = MediaSourcePreparer.setMediaSources(mediaPlayerForPreloadVerification, mediaSources)
+                                    if (source.startsWith("http")) {
+                                        // Should make cache.
+                                        Log.d(TAG, "preload: ${song.songKey}, $source")
+                                        thread {
+                                            mediaCache.addMediaToCache(song.songKey, source)
+                                        }
+                                    } else {
+                                        Log.d(TAG, "no need to preload $source")
+                                    }
+                                } catch (e: Exception) {
+                                    handler.post {
+                                        Toast.makeText(applicationContext, "Wukong: preload error", Toast.LENGTH_LONG).show()
+                                    }
+                                }
 
                             }
 
@@ -387,46 +433,19 @@ class WukongService : Service() {
                                     setNotification()
                                 }
 
-                                val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song)
-                                Log.d(TAG, "all media sources: $mediaSources")
-                                var mediaSourceIndex = 0
-                                var succeed = false
-                                while (!succeed && mediaSourceIndex < mediaSources.size) {
-                                    val mediaSource = mediaSources[mediaSourceIndex]
-                                    Log.i(TAG, "try media: $mediaSource")
-                                    val resolvedMediaSource = MediaProvider.resolveRedirect(mediaSource)
-                                    Log.i(TAG, "resolved media: $resolvedMediaSource")
-                                    try {
-                                        mediaPlayer.reset()
-                                        mediaPlayer.setDataSource(resolvedMediaSource)
-                                        mediaPlayer.prepare()
-                                        mediaPlayer.seekTo((protocol.elapsed * 1000).toInt())
-
-                                        if (!isPaused)
-                                            mediaPlayer.start()
-
-                                        mediaPlayer.setOnCompletionListener {
-                                            Log.d(TAG, "finished")
-                                            thread {
-                                                try {
-                                                    http.reportFinish(song.toRequestSong())
-                                                } catch (e: HttpWrapper.InvalidRequestException) {
-                                                    Log.e(TAG, "reportFinish invalid request, means data not sync. But server will save us.")
-                                                    e.printStackTrace()
-                                                } catch (e: Exception) {
-                                                    e.printStackTrace()
-                                                }
-                                            }
-                                        }
-                                        succeed = true
-                                    } catch (e: Exception) {
-                                        Log.e(TAG, "play")
-                                        e.printStackTrace()
-                                        succeed = false
-                                        mediaSourceIndex++
+                                try {
+                                    val out = mediaCache.getMediaFromDiskCache(song.songKey)
+                                    if (out != null) {
+                                        Log.i(TAG, "using cache: $out")
+                                        MediaSourcePreparer.setMediaSource(mediaPlayer, out, protocol.elapsed)
+                                    } else {
+                                        val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song)
+                                        Log.d(TAG, "play media sources: $mediaSources")
+                                        MediaSourcePreparer.setMediaSources(mediaPlayer, mediaSources, protocol.elapsed)
                                     }
-                                }
-                                if (!succeed) {
+                                    if (!isPaused) mediaPlayer.start()
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "play", e)
                                     handler.post {
                                         Toast.makeText(applicationContext, "Wukong: playback error, all media sources tried. See log for details.", Toast.LENGTH_LONG).show()
                                     }

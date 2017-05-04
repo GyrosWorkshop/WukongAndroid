@@ -14,7 +14,7 @@ data class WebSocketReceiveProtocol(
 
         val song: Song? = null,
         val downVote: Boolean? = null,
-        val elapsed: Double? = null,
+        val elapsed: Float? = null,
         val user: String? = null,
 
         val users: List<User>? = null,

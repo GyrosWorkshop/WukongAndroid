@@ -18,20 +18,25 @@ object SongQuality {
         get() = "medium"
 }
 
+interface SongIdentifier {
+    var siteId: String?
+    var songId: String?
+}
+
 // A RequestSong is an object which contains identified song and credentials, which is supposed to be sent to the server.
 data class RequestSong(
-        var siteId: String?,
-        var songId: String?,
+        override var siteId: String?,
+        override var songId: String?,
 
         // The `withCookie` contains a cookie string, which helps music providers to fetch more data,
         // based on user identity of the music site.
         var withCookie: String?
-) : Serializable
+) : SongIdentifier, Serializable
 
 // A Song is an object contains all the data of a song.
 data class Song(
-        var siteId: String? = null,
-        var songId: String? = null,
+        override var siteId: String? = null,
+        override var songId: String? = null,
         var artist: String? = null,
         var album: String? = null,
         var artwork: File? = null,
@@ -41,9 +46,13 @@ data class Song(
         var mvId: String? = null,
         var mvWebUrl: String? = null,
         var musics: List<File>? = null
-) : Serializable {
+) : SongIdentifier, Serializable {
     fun toRequestSong(): RequestSong {
         return RequestSong(siteId = siteId, songId = songId, withCookie = null)
+    }
+
+    fun toRequestSong(withCookie: String?): RequestSong {
+        return RequestSong(siteId = siteId, songId = songId, withCookie = withCookie)
     }
 
     val songKey: String
