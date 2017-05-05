@@ -68,9 +68,14 @@ class MainActivity : AppCompatActivity() {
             wukongService.registerUpdateUserInfo(this@MainActivity::updateUserTextAndAvatar)
             if (wukongService.connected) {
                 updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
-                updateChannelInfo(wukongService.connected, wukongService.userList, wukongService.currentPlayUserId)
+                pullChannelInfo()
             }
         }
+    }
+
+    fun pullChannelInfo() {
+        if (wukongService != null)
+            updateChannelInfo(wukongService!!.connected, wukongService!!.userList, wukongService!!.currentPlayUserId)
     }
 
     val bindRunnable = object : Runnable {
@@ -248,7 +253,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (broadcastReceiver == null) broadcastReceiver = ChannelUpdateBroadcastReceiver()
         val intentFilter = IntentFilter(UPDATE_CHANNEL_INFO_INTENT)
-        intentFilter.addAction(SHUFFLE_SONG_LIST_INTENT)
+        intentFilter.addAction(UPDATE_SONG_LIST_INTENT)
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, intentFilter)
     }
 
@@ -266,8 +271,8 @@ class MainActivity : AppCompatActivity() {
                             ObjectSerializer.deserialize(intent.getStringExtra("users")) as List<User>?,
                             intent.getStringExtra("currentPlayUserId"))
 
-                SHUFFLE_SONG_LIST_INTENT ->
-                    shuffleSongList()
+                UPDATE_SONG_LIST_INTENT ->
+                    updateSongList()
             }
         }
     }
@@ -305,14 +310,14 @@ class MainActivity : AppCompatActivity() {
             Html.fromHtml("disconnected")
     }
 
-    fun shuffleSongList() {
+    fun updateSongList() {
         val currentFragment = fragmentManager.findFragmentByTag("MAIN")
         if (currentFragment != null) {
             val fragment = currentFragment as MainFragment
             val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
             if (childFragment != null) {
                 val songListFragment = childFragment as SongListFragment
-                songListFragment.shuffleSongList()
+                songListFragment.updateSongListFromService()
             }
         }
     }
@@ -379,6 +384,6 @@ class MainActivity : AppCompatActivity() {
         val REQUEST_WRITE_EXTERNAL_STORAGE = 0
         val KEY_PREF_USE_LOCAL_MEDIA = "pref_useLocalMedia"
         val UPDATE_CHANNEL_INFO_INTENT = "UPDATE_CHANNEL_INFO"
-        val SHUFFLE_SONG_LIST_INTENT = "SHUFFLE_SONG_LIST"
+        val UPDATE_SONG_LIST_INTENT = "UPDATE_SONG_LIST"
     }
 }

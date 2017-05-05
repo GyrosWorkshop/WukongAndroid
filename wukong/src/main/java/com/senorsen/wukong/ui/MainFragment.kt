@@ -23,7 +23,11 @@ class MainFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_main, container, false)
 
         view.findViewById(R.id.song_list_shuffle).setOnClickListener {
-            (activity as MainActivity).shuffleSongList()
+            val childFragment = childFragmentManager.findFragmentByTag("SONGLIST")
+            if (childFragment != null) {
+                val songListFragment = childFragment as SongListFragment
+                songListFragment.shuffleSongList()
+            }
         }
 
         return view
@@ -32,5 +36,6 @@ class MainFragment : Fragment() {
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         childFragmentManager.beginTransaction().replace(R.id.main_fragment_container, SongListFragment::class.createInstance(), "SONGLIST").commit()
+        (activity as MainActivity).pullChannelInfo()
     }
 }

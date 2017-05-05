@@ -42,6 +42,7 @@ import com.senorsen.wukong.utils.ResourceHelper
 import java.io.IOException
 import java.io.Serializable
 import java.lang.System.currentTimeMillis
+import java.util.*
 import kotlin.concurrent.thread
 
 
@@ -560,7 +561,9 @@ class WukongService : Service() {
     }
 
     private fun shuffleSongList() {
-        val intent = Intent(MainActivity.SHUFFLE_SONG_LIST_INTENT)
+        Collections.shuffle(userSongList, Random(System.nanoTime()))
+        doUpdateNextSong()
+        val intent = Intent(MainActivity.UPDATE_SONG_LIST_INTENT)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
