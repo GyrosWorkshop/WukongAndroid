@@ -36,6 +36,7 @@ import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore
 import com.senorsen.wukong.store.UserInfoLocalStore
 import com.senorsen.wukong.ui.MainActivity
+import com.senorsen.wukong.utils.Debounce
 import com.senorsen.wukong.utils.ObjectSerializer
 import com.senorsen.wukong.utils.ResourceHelper
 import java.io.IOException
@@ -65,6 +66,7 @@ class WukongService : Service() {
     private lateinit var mSessionCompat: MediaSessionCompat
     private lateinit var mSession: MediaSessionCompat.Token
     private lateinit var mediaPlayerForPreloadVerification: MediaPlayer
+    private val debounce = Debounce(5000)
 
     private lateinit var mediaCache: MediaCache
 
@@ -384,26 +386,31 @@ class WukongService : Service() {
 
                                 val song = protocol.song!!
 
-                                val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song)
-                                Log.d(TAG, "preload media sources: $mediaSources")
+                                debounce.run {
+                                    try {
+                                        val out = mediaCache.getMediaFromDiskCache(song.songKey)
+                                        if (out != null) {
+                                            Log.d(TAG, "cache exists, skip preload ${song.songKey}")
+                                        } else {
+                                            val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song)
+                                            Log.d(TAG, "preload media sources: $mediaSources")
 
-                                try {
-                                    val source = MediaSourcePreparer.setMediaSources(mediaPlayerForPreloadVerification, mediaSources)
-                                    if (source.startsWith("http")) {
-                                        // Should make cache.
-                                        Log.d(TAG, "preload: ${song.songKey}, $source")
-                                        thread {
-                                            mediaCache.addMediaToCache(song.songKey, source)
+                                            val source = MediaSourcePreparer.setMediaSources(mediaPlayerForPreloadVerification, mediaSources)
+                                            if (source.startsWith("http")) {
+                                                // Should make cache.
+                                                Log.d(TAG, "preload: ${song.songKey}, $source")
+                                                mediaCache.addMediaToCache(song.songKey, source)
+                                            } else {
+                                                Log.d(TAG, "no need to preload $source")
+                                            }
                                         }
-                                    } else {
-                                        Log.d(TAG, "no need to preload $source")
-                                    }
-                                } catch (e: Exception) {
-                                    handler.post {
-                                        Toast.makeText(applicationContext, "Wukong: preload error", Toast.LENGTH_LONG).show()
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                        handler.post {
+                                            Toast.makeText(applicationContext, "Wukong: preload error", Toast.LENGTH_LONG).show()
+                                        }
                                     }
                                 }
-
                             }
 
                             Protocol.PLAY -> {
