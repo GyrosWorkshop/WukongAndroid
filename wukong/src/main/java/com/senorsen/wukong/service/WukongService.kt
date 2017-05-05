@@ -17,7 +17,6 @@ import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
 import android.os.PowerManager
-import android.preference.PreferenceManager
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.content.LocalBroadcastManager
 import android.support.v4.media.session.MediaSessionCompat
@@ -62,7 +61,7 @@ class WukongService : Service() {
     val handler = Handler()
     var workThread: Thread? = null
 
-    private lateinit var mAm: AudioManager
+    private lateinit var am: AudioManager
     private lateinit var mediaPlayer: MediaPlayer
     private lateinit var mSessionCompat: MediaSessionCompat
     private lateinit var mSession: MediaSessionCompat.Token
@@ -277,9 +276,39 @@ class WukongService : Service() {
         })
         mSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
-        mAm = getSystemService(AUDIO_SERVICE) as AudioManager
+        am = getSystemService(AUDIO_SERVICE) as AudioManager
+        requestAudioFocus()
 
         albumArtCache = AlbumArtCache(this)
+    }
+
+
+    private val afChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS ->
+                switchPause()
+
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT ->
+                switchPause()
+
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK ->
+                mediaPlayer.setVolume(0.1f, 0.1f)
+
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                mediaPlayer.setVolume(1.0f, 1.0f)
+                switchPlay()
+            }
+        }
+    }
+
+    private fun requestAudioFocus() {
+        am.abandonAudioFocus(afChangeListener)
+        val result = am.requestAudioFocus(afChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            Log.d(TAG, "requestAudioFocus granted")
+        } else {
+            Log.e(TAG, "requestAudioFocus failed")
+        }
     }
 
     private fun stopPrevConnect() {
@@ -545,12 +574,14 @@ class WukongService : Service() {
             isPaused = true
             setNotification()
             updateMediaSessionState()
+            am.abandonAudioFocus(afChangeListener)
         } catch (e: Exception) {
         }
     }
 
     private fun switchPlay() {
         try {
+            requestAudioFocus()
             mediaPlayer.seekTo((currentTimeMillis() - songStartTime).toInt())
             mediaPlayer.start()
             isPaused = false
