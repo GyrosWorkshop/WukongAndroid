@@ -1,13 +1,18 @@
 package com.senorsen.wukong.media
 
 import android.content.ContentValues
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.preference.PreferenceManager
 import android.util.Log
+import com.senorsen.wukong.network.MediaProvider
 import java.io.File
+import java.io.FileInputStream
+import java.io.InputStream
 
 class MediaCache(private val context: Context) {
+
+    private val TAG = javaClass.simpleName
+
     private lateinit var mDiskLruCache: DiskLruCache
     private var mDiskCacheStarting = false
     private val mDiskCacheLock = Object()
@@ -20,7 +25,7 @@ class MediaCache(private val context: Context) {
     }
 
     private fun initDiskCache(cacheDir: File) {
-        val maxCacheSize = PreferenceManager.getDefaultSharedPreferences(context).getLong(KEY_PREF_MAX_MEDIA_CACHE_SIZE, 1 * 1024 * 1024)
+        val maxCacheSize = PreferenceManager.getDefaultSharedPreferences(context).getLong(KEY_PREF_MAX_MEDIA_CACHE_SIZE, 1 * 1024 * 1024 * 1024)
         Log.d(TAG, "maxCacheSize: $maxCacheSize")
         mDiskLruCache = DiskLruCache.open(cacheDir, 1, 1, maxCacheSize)
         mDiskCacheStarting = false
@@ -31,8 +36,42 @@ class MediaCache(private val context: Context) {
         return File(cachePath + File.separator + uniqueName)
     }
 
+    fun getMediaFromDiskCache(key: String): FileInputStream? {
+        synchronized(mDiskCacheLock) {
+            // Wait while disk cache is started from background thread
+            while (mDiskCacheStarting) {
+                try {
+                    mDiskCacheLock.wait()
+                } catch (e: InterruptedException) {
+                }
+
+            }
+            val stream = (mDiskLruCache.get(key)?.getInputStream(MEDIA_INDEX)) ?: return null
+            Log.d(TAG, "disk cache hit $key")
+            return stream as FileInputStream
+        }
+    }
+
+    fun addMediaToCache(key: String, url: String) {
+        if (!url.startsWith("http")) return
+        if (getMediaFromDiskCache(key) != null) {
+            Log.d(TAG, "media cache $key already exists, skip add")
+            return
+        }
+
+        synchronized(mDiskCacheLock) {
+            val editor = mDiskLruCache.edit(key)
+            val out = editor.newOutputStream(MEDIA_INDEX)
+            MediaProvider.getMedia(url).copyTo(out)
+            editor.commit()
+            out.close()
+        }
+        Log.d(TAG, "write to disk cache $key")
+    }
+
     companion object {
         private val DISK_CACHE_SUBDIR = "media"
         private val KEY_PREF_MAX_MEDIA_CACHE_SIZE = "pref_maxMediaCacheSize"
+        private val MEDIA_INDEX = 0
     }
 }

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_channel"
+            android:icon="@drawable/ic_drawer_channel"
+            android:title="Channel" />
+        <item
+            android:id="@+id/nav_sync_playlist"
+            android:icon="@drawable/ic_sync_playlist"
+            android:title="@string/sync_playlists" />
+        <item
+            android:id="@+id/nav_clear_playlist"
+            android:icon="@drawable/ic_clear_playlist"
+            android:title="@string/clear" />
+    </group>
+
+    <group>
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@drawable/ic_settings"
+            android:title="@string/settings" />
+        <item
+            android:id="@+id/nav_start_service"
+            android:icon="@drawable/ic_drawer_start_service"
+            android:title="Start service" />
+        <item
+            android:id="@+id/nav_stop_service"
+            android:icon="@drawable/ic_drawer_stop_service"
+            android:title="Stop service" />
+    </group>
+
+</menu>

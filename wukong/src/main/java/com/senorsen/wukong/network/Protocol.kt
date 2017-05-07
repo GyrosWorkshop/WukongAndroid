@@ -1,6 +1,5 @@
 package com.senorsen.wukong.network
 
-import com.google.gson.Gson
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.model.User
 
@@ -15,7 +14,7 @@ data class WebSocketReceiveProtocol(
 
         val song: Song? = null,
         val downVote: Boolean? = null,
-        val elapsed: Double? = null,
+        val elapsed: Float? = null,
         val user: String? = null,
 
         val users: List<User>? = null,

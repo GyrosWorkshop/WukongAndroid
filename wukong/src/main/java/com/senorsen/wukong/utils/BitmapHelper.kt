@@ -16,7 +16,6 @@ package com.senorsen.wukong.utils
  * limitations under the License.
  */
 
-import android.content.ContentValues.TAG
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
@@ -28,6 +27,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 object BitmapHelper {
+
+    private val TAG = javaClass.simpleName
 
     // Max read limit that we allow our input stream to mark/reset.
     private val MAX_READ_LIMIT_PER_IMG = 1024 * 1024

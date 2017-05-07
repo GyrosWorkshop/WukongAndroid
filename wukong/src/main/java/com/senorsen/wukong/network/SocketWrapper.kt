@@ -1,13 +1,11 @@
 package com.senorsen.wukong.network
 
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.os.Handler
 import android.util.Log
 import android.widget.Toast
 import com.google.gson.Gson
 import okhttp3.*
-import okio.ByteString
 import java.io.EOFException
 import java.util.*
 import java.util.concurrent.ScheduledFuture
@@ -25,7 +23,13 @@ class SocketWrapper(
         applicationContext: Context
 ) {
 
-    lateinit var ws: WebSocket
+    private val TAG = javaClass.simpleName
+
+    var ws: WebSocket
+
+    companion object {
+        val NORMAL_CLOSURE_STATUS = 1000
+    }
 
     init {
 
@@ -42,11 +46,11 @@ class SocketWrapper(
 
         ws = client.newWebSocket(request, listener)
 
-//        client.dispatcher().executorService().shutdown()
+        client.dispatcher().executorService().shutdown()
     }
 
     fun disconnect() {
-        ws.close(ActualWebSocketListener.Companion.NORMAL_CLOSURE_STATUS, "Bye")
+        ws.close(NORMAL_CLOSURE_STATUS, "Bye")
     }
 
     interface SocketReceiver {
@@ -57,16 +61,12 @@ class SocketWrapper(
         fun call()
     }
 
+    inner class ActualWebSocketListener(private val channelId: String,
+                                        private val socketReceiver: SocketReceiver,
+                                        private val reconnectCallBack: Callback,
+                                        private val handler: Handler,
+                                        private val applicationContext: Context) : WebSocketListener() {
 
-    class ActualWebSocketListener(private val channelId: String,
-                                  private val socketReceiver: SocketReceiver,
-                                  private val reconnectCallBack: Callback,
-                                  private val handler: Handler,
-                                  private val applicationContext: Context) : WebSocketListener() {
-
-        companion object {
-            val NORMAL_CLOSURE_STATUS = 1000
-        }
 
         val executor = ScheduledThreadPoolExecutor(1)
         lateinit private var t: ScheduledFuture<*>

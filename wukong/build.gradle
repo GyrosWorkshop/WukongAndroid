@@ -15,7 +15,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 25
         versionCode 0
-        versionName "0.1.17"
+        versionName "0.1.27"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         manifestPlaceholders = [
                 'appAuthRedirectScheme': 'com.senorsen.wukong'
@@ -47,7 +47,6 @@ dependencies {
     compile 'com.danikula:videocache:2.7.0'
     compile 'net.openid:appauth:0.6.0'
     compile 'com.android.support:support-v4:25.3.1'
-    compile 'com.github.bumptech.glide:glide:3.7.0'
     compile 'com.github.javiersantos:AppUpdater:2.6.1'
     compile 'de.hdodenhof:circleimageview:2.1.0'
 

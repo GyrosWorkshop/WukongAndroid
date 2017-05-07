@@ -17,7 +17,6 @@ import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
 import android.os.PowerManager
-import android.preference.PreferenceManager
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.content.LocalBroadcastManager
 import android.support.v4.media.session.MediaSessionCompat
@@ -27,6 +26,8 @@ import android.util.Log
 import android.widget.Toast
 import com.senorsen.wukong.R
 import com.senorsen.wukong.media.AlbumArtCache
+import com.senorsen.wukong.media.MediaCache
+import com.senorsen.wukong.media.MediaSourcePreparer
 import com.senorsen.wukong.media.MediaSourceSelector
 import com.senorsen.wukong.model.*
 import com.senorsen.wukong.network.*
@@ -34,11 +35,13 @@ import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore
 import com.senorsen.wukong.store.UserInfoLocalStore
 import com.senorsen.wukong.ui.MainActivity
+import com.senorsen.wukong.utils.Debounce
 import com.senorsen.wukong.utils.ObjectSerializer
 import com.senorsen.wukong.utils.ResourceHelper
 import java.io.IOException
 import java.io.Serializable
 import java.lang.System.currentTimeMillis
+import java.util.*
 import kotlin.concurrent.thread
 
 
@@ -58,10 +61,14 @@ class WukongService : Service() {
     val handler = Handler()
     var workThread: Thread? = null
 
-    private lateinit var mAm: AudioManager
+    private lateinit var am: AudioManager
     private lateinit var mediaPlayer: MediaPlayer
     private lateinit var mSessionCompat: MediaSessionCompat
     private lateinit var mSession: MediaSessionCompat.Token
+    private lateinit var mediaPlayerForPreloadVerification: MediaPlayer
+    private val debounce = Debounce(5000)
+
+    private lateinit var mediaCache: MediaCache
 
     private lateinit var wifiLock: WifiLock
 
@@ -69,7 +76,6 @@ class WukongService : Service() {
 
     @Volatile var connected = false
     @Volatile var currentSong: Song? = null
-    @Volatile var currentFile: File? = null
     @Volatile var userList: List<User>? = null
     @Volatile var currentPlayUser: User? = null
     @Volatile var currentPlayUserId: String? = null
@@ -77,6 +83,7 @@ class WukongService : Service() {
     @Volatile var songStartTime: Long = 0
     @Volatile var userSongList: MutableList<Song> = mutableListOf()
     var configuration: Configuration? = null
+
     lateinit var configurationLocalStore: ConfigurationLocalStore
     lateinit var songListLocalStore: SongListLocalStore
     lateinit var userInfoLocalStore: UserInfoLocalStore
@@ -161,8 +168,7 @@ class WukongService : Service() {
     }
 
     fun doUpdateNextSong() {
-        val song = userSongList.firstOrNull()?.toRequestSong() ?: RequestSong(null, null, null)
-        song.withCookie = configuration?.cookies
+        val song = userSongList.firstOrNull()?.toRequestSong(configuration?.cookies) ?: RequestSong(null, null, null)
         thread {
             try {
                 http.updateNextSong(song)
@@ -174,6 +180,20 @@ class WukongService : Service() {
         Log.d(WukongService::class.simpleName, "updateNextSong $song")
     }
 
+    private val mNoisyReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+
+            when (intent?.action) {
+                AudioManager.ACTION_AUDIO_BECOMING_NOISY ->
+                    if (mediaPlayer.isPlaying) handler.post {
+                        switchPause()
+                        Toast.makeText(context, "Wukong paused.", Toast.LENGTH_SHORT).show()
+                    }
+            }
+            Log.d(TAG, "noisy receiver: " + intent?.action + ", ${mediaPlayer.isPlaying}")
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate")
@@ -182,6 +202,7 @@ class WukongService : Service() {
         songListLocalStore = SongListLocalStore(this)
         userInfoLocalStore = UserInfoLocalStore(this)
         mediaSourceSelector = MediaSourceSelector(this)
+        mediaCache = MediaCache(this)
 
         val filter = IntentFilter()
         filter.addAction(ACTION_DOWNVOTE)
@@ -193,7 +214,7 @@ class WukongService : Service() {
                 if (intent != null) {
                     Log.d(TAG, intent.action)
                     when (intent.action) {
-                        ACTION_DOWNVOTE -> sendDownvote(intent)
+                        ACTION_DOWNVOTE -> sendDownvote(ObjectSerializer.deserialize(intent.getStringExtra("song")) as RequestSong)
 
                         ACTION_PAUSE -> switchPause()
 
@@ -219,27 +240,74 @@ class WukongService : Service() {
         mediaPlayer.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
 
+        mediaPlayerForPreloadVerification = MediaPlayer()
+        mediaPlayerForPreloadVerification.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
+        mediaPlayerForPreloadVerification.setAudioStreamType(AudioManager.STREAM_MUSIC)
+
         mSessionCompat = MediaSessionCompat(this, "WukongMusicService")
         mSession = mSessionCompat.sessionToken
+        mSessionCompat.setCallback(object : MediaSessionCompat.Callback() {
+            override fun onPause() {
+                Log.d(TAG, "onPause")
+                switchPause()
+            }
 
-        mAm = getSystemService(AUDIO_SERVICE) as AudioManager
+            override fun onPlay() {
+                Log.d(TAG, "onPlay")
+                switchPlay()
+            }
+
+            override fun onSkipToNext() {
+                Log.d(TAG, "onSkipToNext")
+                shuffleSongList()
+            }
+
+            override fun onSkipToPrevious() {
+                Log.d(TAG, "onSkipToPrevious")
+                if (currentSong != null) {
+                    sendDownvote(currentSong!!.toRequestSong())
+                }
+            }
+
+            override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
+                Log.d(TAG, "onMediaButtonEvent called: " + mediaButtonIntent)
+                return super.onMediaButtonEvent(mediaButtonIntent)
+            }
+        })
+        mSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+
+        am = getSystemService(AUDIO_SERVICE) as AudioManager
+        requestAudioFocus()
 
         albumArtCache = AlbumArtCache(this)
     }
 
 
-    private val mNoisyReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
+    private val afChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS ->
+                switchPause()
 
-            when (intent?.action) {
-                AudioManager.ACTION_AUDIO_BECOMING_NOISY ->
-                    if (mediaPlayer.isPlaying) handler.post {
-                        isPaused = true
-                        mediaPlayer.pause()
-                        Toast.makeText(context, "Wukong paused.", Toast.LENGTH_SHORT).show()
-                    }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT ->
+                switchPause()
+
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK ->
+                mediaPlayer.setVolume(0.1f, 0.1f)
+
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                mediaPlayer.setVolume(1.0f, 1.0f)
+                switchPlay()
             }
-            Log.d(TAG, "noisy receiver: " + intent?.action + ", ${mediaPlayer.isPlaying}")
+        }
+    }
+
+    private fun requestAudioFocus() {
+        am.abandonAudioFocus(afChangeListener)
+        val result = am.requestAudioFocus(afChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            Log.d(TAG, "requestAudioFocus granted")
+        } else {
+            Log.e(TAG, "requestAudioFocus failed")
         }
     }
 
@@ -256,6 +324,9 @@ class WukongService : Service() {
             mediaPlayer.stop()
         }
         mediaPlayer.reset()
+        mediaPlayerForPreloadVerification.reset()
+
+        mSessionCompat.isActive = false
     }
 
     var onUserInfoUpdate: ((user: User?, avatar: Bitmap?) -> Unit)? = null
@@ -306,6 +377,20 @@ class WukongService : Service() {
                     })
                 }
 
+                mediaPlayer.setOnCompletionListener {
+                    Log.d(TAG, "finished")
+                    thread {
+                        try {
+                            http.reportFinish(currentSong!!.toRequestSong())
+                        } catch (e: HttpWrapper.InvalidRequestException) {
+                            Log.e(TAG, "reportFinish invalid request, means data not sync. But server will save us.")
+                            e.printStackTrace()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
                 val receiver = object : SocketWrapper.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
                         // FIXME: 该分层了。。。
@@ -329,6 +414,33 @@ class WukongService : Service() {
                                 if (protocol.song?.artwork != null)
                                     albumArtCache.fetch(protocol.song.artwork?.file!!, null, protocol.song.songKey)
 
+                                val song = protocol.song!!
+
+                                debounce.run {
+                                    try {
+                                        val out = mediaCache.getMediaFromDiskCache(song.songKey)
+                                        if (out != null) {
+                                            Log.d(TAG, "cache exists, skip preload ${song.songKey}")
+                                        } else {
+                                            val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song)
+                                            Log.d(TAG, "preload media sources: $mediaSources")
+
+                                            val source = MediaSourcePreparer.setMediaSources(mediaPlayerForPreloadVerification, mediaSources)
+                                            if (source.startsWith("http")) {
+                                                // Should make cache.
+                                                Log.d(TAG, "preload: ${song.songKey}, $source")
+                                                mediaCache.addMediaToCache(song.songKey, source)
+                                            } else {
+                                                Log.d(TAG, "no need to preload $source")
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                        handler.post {
+                                            Toast.makeText(applicationContext, "Wukong: preload error", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                }
                             }
 
                             Protocol.PLAY -> {
@@ -355,45 +467,25 @@ class WukongService : Service() {
                                 songStartTime = currentTimeMillis() - (protocol.elapsed!! * 1000).toLong()
 
                                 handler.post {
-                                    setNotification(songStartTime)
+                                    setNotification()
                                 }
 
-                                var mediaSrc: String? = mediaSourceSelector.getValidLocalMedia(song)
-                                if (mediaSrc == null) {
-                                    val (currentFile, originalUrl) = mediaSourceSelector.selectFromMultipleMediaFiles(song.musics!!)
-                                    Log.i(TAG, "file audio quality: ${currentFile.audioQuality}")
-                                    Log.i(TAG, "originalUrl: $originalUrl")
-                                    mediaSrc = MediaProvider().resolveRedirect(originalUrl)
-                                    Log.i(TAG, "resolved media url: $mediaSrc")
-                                } else {
-                                    Log.i(TAG, "use local media: $mediaSrc")
-                                }
-                                mediaPlayer.reset()
                                 try {
-                                    mediaPlayer.setDataSource(mediaSrc)
-                                    mediaPlayer.prepare()
-                                    mediaPlayer.seekTo((protocol.elapsed * 1000).toInt())
-
-                                    if (!isPaused)
-                                        mediaPlayer.start()
-
-                                    mediaPlayer.setOnCompletionListener {
-                                        Log.d(TAG, "finished")
-                                        thread {
-                                            try {
-                                                http.reportFinish(song.toRequestSong())
-                                            } catch (e: HttpWrapper.InvalidRequestException) {
-                                            } catch (e: Exception) {
-                                                e.printStackTrace()
-                                            }
-                                        }
+                                    val out = mediaCache.getMediaFromDiskCache(song.songKey)
+                                    if (out != null) {
+                                        Log.i(TAG, "using cache: $out")
+                                        MediaSourcePreparer.setMediaSource(mediaPlayer, out, protocol.elapsed)
+                                    } else {
+                                        val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song)
+                                        Log.d(TAG, "play media sources: $mediaSources")
+                                        MediaSourcePreparer.setMediaSources(mediaPlayer, mediaSources, protocol.elapsed)
                                     }
+                                    if (!isPaused) mediaPlayer.start()
                                 } catch (e: Exception) {
+                                    Log.e(TAG, "play", e)
                                     handler.post {
-                                        Toast.makeText(applicationContext, "Wukong play error: " + e.message, Toast.LENGTH_LONG).show()
+                                        Toast.makeText(applicationContext, "Wukong: playback error, all media sources tried. See log for details.", Toast.LENGTH_LONG).show()
                                     }
-                                    Log.e(TAG, "play")
-                                    e.printStackTrace()
                                 }
                             }
 
@@ -458,16 +550,21 @@ class WukongService : Service() {
         workThread!!.start()
     }
 
-    private fun sendDownvote(intent: Intent) {
+    private fun sendDownvote(song: RequestSong) {
         Log.d(TAG, currentSong!!.toRequestSong().toString())
-        Log.d(TAG, intent.getStringExtra("song"))
-        if (currentSong != null && currentSong!!.toRequestSong().toString() == intent.getStringExtra("song")) {
-            Log.d(TAG, "Downvote: $currentSong")
+        Log.d(TAG, song.toString())
+        if (currentSong != null && currentSong!!.toRequestSong().toString() == song.toString()) {
+            Log.d(TAG, "Downvote: $song")
             thread {
-                http.downvote(currentSong!!.toRequestSong())
+                try {
+                    http.downvote(song)
+                } catch (e: Exception) {
+                    Log.e(TAG, "sendDownvote")
+                    e.printStackTrace()
+                }
             }
             downvoted = true
-            setNotification(songStartTime)
+            setNotification()
         }
     }
 
@@ -475,19 +572,29 @@ class WukongService : Service() {
         try {
             mediaPlayer.pause()
             isPaused = true
-            setNotification(songStartTime)
+            setNotification()
+            updateMediaSessionState()
         } catch (e: Exception) {
         }
     }
 
     private fun switchPlay() {
         try {
+            requestAudioFocus()
             mediaPlayer.seekTo((currentTimeMillis() - songStartTime).toInt())
             mediaPlayer.start()
             isPaused = false
-            setNotification(songStartTime)
+            setNotification()
+            updateMediaSessionState()
         } catch (e: Exception) {
         }
+    }
+
+    private fun shuffleSongList() {
+        Collections.shuffle(userSongList, Random(System.nanoTime()))
+        doUpdateNextSong()
+        val intent = Intent(MainActivity.UPDATE_SONG_LIST_INTENT)
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -526,13 +633,11 @@ class WukongService : Service() {
         var content = nContent
         if (nContent == null && currentSong != null) {
             title = currentSong?.title!!
-            content = "${currentPlayUser?.displayName ?: currentPlayUser?.userName}: ${currentSong?.artist} - ${currentSong?.album}"
+            content = "(${currentPlayUser?.displayName ?: currentPlayUser?.userName}) ${currentSong?.artist} - ${currentSong?.album}"
         }
 
         val intent = Intent(this, MainActivity::class.java)
         val contextIntent = PendingIntent.getActivity(this, 0, intent, 0)
-
-        val playPauseButtonPosition = 0
 
         val notificationBuilder = NotificationCompat.Builder(this)
                 .setStyle(NotificationCompat.MediaStyle()
@@ -547,19 +652,6 @@ class WukongService : Service() {
                 .setContentTitle(title)
                 .setContentText(content) as android.support.v7.app.NotificationCompat.Builder
 
-        if (currentSong != null) {
-            val serviceIntent = Intent(ACTION_DOWNVOTE).setPackage(packageName)
-            serviceIntent.putExtra("song", currentSong!!.toRequestSong().toString())
-            val downvoteIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
-            val action = android.support.v4.app.NotificationCompat.Action(R.drawable.ic_downvote, "Downvote", downvoteIntent)
-            if (downvoted) {
-                val f = action.javaClass.getDeclaredField("mAllowGeneratedReplies")
-                f.isAccessible = true
-                f.set(action, false)
-            }
-            notificationBuilder.addAction(action)
-        }
-
         if (!isPaused) {
             val serviceIntent = Intent(ACTION_PAUSE).setPackage(packageName)
             val pauseIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
@@ -572,15 +664,19 @@ class WukongService : Service() {
             notificationBuilder.addAction(action)
         }
 
+        if (currentSong != null && !downvoted) {
+            val serviceIntent = Intent(ACTION_DOWNVOTE).setPackage(packageName)
+            serviceIntent.putExtra("song", ObjectSerializer.serialize(currentSong!!.toRequestSong()))
+            val downvoteIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
+            val action = android.support.v4.app.NotificationCompat.Action(R.drawable.ic_downvote, "Downvote", downvoteIntent)
+            notificationBuilder.addAction(action)
+        }
+
         var art: Bitmap? = null
         var fetchArtUrl: String? = null
         if (currentSong != null) {
-//            fetchArtUrl = mediaSourceSelector.selectMediaUrlByCdnSettings(currentSong?.artwork!!)
             fetchArtUrl = currentSong!!.artwork?.file
             if (fetchArtUrl != null) {
-                // This sample assumes the iconUri will be a valid URL formatted String, but
-                // it can actually be any valid Android Uri formatted String.
-                // async fetch the album art icon
                 art = albumArtCache.getBigImage(fetchArtUrl, currentSong!!.songKey)
             }
         }
@@ -601,7 +697,7 @@ class WukongService : Service() {
         return notificationBuilder
     }
 
-    private fun setNotification(songStartTime: Long) {
+    private fun setNotification() {
         val notification = makeNotificationBuilder(null)
                 .setWhen(songStartTime).build()
 
@@ -634,8 +730,10 @@ class WukongService : Service() {
 
     private fun updateMediaSessionState() {
         val stateBuilder = PlaybackStateCompat.Builder()
-        stateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE or PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_REWIND or PlaybackStateCompat.ACTION_FAST_FORWARD)
-        stateBuilder.setState(if (isPaused) PlaybackStateCompat.STATE_PAUSED else PlaybackStateCompat.STATE_PLAYING, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1.0f)
+        stateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
+        stateBuilder.setState(if (isPaused) PlaybackStateCompat.STATE_PAUSED else PlaybackStateCompat.STATE_PLAYING, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1f)
 
         mSessionCompat.setPlaybackState(stateBuilder.build())
         mSessionCompat.isActive = true

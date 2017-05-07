@@ -16,7 +16,6 @@ package com.senorsen.wukong.media
  * limitations under the License.
  */
 
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.AsyncTask
@@ -24,13 +23,9 @@ import android.os.Environment
 import android.util.Log
 import android.util.LruCache
 import com.senorsen.wukong.utils.BitmapHelper
-
 import java.io.File.separator
 import android.os.Environment.isExternalStorageRemovable
-import android.support.v4.graphics.BitmapCompat
 import java.io.*
-import java.nio.Buffer
-import java.nio.ByteBuffer
 import android.graphics.BitmapFactory
 import android.util.Base64
 
@@ -39,6 +34,8 @@ import android.util.Base64
  * Implements a basic cache of album arts, with async loading support.
  */
 class AlbumArtCache(private val context: Context) {
+
+    private val TAG = javaClass.simpleName
 
     private lateinit var mDiskLruCache: DiskLruCache
     private var mDiskCacheStarting = false
@@ -189,6 +186,7 @@ class AlbumArtCache(private val context: Context) {
     }
 
     abstract class FetchListener {
+        private val TAG = javaClass.simpleName
         abstract fun onFetched(artUrl: String, bigImage: Bitmap, iconImage: Bitmap)
         fun onError(artUrl: String, e: Exception) {
             Log.e(TAG, "AlbumArtFetchListener: error while downloading " + artUrl)

@@ -129,6 +129,12 @@ class SongListFragment : Fragment() {
         }.execute()
     }
 
+    fun updateSongListFromService() {
+        if (wukongService?.userSongList?.isNotEmpty() ?: false) {
+            adapter.list = wukongService!!.userSongList
+        }
+    }
+
     fun shuffleSongList() {
         if (adapter.list != null) {
             val list = adapter.list!!
