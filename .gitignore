@@ -9,3 +9,4 @@
 *.apk
 signing.gradle
 *.jks
+wukong/src/main/res/values/idp_configs.xml
