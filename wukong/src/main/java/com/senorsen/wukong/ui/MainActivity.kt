@@ -7,6 +7,7 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceManager
@@ -33,6 +34,9 @@ import android.widget.*
 import com.senorsen.wukong.model.User
 import com.senorsen.wukong.store.UserInfoLocalStore
 import com.senorsen.wukong.utils.ObjectSerializer
+import com.senorsen.wukong.model.getProvider
+import com.senorsen.wukong.network.createPostAuthenticationIntent
+import net.openid.appauth.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -49,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     var connected = false
     var wukongService: WukongService? = null
     private var broadcastReceiver: BroadcastReceiver? = null
+    private val authorizationService: AuthorizationService = AuthorizationService(this)
 
     private lateinit var userInfoLocalStore: UserInfoLocalStore
 
@@ -129,6 +134,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun login() {
+        val provider = getProvider(this)
+
+        AuthorizationServiceConfiguration.fetchFromUrl(provider.getDeiscoveryEndpoint()) {
+            config, ex ->
+            val configuration = config?.let { it } ?: return@fetchFromUrl
+            val authRequest = AuthorizationRequest.Builder(
+                    configuration,
+                    provider.clientId,
+                    ResponseTypeValues.CODE,
+                    provider.redirectUri?: Uri.EMPTY)
+                    .build()
+
+            authorizationService.performAuthorizationRequest(
+                    authRequest,
+                    createPostAuthenticationIntent(this, authRequest, AuthState())
+            )
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -172,7 +197,8 @@ class MainActivity : AppCompatActivity() {
         headerLayout = navigationView.inflateHeaderView(R.layout.nav_header)
         headerLayout.findViewById(R.id.drawer_user).setOnClickListener {
             mDrawerLayout.closeDrawer(GravityCompat.START)
-            startActivityForResult(Intent(this, WebViewActivity::class.java), REQUEST_COOKIES)
+//            startActivityForResult(Intent(this, WebViewActivity::class.java), REQUEST_COOKIES)
+            login()
         }
         updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
         updateChannelText()

@@ -12,8 +12,7 @@ fun getProvider(context: Context) : IdentityProvider {
             context.resources.getString(R.string.b2c_tenant),
             context.resources.getString(R.string.b2c_client_id),
             Uri.parse(context.resources.getString(R.string.b2c_redirect_uri)),
-            context.resources.getString(R.string.b2c_signupin_policy),
-            context.resources.getString(R.string.b2c_scope_string)
+            context.resources.getString(R.string.b2c_signupin_policy)
     )
 }
 
@@ -22,8 +21,7 @@ data class IdentityProvider(
         val tenant: String = "",
         val clientId: String = "",
         val redirectUri: Uri? = null,
-        val policy: String = "",
-        val scope: String = ""
+        val policy: String = ""
     ) {
     public fun getDeiscoveryEndpoint(): Uri {
         return Uri.parse(String.format(discoveryEndpoint, tenant, policy))
