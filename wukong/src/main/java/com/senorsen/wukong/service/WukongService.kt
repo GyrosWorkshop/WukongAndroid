@@ -74,14 +74,14 @@ class WukongService : Service() {
 
     var isPaused = false
 
-    @Volatile var connected = false
-    @Volatile var currentSong: Song? = null
-    @Volatile var userList: List<User>? = null
-    @Volatile var currentPlayUser: User? = null
-    @Volatile var currentPlayUserId: String? = null
-    @Volatile var downvoted = false
-    @Volatile var songStartTime: Long = 0
-    @Volatile var userSongList: MutableList<Song> = mutableListOf()
+    var connected = false
+    var currentSong: Song? = null
+    var userList: List<User>? = null
+    var currentPlayUser: User? = null
+    var currentPlayUserId: String? = null
+    var downvoted = false
+    var songStartTime: Long = 0
+    var userSongList: MutableList<Song> = mutableListOf()
     var configuration: Configuration? = null
 
     lateinit var configurationLocalStore: ConfigurationLocalStore
