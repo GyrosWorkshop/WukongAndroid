@@ -3,20 +3,19 @@ package com.senorsen.wukong.ui
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Bundle
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.util.Log
-import android.webkit.CookieManager
+import android.webkit.*
 import com.senorsen.wukong.R
 import com.senorsen.wukong.network.ApiUrls
 
 
 class WebViewActivity : AppCompatActivity() {
+
+    private val TAG = javaClass.simpleName
 
     private lateinit var webView: WebView
 
@@ -34,7 +33,7 @@ class WebViewActivity : AppCompatActivity() {
         webView = findViewById(R.id.webview) as WebView
         webView.settings.javaScriptEnabled = true
         CookieManager.getInstance().removeAllCookies(null)
-        webView.loadUrl("${ApiUrls.oAuthRedirectEndpoint}/GitHub")
+        webView.loadUrl("${ApiUrls.oAuthRedirectEndpoint}/OpenIdConnect?redirectUri=/")
 
         var loggedIn = false
 
@@ -50,7 +49,7 @@ class WebViewActivity : AppCompatActivity() {
             }
 
             override fun onPageFinished(view: WebView?, url: String) {
-                if (url == ApiUrls.base + '/' && !loggedIn) {
+                if (url == ApiUrls.base + "/" && !loggedIn) {
                     val cookies = CookieManager.getInstance().getCookie(url)
                     Log.d(TAG, "All the cookies of $url: $cookies")
                     if (cookies.isNotBlank()) {
@@ -63,6 +62,11 @@ class WebViewActivity : AppCompatActivity() {
                         }
                     }
                 }
+            }
+
+            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError) {
+                Log.d(TAG, error.toString())
+                super.onReceivedError(view, request, error)
             }
 
         })

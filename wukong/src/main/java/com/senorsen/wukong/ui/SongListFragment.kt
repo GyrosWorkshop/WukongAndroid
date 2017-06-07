@@ -49,7 +49,7 @@ class SongListFragment : Fragment() {
             this@SongListFragment.wukongService = wukongService
             wukongService.songListUpdateCallback = this@SongListFragment::onSongListUpdate
 
-            if (adapter.list == null) {
+            if (adapter.list?.isEmpty() ?: true) {
                 fetchSongList()
             } else {
                 // If song list in service is empty, service is not setup.

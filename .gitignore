@@ -10,3 +10,4 @@
 signing.gradle
 wukong/src/main/res/values/idp_configs.xml
 *.jks
+wukong/src/main/res/values/idp_configs.xml
