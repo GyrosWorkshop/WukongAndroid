@@ -314,9 +314,10 @@ class WukongService : Service() {
     private fun stopPrevConnect() {
         if (workThread != null) {
             Log.i(TAG, "socket disconnect")
-            socket?.disconnect()
-            workThread?.interrupt()
             connected = false
+            socket?.disconnect()
+            socket?.cancel()
+            workThread?.interrupt()
         }
 
         currentSong = null
@@ -511,16 +512,18 @@ class WukongService : Service() {
                 reconnectCallback = object : SocketWrapper.Callback {
                     override fun call() {
                         var retry = true
-                        while (retry) {
+                        while (retry && this@WukongService.connected) {
                             try {
                                 Thread.sleep(1000)
                                 handler.post {
                                     setNotification("Reconnecting")
                                     Toast.makeText(applicationContext, "Wukong: Reconnecting...", Toast.LENGTH_SHORT).show()
                                 }
+                                socket!!.cancel()
                                 doConnect()
                                 retry = false
                             } catch (e: IOException) {
+                                e.printStackTrace()
                                 retry = true
                             }
                         }

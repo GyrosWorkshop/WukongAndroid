@@ -53,6 +53,10 @@ class SocketWrapper(
         ws.close(NORMAL_CLOSURE_STATUS, "Bye")
     }
 
+    fun cancel() {
+        ws.cancel()
+    }
+
     interface SocketReceiver {
         fun onEventMessage(protocol: WebSocketReceiveProtocol)
     }
