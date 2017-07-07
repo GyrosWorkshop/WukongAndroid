@@ -226,7 +226,7 @@ class WukongService : Service() {
         }
         registerReceiver(receiver, filter)
 
-        wifiLock = (getSystemService(Context.WIFI_SERVICE) as WifiManager)
+        wifiLock = (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager)
                 .createWifiLock(WifiManager.WIFI_MODE_FULL, getString(R.string.app_name))
 
         wifiLock.acquire()
