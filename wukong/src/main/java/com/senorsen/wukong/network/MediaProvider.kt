@@ -33,7 +33,7 @@ object MediaProvider {
         val response = client.newCall(request).execute()
         when {
             response.isSuccessful ->
-                return response.body().byteStream()
+                return response.body()!!.byteStream()
             else ->
                 throw HttpWrapper.InvalidResponseException(response)
         }

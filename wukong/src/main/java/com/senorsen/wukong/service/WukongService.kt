@@ -504,6 +504,7 @@ class WukongService : Service() {
                 val doConnect = fun() {
                     http.channelJoin(channelId)
                     fetchConfiguration()
+                    socket?.cancel()
                     socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, channelId, reconnectCallback as SocketWrapper.Callback, receiver, handler, applicationContext)
                     connected = true
                     doUpdateNextSong()
@@ -562,6 +563,7 @@ class WukongService : Service() {
                 try {
                     http.downvote(song)
                 } catch (e: Exception) {
+                    Toast.makeText(applicationContext, "Downvote failed: " + e.message, Toast.LENGTH_SHORT).show()
                     Log.e(TAG, "sendDownvote")
                     e.printStackTrace()
                 }

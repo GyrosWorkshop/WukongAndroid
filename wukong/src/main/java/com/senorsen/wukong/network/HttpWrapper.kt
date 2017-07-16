@@ -89,13 +89,13 @@ class HttpWrapper(private val cookies: String) {
         val response = client.newCall(request).execute()
         when {
             response.isSuccessful ->
-                return response.body().string()
+                return response.body()!!.string()
 
             response.code() == 401 ->
-                throw UserUnauthorizedException(response.body().string())
+                throw UserUnauthorizedException(response.body()!!.string())
 
             response.code() == 400 ->
-                throw InvalidRequestException(response.body().string())
+                throw InvalidRequestException(response.body()!!.string())
 
             else ->
                 throw InvalidResponseException(response)
@@ -113,13 +113,13 @@ class HttpWrapper(private val cookies: String) {
         val response = client.newCall(request).execute()
         when {
             response.isSuccessful ->
-                return response.body().string()
+                return response.body()!!.string()
 
             response.code() == 401 ->
-                throw UserUnauthorizedException(response.body().string())
+                throw UserUnauthorizedException(response.body()!!.string())
 
             response.code() == 400 ->
-                throw InvalidRequestException(response.body().string())
+                throw InvalidRequestException(response.body()!!.string())
 
             else ->
                 throw InvalidResponseException(response)
