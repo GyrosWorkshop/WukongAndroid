@@ -2,32 +2,48 @@ package com.senorsen.wukong.network
 
 object ApiUrls {
 
+    // Dynamic Api base.
+    val dynamicApiBaseUrl = "https://redir.senorsen.com/WukongApi?detail=1"
+
     // Base url, hostname, etc.
-//    val hostname = "api4.wukongmusic.us"
-    val hostname = "wukong.azurewebsites.net"
-    val base = "https://$hostname"
+    lateinit var base: String
 
     // API endpoints.
-    val apiEndpoint = "$base/api"
-    val wsEndpoint = "wss://$hostname/api/ws"
+    val apiEndpoint: String
+        get() = "$base/api"
+    val wsEndpoint: String
+        get() = base.replaceFirst("http", "ws") + "/api/ws"
 
-    val userInfoEndpoint = "$apiEndpoint/user/userinfo"
-    val userConfigurationUri = "$apiEndpoint/user/configuration"
+    val userInfoEndpoint: String
+        get() = "$apiEndpoint/user/userinfo"
+    val userConfigurationUri: String
+        get() = "$apiEndpoint/user/configuration"
 
-    val channelJoinEndpoint = "$apiEndpoint/channel/join"
-    val channelReportFinishedEndpoint = "$apiEndpoint/channel/finished"
-    val channelUpdateNextSongEndpoint = "$apiEndpoint/channel/updateNextSong"
-    val channelDownvoteUri = "$apiEndpoint/channel/downVote"
+    val channelJoinEndpoint: String
+        get() = "$apiEndpoint/channel/join"
+    val channelReportFinishedEndpoint: String
+        get() = "$apiEndpoint/channel/finished"
+    val channelUpdateNextSongEndpoint: String
+        get() = "$apiEndpoint/channel/updateNextSong"
+    val channelDownvoteUri: String
+        get() = "$apiEndpoint/channel/downVote"
 
     // Music Provider API endpoints.
-    val providerEndpoint = "$base/provider"
-    val providerSearchSongsEndpoint = "$providerEndpoint/searchSongs"
-    val providerSongInfoEndpoint = "$providerEndpoint/songInfo"
-    val providerSongListWithUrlEndpoint = "$providerEndpoint/songListWithUrl"
+    val providerEndpoint: String
+        get() = "$base/provider"
+    val providerSearchSongsEndpoint: String
+        get() = "$providerEndpoint/searchSongs"
+    val providerSongInfoEndpoint: String
+        get() = "$providerEndpoint/songInfo"
+    val providerSongListWithUrlEndpoint: String
+        get() = "$providerEndpoint/songListWithUrl"
 
     // OAuth endpoints.
-    val oAuthEndpoint = "$base/oauth"
-    val oAuthMethodsEndpoint = "$oAuthEndpoint/all"
-    val oAuthRedirectEndpoint = "$oAuthEndpoint/go"
+    val oAuthEndpoint: String
+        get() = "$base/oauth"
+    val oAuthMethodsEndpoint: String
+        get() = "$oAuthEndpoint/all"
+    val oAuthRedirectEndpoint: String
+        get() = "$oAuthEndpoint/go"
 
 }

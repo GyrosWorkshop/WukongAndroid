@@ -32,6 +32,7 @@ class SocketWrapper(
     }
 
     init {
+        Log.i(TAG, "Connect ws: $wsUrl")
 
         val client = OkHttpClient.Builder()
                 .readTimeout(0, TimeUnit.MILLISECONDS)

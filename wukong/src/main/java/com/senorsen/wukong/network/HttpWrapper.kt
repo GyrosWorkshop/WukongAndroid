@@ -19,6 +19,10 @@ class HttpWrapper(private val cookies: String) {
 
     private val userAgent = "WukongAndroid/" + BuildConfig.VERSION_NAME
 
+    private val JSON = MediaType.parse("application/json; charset=utf-8")
+
+    val client = OkHttpClient()
+
     class UserUnauthorizedException : Exception {
         constructor(e: Exception) : super(e)
         constructor(message: String) : super(message)
@@ -38,9 +42,22 @@ class HttpWrapper(private val cookies: String) {
         constructor(message: String, e: Exception) : super(e)
     }
 
-    private val JSON = MediaType.parse("application/json; charset=utf-8")
+    init {
+        fetchApiBaseUrl()
+    }
 
-    val client = OkHttpClient()
+    fun fetchApiBaseUrl() {
+        val ret = get(ApiUrls.dynamicApiBaseUrl)
+        val detail = Gson().fromJson(ret, ApiBaseUrlDetail::class.java)
+        detail.linkUrl.trimEnd('/')
+        detail.apply {
+            Log.i(TAG, "Api base url: $linkUrl, updated at $updatedAt")
+        }
+        ApiUrls.base = detail.linkUrl
+    }
+
+    inner class ApiBaseUrlDetail(val linkUrl: String,
+                                 val updatedAt: String)
 
     fun getUserInfo(): User {
         val ret = get(ApiUrls.userInfoEndpoint)
@@ -81,9 +98,9 @@ class HttpWrapper(private val cookies: String) {
         return Gson().fromJson(ret, SongList::class.java)
     }
 
-    private fun get(url: String): String {
+    private fun get(url: String, withCookie: Boolean = true): String {
         val request = Request.Builder()
-                .header("Cookie", cookies)
+                .header("Cookie", if (withCookie) cookies else "")
                 .header("User-Agent", userAgent)
                 .url(url).build()
         val response = client.newCall(request).execute()

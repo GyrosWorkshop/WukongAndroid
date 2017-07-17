@@ -11,6 +11,8 @@ import android.util.Log
 import android.webkit.*
 import com.senorsen.wukong.R
 import com.senorsen.wukong.network.ApiUrls
+import com.senorsen.wukong.network.HttpWrapper
+import kotlin.concurrent.thread
 
 
 class WebViewActivity : AppCompatActivity() {
@@ -33,6 +35,9 @@ class WebViewActivity : AppCompatActivity() {
         webView = findViewById(R.id.webview) as WebView
         webView.settings.javaScriptEnabled = true
         CookieManager.getInstance().removeAllCookies(null)
+        thread {
+            HttpWrapper("")
+        }.join()
         webView.loadUrl("${ApiUrls.oAuthRedirectEndpoint}/OpenIdConnect?redirectUri=/")
 
         var loggedIn = false

@@ -312,9 +312,9 @@ class WukongService : Service() {
     }
 
     private fun stopPrevConnect() {
+        connected = false
         if (workThread != null) {
             Log.i(TAG, "socket disconnect")
-            connected = false
             socket?.disconnect()
             socket?.cancel()
             workThread?.interrupt()
@@ -341,7 +341,6 @@ class WukongService : Service() {
         val channelId = intent.getStringExtra("channel")
         Log.d(TAG, "Channel: " + channelId)
         Log.d(TAG, "Cookies: " + cookies)
-        http = HttpWrapper(cookies)
 
         stopPrevConnect()
 
@@ -351,9 +350,10 @@ class WukongService : Service() {
 
         downvoted = false
 
-        workThread = Thread(Runnable {
+        workThread = thread {
 
             try {
+                http = HttpWrapper(cookies)
 
                 currentUser = http.getUserInfo()
                 Log.d(TAG, "User: " + currentUser.toString())
@@ -515,7 +515,7 @@ class WukongService : Service() {
                         var retry = true
                         while (retry && this@WukongService.connected) {
                             try {
-                                Thread.sleep(1000)
+                                Thread.sleep(3000)
                                 handler.post {
                                     setNotification("Reconnecting")
                                     Toast.makeText(applicationContext, "Wukong: Reconnecting...", Toast.LENGTH_SHORT).show()
@@ -550,8 +550,7 @@ class WukongService : Service() {
                 }
             }
 
-        })
-        workThread!!.start()
+        }
     }
 
     private fun sendDownvote(song: RequestSong) {
