@@ -562,9 +562,11 @@ class WukongService : Service() {
                 try {
                     http.downvote(song)
                 } catch (e: Exception) {
-                    Toast.makeText(applicationContext, "Downvote failed: " + e.message, Toast.LENGTH_SHORT).show()
                     Log.e(TAG, "sendDownvote")
                     e.printStackTrace()
+                    handler.post {
+                        Toast.makeText(applicationContext, "Downvote failed: " + e.message, Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
             downvoted = true
