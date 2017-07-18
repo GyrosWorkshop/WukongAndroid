@@ -4,7 +4,9 @@ import android.content.Context
 import android.os.Handler
 import android.util.Log
 import android.widget.Toast
+import com.google.common.net.HttpHeaders
 import com.google.gson.Gson
+import com.senorsen.wukong.BuildConfig
 import okhttp3.*
 import java.io.EOFException
 import java.util.*
@@ -25,6 +27,8 @@ class SocketWrapper(
 
     private val TAG = javaClass.simpleName
 
+    private val userAgent = "WukongAndroid/${BuildConfig.VERSION_NAME}(${BuildConfig.VERSION_CODE})"
+
     var ws: WebSocket
 
     companion object {
@@ -39,7 +43,8 @@ class SocketWrapper(
                 .build()
 
         val request = Request.Builder()
-                .addHeader("Cookie", cookies)
+                .header(HttpHeaders.COOKIE, cookies)
+                .header(HttpHeaders.USER_AGENT, userAgent)
                 .url(wsUrl).build()
         var listener: ActualWebSocketListener? = null
 
