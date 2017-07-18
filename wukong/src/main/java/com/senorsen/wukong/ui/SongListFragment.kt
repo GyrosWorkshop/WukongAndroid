@@ -58,8 +58,6 @@ class SongListFragment : Fragment() {
                 } else {
                     adapter.list = wukongService.userSongList
                 }
-                if (wukongService.connected)
-                    wukongService.doUpdateNextSong()
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.senorsen.wukong.network
 
 import android.util.Log
+import com.google.common.net.HttpHeaders
 import com.google.gson.Gson
 import com.senorsen.wukong.BuildConfig
 import com.senorsen.wukong.model.Configuration
@@ -14,7 +15,7 @@ class HttpWrapper(private val cookies: String) {
 
     private val TAG = javaClass.simpleName
 
-    private val userAgent = "WukongAndroid/" + BuildConfig.VERSION_NAME
+    private val userAgent = "WukongAndroid/${BuildConfig.VERSION_NAME}(${BuildConfig.VERSION_CODE})"
 
     private val JSON = MediaType.parse("application/json; charset=utf-8")
 
@@ -97,8 +98,8 @@ class HttpWrapper(private val cookies: String) {
 
     private fun get(url: String, withCookie: Boolean = true): String {
         val request = Request.Builder()
-                .header("Cookie", if (withCookie) cookies else "")
-                .header("User-Agent", userAgent)
+                .header(HttpHeaders.COOKIE, if (withCookie) cookies else "")
+                .header(HttpHeaders.USER_AGENT, userAgent)
                 .url(url).build()
         val response = client.newCall(request).execute()
         when {
