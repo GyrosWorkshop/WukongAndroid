@@ -7,7 +7,6 @@ import android.util.Log
 import com.senorsen.wukong.network.MediaProvider
 import java.io.File
 import java.io.FileInputStream
-import java.io.InputStream
 
 class MediaCache(private val context: Context) {
 

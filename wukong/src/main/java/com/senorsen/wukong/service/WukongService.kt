@@ -29,7 +29,10 @@ import com.senorsen.wukong.media.AlbumArtCache
 import com.senorsen.wukong.media.MediaCache
 import com.senorsen.wukong.media.MediaSourcePreparer
 import com.senorsen.wukong.media.MediaSourceSelector
-import com.senorsen.wukong.model.*
+import com.senorsen.wukong.model.Configuration
+import com.senorsen.wukong.model.RequestSong
+import com.senorsen.wukong.model.Song
+import com.senorsen.wukong.model.User
 import com.senorsen.wukong.network.*
 import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore

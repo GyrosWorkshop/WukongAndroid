@@ -24,7 +24,6 @@ import com.senorsen.wukong.R
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.service.WukongService
 import com.senorsen.wukong.store.SongListLocalStore
-import com.senorsen.wukong.utils.ObjectSerializer
 import java.util.*
 
 

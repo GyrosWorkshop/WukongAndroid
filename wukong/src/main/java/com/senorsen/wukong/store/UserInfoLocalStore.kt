@@ -23,7 +23,7 @@ class UserInfoLocalStore(context: Context) : PrefLocalStore(context, PREF_NAME) 
         return loadFromJson(KEY_PREF_USER, User::class.java)
     }
 
-    fun loadUserAvatar() : Bitmap? {
+    fun loadUserAvatar(): Bitmap? {
         return AlbumArtCache.stringToBitMap(pref.getString(KEY_PREF_USER_AVATAR, ""))
     }
 

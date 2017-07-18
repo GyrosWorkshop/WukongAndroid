@@ -2,8 +2,8 @@ package com.senorsen.wukong.ui
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.os.Bundle
 import android.content.Intent
+import android.os.Bundle
 import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
@@ -38,7 +38,7 @@ class WebViewActivity : AppCompatActivity() {
         thread {
             HttpWrapper("")
         }.join()
-        webView.loadUrl("${ApiUrls.oAuthRedirectEndpoint}/OpenIdConnect?redirectUri=/")
+        webView.loadUrl(ApiUrls.oAuthEndpoint)
 
         var loggedIn = false
 

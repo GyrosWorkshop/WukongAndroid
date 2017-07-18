@@ -38,12 +38,8 @@ object ApiUrls {
     val providerSongListWithUrlEndpoint: String
         get() = "$providerEndpoint/songListWithUrl"
 
-    // OAuth endpoints.
+    // OAuth endpoint.
     val oAuthEndpoint: String
-        get() = "$base/oauth"
-    val oAuthMethodsEndpoint: String
-        get() = "$oAuthEndpoint/all"
-    val oAuthRedirectEndpoint: String
-        get() = "$oAuthEndpoint/go"
+        get() = "$base/oauth/go/OpenIdConnect?redirectUri=/"
 
 }

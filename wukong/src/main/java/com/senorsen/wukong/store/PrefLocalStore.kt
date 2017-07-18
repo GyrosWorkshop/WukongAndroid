@@ -6,7 +6,6 @@ import android.preference.PreferenceManager
 import android.util.Log
 import com.google.gson.Gson
 import java.lang.reflect.Type
-import kotlin.reflect.KClass
 
 abstract class PrefLocalStore {
 

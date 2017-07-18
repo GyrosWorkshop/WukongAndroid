@@ -1,12 +1,9 @@
 package com.senorsen.wukong.media
 
-import android.util.Log
 import android.media.MediaPlayer
+import android.util.Log
 import com.senorsen.wukong.network.MediaProvider
 import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.OutputStream
 
 object MediaSourcePreparer {
 

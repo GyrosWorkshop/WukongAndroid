@@ -1,13 +1,10 @@
 package com.senorsen.wukong.network
 
-import android.content.ContentValues.TAG
 import android.util.Log
 import com.google.gson.Gson
 import com.senorsen.wukong.BuildConfig
-import com.senorsen.wukong.R
 import com.senorsen.wukong.model.Configuration
 import com.senorsen.wukong.model.RequestSong
-import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.model.User
 import okhttp3.*
 import java.net.URLEncoder

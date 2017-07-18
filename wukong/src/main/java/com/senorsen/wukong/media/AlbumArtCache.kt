@@ -18,16 +18,16 @@ package com.senorsen.wukong.media
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.AsyncTask
 import android.os.Environment
+import android.os.Environment.isExternalStorageRemovable
+import android.util.Base64
 import android.util.Log
 import android.util.LruCache
 import com.senorsen.wukong.utils.BitmapHelper
-import java.io.File.separator
-import android.os.Environment.isExternalStorageRemovable
 import java.io.*
-import android.graphics.BitmapFactory
-import android.util.Base64
+import java.io.File.separator
 
 
 /**

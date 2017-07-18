@@ -4,8 +4,7 @@ import android.media.browse.MediaBrowser.MediaItem
 import android.media.session.MediaSession
 import android.os.Bundle
 import android.service.media.MediaBrowserService
-
-import java.util.ArrayList
+import java.util.*
 
 /**
  * This class provides a MediaBrowser through a service. It exposes the media library to a browsing
