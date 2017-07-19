@@ -8,6 +8,7 @@ import com.google.common.net.HttpHeaders
 import com.google.gson.Gson
 import com.senorsen.wukong.BuildConfig
 import okhttp3.*
+import okio.ByteString
 import java.io.EOFException
 import java.util.*
 import java.util.concurrent.ScheduledFuture
@@ -40,6 +41,7 @@ class SocketWrapper(
 
         val client = OkHttpClient.Builder()
                 .readTimeout(0, TimeUnit.MILLISECONDS)
+                .pingInterval(20, TimeUnit.SECONDS)
                 .build()
 
         val request = Request.Builder()
@@ -48,7 +50,7 @@ class SocketWrapper(
                 .url(wsUrl).build()
         var listener: ActualWebSocketListener? = null
 
-        listener = ActualWebSocketListener(channelId, socketReceiver, reconnectCallback, handler, applicationContext)
+        listener = ActualWebSocketListener(socketReceiver, reconnectCallback, handler, applicationContext)
 
         ws = client.newWebSocket(request, listener)
 
@@ -71,29 +73,13 @@ class SocketWrapper(
         fun call()
     }
 
-    inner class ActualWebSocketListener(private val channelId: String,
-                                        private val socketReceiver: SocketReceiver,
+    inner class ActualWebSocketListener(private val socketReceiver: SocketReceiver,
                                         private val reconnectCallBack: Callback,
                                         private val handler: Handler,
                                         private val applicationContext: Context) : WebSocketListener() {
 
-
-        val executor = ScheduledThreadPoolExecutor(1)
-        lateinit private var t: ScheduledFuture<*>
-
         override fun onOpen(webSocket: WebSocket, response: Response) {
-            try {
-                t = executor.scheduleAtFixedRate(object : TimerTask() {
-                    override fun run() {
-                        // FIXME(Senorsen): hardcoded string
-                        webSocket.send(Gson().toJson(WebSocketTransmitProtocol("", "ping"), WebSocketTransmitProtocol::class.java))
-                    }
-                }, 0, 10, TimeUnit.SECONDS)
-            } catch (e: Exception) {
-                handler.post {
-                    Toast.makeText(applicationContext, "Wukong WebSocket onOpen: " + e.message, Toast.LENGTH_LONG).show()
-                }
-            }
+            Log.i(TAG, "WebSocket open")
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
@@ -104,7 +90,6 @@ class SocketWrapper(
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             Log.d(TAG, "Closing: $code $reason")
-            t.cancel(true)
             if (code == NORMAL_CLOSURE_STATUS) {
                 webSocket.close(NORMAL_CLOSURE_STATUS, null)
             } else {

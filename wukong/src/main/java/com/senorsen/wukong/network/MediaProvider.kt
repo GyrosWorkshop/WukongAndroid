@@ -1,6 +1,7 @@
 package com.senorsen.wukong.network
 
 import android.util.Log
+import com.google.common.net.HttpHeaders
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.InputStream
@@ -15,6 +16,7 @@ object MediaProvider {
         if (!url.startsWith("http")) return url
         val request = Request.Builder()
                 .head()
+                .header(HttpHeaders.USER_AGENT, "")
                 .url(url).build()
         val response = client.newCall(request).execute()
         when {
@@ -29,6 +31,7 @@ object MediaProvider {
 
     fun getMedia(url: String): InputStream {
         val request = Request.Builder()
+                .header(HttpHeaders.USER_AGENT, "")
                 .url(url).build()
         val response = client.newCall(request).execute()
         when {
