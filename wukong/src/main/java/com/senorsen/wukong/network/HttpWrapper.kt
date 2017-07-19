@@ -23,21 +23,21 @@ class HttpWrapper(private val cookies: String) {
 
     class UserUnauthorizedException : Exception {
         constructor(e: Exception) : super(e)
-        constructor(message: String) : super(message)
-        constructor(message: String, e: Exception) : super(e)
+        constructor(message: String?) : super(message)
+        constructor(message: String?, e: Exception) : super(e)
     }
 
     class InvalidRequestException : Exception {
         constructor(e: Exception) : super(e)
-        constructor(message: String) : super(message)
-        constructor(message: String, e: Exception) : super(e)
+        constructor(message: String?) : super(message)
+        constructor(message: String?, e: Exception) : super(e)
     }
 
     class InvalidResponseException : Exception {
-        constructor(response: Response) : super("Invalid response: success=${response.isSuccessful}, code=${response.code()}")
+        constructor(response: Response) : super("Invalid response: success=${response.isSuccessful}, code=${response.code()}, body=${response.body()?.string()}")
         constructor(e: Exception) : super(e)
-        constructor(message: String) : super(message)
-        constructor(message: String, e: Exception) : super(e)
+        constructor(message: String?) : super(message)
+        constructor(message: String?, e: Exception) : super(e)
     }
 
     init {
@@ -107,10 +107,10 @@ class HttpWrapper(private val cookies: String) {
                 return response.body()!!.string()
 
             response.code() == 401 ->
-                throw UserUnauthorizedException(response.body()!!.string())
+                throw UserUnauthorizedException("Unauthorized: " + response.body()!!.string())
 
             response.code() == 400 ->
-                throw InvalidRequestException(response.body()!!.string())
+                throw InvalidRequestException("Invalid request: " + response.body()!!.string())
 
             else ->
                 throw InvalidResponseException(response)
@@ -131,10 +131,10 @@ class HttpWrapper(private val cookies: String) {
                 return response.body()!!.string()
 
             response.code() == 401 ->
-                throw UserUnauthorizedException(response.body()!!.string())
+                throw UserUnauthorizedException("Unauthorized: " + response.body()!!.string())
 
             response.code() == 400 ->
-                throw InvalidRequestException(response.body()!!.string())
+                throw InvalidRequestException("Invalid request: " + response.body()!!.string())
 
             else ->
                 throw InvalidResponseException(response)

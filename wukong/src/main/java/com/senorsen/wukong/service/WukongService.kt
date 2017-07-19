@@ -316,12 +316,9 @@ class WukongService : Service() {
 
     private fun stopPrevConnect() {
         connected = false
-        if (workThread != null) {
-            Log.i(TAG, "socket disconnect")
-            socket?.disconnect()
-            socket?.cancel()
-            workThread?.interrupt()
-        }
+        Log.i(TAG, "socket disconnect")
+        socket?.disconnect()
+        workThread?.interrupt()
 
         currentSong = null
         if (mediaPlayer.isPlaying) {
@@ -507,8 +504,11 @@ class WukongService : Service() {
                 val doConnect = fun() {
                     http.channelJoin(channelId)
                     fetchConfiguration()
-                    socket?.cancel()
-                    socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, channelId, reconnectCallback as SocketWrapper.Callback, receiver, handler, applicationContext)
+                    if (socket == null) {
+                        socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, channelId, reconnectCallback as SocketWrapper.Callback, receiver, handler, applicationContext)
+                    } else {
+                        socket!!.connect()
+                    }
                     connected = true
                     doUpdateNextSong()
                 }
@@ -523,7 +523,6 @@ class WukongService : Service() {
                                     setNotification("Reconnecting")
                                     Toast.makeText(applicationContext, "Wukong: Reconnecting...", Toast.LENGTH_SHORT).show()
                                 }
-                                socket!!.cancel()
                                 doConnect()
                                 retry = false
                             } catch (e: IOException) {

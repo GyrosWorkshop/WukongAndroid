@@ -13,51 +13,53 @@ import java.util.concurrent.TimeUnit
 
 
 class SocketWrapper(
-        wsUrl: String,
-        cookies: String,
+        private val wsUrl: String,
+        val cookies: String,
         private val channelId: String,
-        reconnectCallback: Callback,
-        socketReceiver: SocketReceiver,
-        handler: Handler,
-        applicationContext: Context
+        val reconnectCallback: Callback,
+        val socketReceiver: SocketReceiver,
+        val handler: Handler,
+        val applicationContext: Context
 ) {
 
     private val TAG = javaClass.simpleName
 
     private val userAgent = "WukongAndroid/${BuildConfig.VERSION_NAME}(${BuildConfig.VERSION_CODE})"
 
-    var ws: WebSocket
+    var ws: WebSocket? = null
 
     companion object {
-        val NORMAL_CLOSURE_STATUS = 1000
+        val CLOSE_NORMAL_CLOSURE = 1000
+        val CLOSE_GOING_AWAY = 1001
     }
 
+
+    val client = OkHttpClient.Builder()
+            .readTimeout(0, TimeUnit.MILLISECONDS)
+            .pingInterval(20, TimeUnit.SECONDS)
+            .build()
+
+    val request = Request.Builder()
+            .header(HttpHeaders.COOKIE, cookies)
+            .header(HttpHeaders.USER_AGENT, userAgent)
+            .url(wsUrl).build()
+    var listener: ActualWebSocketListener? = null
+
     init {
+        connect()
+    }
+
+    @Synchronized
+    fun connect() {
         Log.i(TAG, "Connect ws: $wsUrl")
-
-        val client = OkHttpClient.Builder()
-                .readTimeout(0, TimeUnit.MILLISECONDS)
-                .pingInterval(20, TimeUnit.SECONDS)
-                .build()
-
-        val request = Request.Builder()
-                .header(HttpHeaders.COOKIE, cookies)
-                .header(HttpHeaders.USER_AGENT, userAgent)
-                .url(wsUrl).build()
-        val listener = ActualWebSocketListener(socketReceiver, reconnectCallback, handler, applicationContext)
-
+        listener?.reconnectCallBack = null
+        ws?.close(CLOSE_GOING_AWAY, "Going away")
+        listener = ActualWebSocketListener(socketReceiver, reconnectCallback, handler, applicationContext)
         ws = client.newWebSocket(request, listener)
-
-
-        client.dispatcher().executorService().shutdown()
     }
 
     fun disconnect() {
-        ws.close(NORMAL_CLOSURE_STATUS, "Bye")
-    }
-
-    fun cancel() {
-        ws.cancel()
+        ws?.close(CLOSE_NORMAL_CLOSURE, "Bye")
     }
 
     interface SocketReceiver {
@@ -69,16 +71,17 @@ class SocketWrapper(
     }
 
     inner class ActualWebSocketListener(private val socketReceiver: SocketReceiver,
-                                        private val reconnectCallBack: Callback,
+                                        var reconnectCallBack: Callback?,
                                         private val handler: Handler,
                                         private val applicationContext: Context) : WebSocketListener() {
 
         @Volatile var alonePingCount = 0
 
-        private val executor = ScheduledThreadPoolExecutor(1)
+        private lateinit var executor: ScheduledThreadPoolExecutor
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
             Log.i(TAG, "WebSocket open")
+            executor = ScheduledThreadPoolExecutor(1)
             executor.scheduleAtFixedRate(PingPongCheckerRunnable(), 20, 20, TimeUnit.SECONDS)
         }
 
@@ -100,22 +103,19 @@ class SocketWrapper(
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             Log.d(TAG, "Closing: $code $reason")
-            if (code == NORMAL_CLOSURE_STATUS) {
-                webSocket.close(NORMAL_CLOSURE_STATUS, null)
-            } else {
-                Log.i(TAG, "Reconnection")
-                reconnectCallBack.call()
-            }
+            Log.i(TAG, "Reconnection")
             executor.shutdown()
+            reconnectCallBack?.call()
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             if (t is EOFException) {
                 Log.i(TAG, "Ignore EOFException")
             } else {
+                executor.shutdown()
                 t.printStackTrace()
                 Log.i(TAG, "Reconnection onFailure")
-                reconnectCallBack.call()
+                reconnectCallBack?.call()
             }
         }
 
@@ -127,7 +127,7 @@ class SocketWrapper(
                 if (alonePingCount > pingTimeoutThreshold) {
                     Log.i(TAG, "ping-timeout threshold $pingTimeoutThreshold reached, reconnecting")
                     executor.shutdown()
-                    reconnectCallBack.call()
+                    reconnectCallBack?.call()
                 }
             }
         }
