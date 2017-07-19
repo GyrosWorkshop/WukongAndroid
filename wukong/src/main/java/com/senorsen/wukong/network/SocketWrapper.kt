@@ -3,15 +3,11 @@ package com.senorsen.wukong.network
 import android.content.Context
 import android.os.Handler
 import android.util.Log
-import android.widget.Toast
 import com.google.common.net.HttpHeaders
 import com.google.gson.Gson
 import com.senorsen.wukong.BuildConfig
 import okhttp3.*
-import okio.ByteString
 import java.io.EOFException
-import java.util.*
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -48,11 +44,10 @@ class SocketWrapper(
                 .header(HttpHeaders.COOKIE, cookies)
                 .header(HttpHeaders.USER_AGENT, userAgent)
                 .url(wsUrl).build()
-        var listener: ActualWebSocketListener? = null
-
-        listener = ActualWebSocketListener(socketReceiver, reconnectCallback, handler, applicationContext)
+        val listener = ActualWebSocketListener(socketReceiver, reconnectCallback, handler, applicationContext)
 
         ws = client.newWebSocket(request, listener)
+
 
         client.dispatcher().executorService().shutdown()
     }
@@ -78,14 +73,29 @@ class SocketWrapper(
                                         private val handler: Handler,
                                         private val applicationContext: Context) : WebSocketListener() {
 
+        @Volatile var alonePingCount = 0
+
+        private val executor = ScheduledThreadPoolExecutor(1)
+
         override fun onOpen(webSocket: WebSocket, response: Response) {
             Log.i(TAG, "WebSocket open")
+            executor.scheduleAtFixedRate(PingPongCheckerRunnable(), 20, 20, TimeUnit.SECONDS)
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
             Log.d(TAG, "Receiving: " + text)
             val receiveProtocol = Gson().fromJson(text, WebSocketReceiveProtocol::class.java)
             socketReceiver.onEventMessage(receiveProtocol)
+        }
+
+        override fun onPing(webSocket: WebSocket) {
+            this.alonePingCount++;
+            Log.d(TAG, "ping sent")
+        }
+
+        override fun onPong(webSocket: WebSocket, sendPingCount: Int, pongCount: Int) {
+            alonePingCount = 0
+            Log.d(TAG, "pong received from server, alone $alonePingCount, sent $sendPingCount received $pongCount.")
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
@@ -96,6 +106,7 @@ class SocketWrapper(
                 Log.i(TAG, "Reconnection")
                 reconnectCallBack.call()
             }
+            executor.shutdown()
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -105,6 +116,19 @@ class SocketWrapper(
                 t.printStackTrace()
                 Log.i(TAG, "Reconnection onFailure")
                 reconnectCallBack.call()
+            }
+        }
+
+        inner class PingPongCheckerRunnable : Runnable {
+
+            private val pingTimeoutThreshold = 3
+
+            override fun run() {
+                if (alonePingCount > pingTimeoutThreshold) {
+                    Log.i(TAG, "ping-timeout threshold $pingTimeoutThreshold reached, reconnecting")
+                    executor.shutdown()
+                    reconnectCallBack.call()
+                }
             }
         }
 
