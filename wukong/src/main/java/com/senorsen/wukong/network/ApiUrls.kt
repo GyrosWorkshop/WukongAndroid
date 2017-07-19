@@ -5,6 +5,9 @@ object ApiUrls {
     // Dynamic Api base.
     val dynamicApiBaseUrl = "https://redir.senorsen.com/WukongApi?detail=1"
 
+    // Message Api.
+    val messageApiUrl = "https://redir.senorsen.com/messages/wukong"
+
     // Base url, hostname, etc.
     lateinit var base: String
 

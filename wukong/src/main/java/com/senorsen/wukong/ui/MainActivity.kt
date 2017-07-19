@@ -32,10 +32,14 @@ import android.widget.Toast
 import com.github.javiersantos.appupdater.AppUpdater
 import com.github.javiersantos.appupdater.enums.UpdateFrom
 import com.senorsen.wukong.R
+import com.senorsen.wukong.model.Message
 import com.senorsen.wukong.model.User
+import com.senorsen.wukong.network.HttpClient
 import com.senorsen.wukong.service.WukongService
+import com.senorsen.wukong.store.LastMessageLocalStore
 import com.senorsen.wukong.store.UserInfoLocalStore
 import com.senorsen.wukong.utils.ObjectSerializer
+import kotlin.concurrent.thread
 
 
 class MainActivity : AppCompatActivity() {
@@ -188,6 +192,31 @@ class MainActivity : AppCompatActivity() {
                 .setUpdateFrom(UpdateFrom.GITHUB)
                 .setGitHubUserAndRepo("GyrosWorkshop", "WukongAndroid")
                 .start()
+
+        val lastMessageLocalStore = LastMessageLocalStore(this)
+        var messages: List<Message>
+        thread {
+            val last = lastMessageLocalStore.load()
+            messages = HttpClient().getMessage(last,  userInfoLocalStore.load()?.userName)
+            Log.d(TAG, "fetch message gt $last")
+            if (messages.isNotEmpty()) {
+                handler.post {
+                    fun showNext(index: Int) {
+                        if (index >= messages.count()) return
+                        val message = messages[index]
+                        AlertDialog.Builder(this)
+                                .setTitle("Message ${index + 1}/${messages.count()}")
+                                .setMessage(message.message + "\n\n" + message.createdAt.replace(Regex("T|Z|\\.000"), " "))
+                                .setPositiveButton(if (index < messages.count() - 1) "Next" else "Ok") { _, _ ->
+                                    lastMessageLocalStore.save(message.messageId)
+                                    showNext(index + 1)
+                                }
+                                .show()
+                    }
+                    showNext(0)
+                }
+            }
+        }
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {

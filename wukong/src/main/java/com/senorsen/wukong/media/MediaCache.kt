@@ -4,7 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.preference.PreferenceManager
 import android.util.Log
-import com.senorsen.wukong.network.MediaProvider
+import com.senorsen.wukong.network.MediaProviderClient
 import java.io.File
 import java.io.FileInputStream
 
@@ -61,7 +61,7 @@ class MediaCache(private val context: Context) {
         synchronized(mDiskCacheLock) {
             val editor = mDiskLruCache.edit(key)
             val out = editor.newOutputStream(MEDIA_INDEX)
-            MediaProvider.getMedia(url).copyTo(out)
+            MediaProviderClient.getMedia(url).copyTo(out)
             editor.commit()
             out.close()
         }

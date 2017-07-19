@@ -2,7 +2,7 @@ package com.senorsen.wukong.media
 
 import android.media.MediaPlayer
 import android.util.Log
-import com.senorsen.wukong.network.MediaProvider
+import com.senorsen.wukong.network.MediaProviderClient
 import java.io.FileInputStream
 
 object MediaSourcePreparer {
@@ -10,7 +10,7 @@ object MediaSourcePreparer {
     private val TAG = javaClass.simpleName
 
     fun setMediaSource(mp: MediaPlayer, source: String, elapsed: Float = 0f): String {
-        val resolvedMediaSource = MediaProvider.resolveRedirect(source)
+        val resolvedMediaSource = MediaProviderClient.resolveRedirect(source)
         mp.reset()
         mp.setDataSource(resolvedMediaSource)
         mp.prepare()

@@ -34,8 +34,11 @@ import com.senorsen.wukong.model.RequestSong
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.model.User
 import com.senorsen.wukong.network.*
+import com.senorsen.wukong.network.message.Protocol
+import com.senorsen.wukong.network.message.WebSocketReceiveProtocol
 import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore
+import com.senorsen.wukong.store.LastMessageLocalStore
 import com.senorsen.wukong.store.UserInfoLocalStore
 import com.senorsen.wukong.ui.MainActivity
 import com.senorsen.wukong.utils.Debounce
@@ -57,8 +60,8 @@ class WukongService : Service() {
     private lateinit var albumArtCache: AlbumArtCache
 
     lateinit var mediaSourceSelector: MediaSourceSelector
-    lateinit var http: HttpWrapper
-    var socket: SocketWrapper? = null
+    lateinit var http: HttpClient
+    var socket: SocketCilent? = null
     lateinit var currentUser: User
 
     val handler = Handler()
@@ -121,7 +124,7 @@ class WukongService : Service() {
     fun fetchConfiguration(): Configuration? {
         try {
             configuration = http.getConfiguration()
-        } catch (e: HttpWrapper.UserUnauthorizedException) {
+        } catch (e: HttpClient.UserUnauthorizedException) {
             Log.d(WukongService::class.simpleName, e.message)
         }
         if (configuration != null) {
@@ -143,7 +146,7 @@ class WukongService : Service() {
             try {
                 http.getSongListWithUrl(url, cookies)
             } catch (e: Exception) {
-                Log.e(HttpWrapper::class.simpleName, "getSongLists")
+                Log.e(HttpClient::class.simpleName, "getSongLists")
                 e.printStackTrace()
                 null
             }
@@ -353,7 +356,7 @@ class WukongService : Service() {
         workThread = thread {
 
             try {
-                http = HttpWrapper(cookies)
+                http = HttpClient(cookies)
 
                 currentUser = http.getUserInfo()
                 Log.d(TAG, "User: " + currentUser.toString())
@@ -383,7 +386,7 @@ class WukongService : Service() {
                     thread {
                         try {
                             http.reportFinish(currentSong!!.toRequestSong())
-                        } catch (e: HttpWrapper.InvalidRequestException) {
+                        } catch (e: HttpClient.InvalidRequestException) {
                             Log.e(TAG, "reportFinish invalid request, means data not sync. But server will save us.")
                             e.printStackTrace()
                         } catch (e: Exception) {
@@ -392,7 +395,7 @@ class WukongService : Service() {
                     }
                 }
 
-                val receiver = object : SocketWrapper.SocketReceiver {
+                val receiver = object : SocketCilent.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
                         // FIXME: 该分层了。。。
 
@@ -505,7 +508,7 @@ class WukongService : Service() {
                     http.channelJoin(channelId)
                     fetchConfiguration()
                     if (socket == null) {
-                        socket = SocketWrapper(ApiUrls.wsEndpoint, cookies, channelId, reconnectCallback as SocketWrapper.Callback, receiver, handler, applicationContext)
+                        socket = SocketCilent(ApiUrls.wsEndpoint, cookies, channelId, reconnectCallback as SocketCilent.Callback, receiver, handler, applicationContext)
                     } else {
                         socket!!.connect()
                     }
@@ -513,7 +516,7 @@ class WukongService : Service() {
                     doUpdateNextSong()
                 }
 
-                reconnectCallback = object : SocketWrapper.Callback {
+                reconnectCallback = object : SocketCilent.Callback {
                     override fun call() {
                         var retry = true
                         while (retry && this@WukongService.connected) {
@@ -540,7 +543,7 @@ class WukongService : Service() {
                     Log.e(TAG, "socket exception: " + e.message)
                 }
 
-            } catch (e: HttpWrapper.UserUnauthorizedException) {
+            } catch (e: HttpClient.UserUnauthorizedException) {
                 handler.post {
                     Toast.makeText(applicationContext, "Please sign in to continue.", Toast.LENGTH_SHORT).show()
                     userInfoLocalStore.save(user = null)

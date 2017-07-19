@@ -3,15 +3,19 @@ package com.senorsen.wukong.network
 import android.util.Log
 import com.google.common.net.HttpHeaders
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.senorsen.wukong.BuildConfig
 import com.senorsen.wukong.model.Configuration
+import com.senorsen.wukong.model.Message
 import com.senorsen.wukong.model.RequestSong
 import com.senorsen.wukong.model.User
+import com.senorsen.wukong.network.message.SongList
+import com.senorsen.wukong.network.message.SongListWithUrlRequest
 import okhttp3.*
 import java.net.URLEncoder
 
 
-class HttpWrapper(private val cookies: String) {
+class HttpClient(private val cookies: String = "") {
 
     private val TAG = javaClass.simpleName
 
@@ -94,6 +98,11 @@ class HttpWrapper(private val cookies: String) {
     fun getSongListWithUrl(url: String, cookies: String?): SongList {
         val ret = post(ApiUrls.providerSongListWithUrlEndpoint, Gson().toJson(SongListWithUrlRequest(url, cookies)))
         return Gson().fromJson(ret, SongList::class.java)
+    }
+
+    fun getMessage(lastId: Long, user: String?): List<Message> {
+        val ret = get(ApiUrls.messageApiUrl + "?last=$lastId&user=$user", false)
+        return Gson().fromJson(ret, object : TypeToken<List<Message>>() {}.type)
     }
 
     private fun get(url: String, withCookie: Boolean = true): String {

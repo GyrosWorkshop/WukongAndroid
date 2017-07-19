@@ -1,4 +1,4 @@
-package com.senorsen.wukong.network
+package com.senorsen.wukong.network.message
 
 import com.senorsen.wukong.model.OtherSiteUser
 import com.senorsen.wukong.model.Song

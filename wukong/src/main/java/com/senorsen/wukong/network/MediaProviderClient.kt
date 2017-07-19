@@ -6,7 +6,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.InputStream
 
-object MediaProvider {
+object MediaProviderClient {
 
     private val TAG = javaClass.simpleName
 
@@ -25,7 +25,7 @@ object MediaProvider {
                 return response.request().url().toString()
             }
             else ->
-                throw HttpWrapper.InvalidResponseException(response)
+                throw HttpClient.InvalidResponseException(response)
         }
     }
 
@@ -38,7 +38,7 @@ object MediaProvider {
             response.isSuccessful ->
                 return response.body()!!.byteStream()
             else ->
-                throw HttpWrapper.InvalidResponseException(response)
+                throw HttpClient.InvalidResponseException(response)
         }
     }
 

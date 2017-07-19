@@ -11,7 +11,7 @@ import android.util.Log
 import android.webkit.*
 import com.senorsen.wukong.R
 import com.senorsen.wukong.network.ApiUrls
-import com.senorsen.wukong.network.HttpWrapper
+import com.senorsen.wukong.network.HttpClient
 import kotlin.concurrent.thread
 
 
@@ -36,7 +36,7 @@ class WebViewActivity : AppCompatActivity() {
         webView.settings.javaScriptEnabled = true
         CookieManager.getInstance().removeAllCookies(null)
         thread {
-            HttpWrapper("")
+            HttpClient("")
         }.join()
         webView.loadUrl(ApiUrls.oAuthEndpoint)
 

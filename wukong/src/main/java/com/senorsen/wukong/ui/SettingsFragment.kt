@@ -11,7 +11,7 @@ import android.util.Log
 import android.widget.Toast
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.Configuration
-import com.senorsen.wukong.network.HttpWrapper
+import com.senorsen.wukong.network.HttpClient
 import com.senorsen.wukong.service.WukongService
 
 /**
@@ -99,7 +99,7 @@ class SettingsFragment : PreferenceFragment(), SharedPreferences.OnSharedPrefere
             try {
                 wukongService?.uploadConfiguration(configuration) ?:
                         Toast.makeText(activity, "Cannot upload configuration: not connected?", Toast.LENGTH_LONG).show()
-            } catch (e: HttpWrapper.UserUnauthorizedException) {
+            } catch (e: HttpClient.UserUnauthorizedException) {
                 Toast.makeText(activity, "Cannot upload configuration: not sign in", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Toast.makeText(activity, "Cannot upload configuration: $e", Toast.LENGTH_LONG).show()

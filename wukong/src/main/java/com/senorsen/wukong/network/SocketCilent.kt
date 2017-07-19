@@ -6,13 +6,14 @@ import android.util.Log
 import com.google.common.net.HttpHeaders
 import com.google.gson.Gson
 import com.senorsen.wukong.BuildConfig
+import com.senorsen.wukong.network.message.WebSocketReceiveProtocol
 import okhttp3.*
 import java.io.EOFException
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 
-class SocketWrapper(
+class SocketCilent(
         private val wsUrl: String,
         val cookies: String,
         private val channelId: String,
