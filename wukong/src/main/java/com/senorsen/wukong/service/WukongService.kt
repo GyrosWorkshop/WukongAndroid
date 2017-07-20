@@ -33,12 +33,13 @@ import com.senorsen.wukong.model.Configuration
 import com.senorsen.wukong.model.RequestSong
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.model.User
-import com.senorsen.wukong.network.*
+import com.senorsen.wukong.network.ApiUrls
+import com.senorsen.wukong.network.HttpClient
+import com.senorsen.wukong.network.SocketCilent
 import com.senorsen.wukong.network.message.Protocol
 import com.senorsen.wukong.network.message.WebSocketReceiveProtocol
 import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore
-import com.senorsen.wukong.store.LastMessageLocalStore
 import com.senorsen.wukong.store.UserInfoLocalStore
 import com.senorsen.wukong.ui.MainActivity
 import com.senorsen.wukong.utils.Debounce
@@ -48,6 +49,8 @@ import java.io.IOException
 import java.io.Serializable
 import java.lang.System.currentTimeMillis
 import java.util.*
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 
@@ -352,6 +355,7 @@ class WukongService : Service() {
         applicationContext.registerReceiver(mNoisyReceiver, intentFilter)
 
         downvoted = false
+        currentSong = null
 
         workThread = thread {
 
@@ -539,6 +543,18 @@ class WukongService : Service() {
                 try {
                     doConnect()
                     setNotification("Channel $channelId idle.")
+
+                    // Check whether server sent us a song after 10s.
+                    val executor = ScheduledThreadPoolExecutor(1)
+                    executor.scheduleAtFixedRate({
+                        if (currentSong != null) {
+                            Log.i(TAG, "server already sent us a song, check executor shutdown")
+                            executor.shutdown()
+                        } else {
+                            Log.i(TAG, "server not send us a song, requesting")
+                            sendSongUpdateRequest()
+                        }
+                    }, 10, 10, TimeUnit.SECONDS)
                 } catch (e: IOException) {
                     Log.e(TAG, "socket exception: " + e.message)
                 }
@@ -558,6 +574,17 @@ class WukongService : Service() {
         }
     }
 
+    private fun sendSongUpdateRequest() {
+        Log.d(TAG, "song update request (dummy downvote)")
+        thread {
+            try {
+                http.downvote(RequestSong("dummy", "dummy", null))
+            } catch (e: Exception) {
+                Log.e(TAG, "song update request failed", e)
+            }
+        }
+    }
+
     private fun sendDownvote(song: RequestSong) {
         Log.d(TAG, currentSong!!.toRequestSong().toString())
         Log.d(TAG, song.toString())
@@ -567,8 +594,7 @@ class WukongService : Service() {
                 try {
                     http.downvote(song)
                 } catch (e: Exception) {
-                    Log.e(TAG, "sendDownvote")
-                    e.printStackTrace()
+                    Log.e(TAG, "sendDownvote", e)
                     handler.post {
                         Toast.makeText(applicationContext, "Downvote failed: " + e.message, Toast.LENGTH_SHORT).show()
                     }
