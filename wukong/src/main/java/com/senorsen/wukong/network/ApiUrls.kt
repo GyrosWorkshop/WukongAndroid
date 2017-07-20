@@ -9,7 +9,7 @@ object ApiUrls {
     val messageApiUrl = "https://redir.senorsen.com/messages/wukong"
 
     // Base url, hostname, etc.
-    lateinit var base: String
+    var base: String = "https://api.wukongmusic.us:443" // Default, will be dynamically updated.
 
     // API endpoints.
     val apiEndpoint: String

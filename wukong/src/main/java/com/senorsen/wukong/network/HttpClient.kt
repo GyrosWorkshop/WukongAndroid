@@ -45,7 +45,11 @@ class HttpClient(private val cookies: String = "") {
     }
 
     init {
-        fetchApiBaseUrl()
+        try {
+            fetchApiBaseUrl()
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchApiBaseUrl failed, will use the default one")
+        }
     }
 
     fun fetchApiBaseUrl() {

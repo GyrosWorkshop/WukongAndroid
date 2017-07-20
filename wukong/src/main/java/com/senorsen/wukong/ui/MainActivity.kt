@@ -196,25 +196,29 @@ class MainActivity : AppCompatActivity() {
         val lastMessageLocalStore = LastMessageLocalStore(this)
         var messages: List<Message>
         thread {
-            val last = lastMessageLocalStore.load()
-            messages = HttpClient().getMessage(last,  userInfoLocalStore.load()?.userName)
-            Log.d(TAG, "fetch message gt $last")
-            if (messages.isNotEmpty()) {
-                handler.post {
-                    fun showNext(index: Int) {
-                        if (index >= messages.count()) return
-                        val message = messages[index]
-                        AlertDialog.Builder(this)
-                                .setTitle("Message ${index + 1}/${messages.count()}")
-                                .setMessage(message.message + "\n\n" + message.createdAt.replace(Regex("T|Z|\\.000"), " "))
-                                .setPositiveButton(if (index < messages.count() - 1) "Next" else "Ok") { _, _ ->
-                                    lastMessageLocalStore.save(message.messageId)
-                                    showNext(index + 1)
-                                }
-                                .show()
+            try {
+                val last = lastMessageLocalStore.load()
+                messages = HttpClient().getMessage(last, userInfoLocalStore.load()?.userName)
+                Log.d(TAG, "fetch message gt $last")
+                if (messages.isNotEmpty()) {
+                    handler.post {
+                        fun showNext(index: Int) {
+                            if (index >= messages.count()) return
+                            val message = messages[index]
+                            AlertDialog.Builder(this)
+                                    .setTitle("Message ${index + 1}/${messages.count()}")
+                                    .setMessage(message.message + "\n\n" + message.createdAt.replace(Regex("T|Z|\\.000"), " "))
+                                    .setPositiveButton(if (index < messages.count() - 1) "Next" else "Ok") { _, _ ->
+                                        lastMessageLocalStore.save(message.messageId)
+                                        showNext(index + 1)
+                                    }
+                                    .show()
+                        }
+                        showNext(0)
                     }
-                    showNext(0)
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "fetch online message error", e)
             }
         }
     }

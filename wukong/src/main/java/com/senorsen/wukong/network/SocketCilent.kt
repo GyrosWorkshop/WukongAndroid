@@ -8,7 +8,6 @@ import com.google.gson.Gson
 import com.senorsen.wukong.BuildConfig
 import com.senorsen.wukong.network.message.WebSocketReceiveProtocol
 import okhttp3.*
-import java.io.EOFException
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -110,14 +109,10 @@ class SocketCilent(
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-            if (t is EOFException) {
-                Log.i(TAG, "Ignore EOFException")
-            } else {
-                executor.shutdown()
-                t.printStackTrace()
-                Log.i(TAG, "Reconnection onFailure")
-                reconnectCallBack?.call()
-            }
+            executor.shutdown()
+            t.printStackTrace()
+            Log.i(TAG, "Reconnection onFailure")
+            reconnectCallBack?.call()
         }
 
         inner class PingPongCheckerRunnable : Runnable {
