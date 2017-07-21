@@ -193,12 +193,11 @@ class MainActivity : AppCompatActivity() {
                 .setGitHubUserAndRepo("GyrosWorkshop", "WukongAndroid")
                 .start()
 
-        val lastMessageLocalStore = LastMessageLocalStore(this)
-        var messages: List<Message>
         thread {
             try {
+                val lastMessageLocalStore = LastMessageLocalStore(this)
                 val last = lastMessageLocalStore.load()
-                messages = HttpClient().getMessage(last, userInfoLocalStore.load()?.userName)
+                val messages = HttpClient().getMessage(last, userInfoLocalStore.load()?.userName)
                 Log.d(TAG, "fetch message gt $last")
                 if (messages.isNotEmpty()) {
                     handler.post {
