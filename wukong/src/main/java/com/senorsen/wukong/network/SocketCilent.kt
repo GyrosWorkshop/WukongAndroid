@@ -36,7 +36,7 @@ class SocketCilent(
 
     val client = OkHttpClient.Builder()
             .readTimeout(0, TimeUnit.MILLISECONDS)
-            .pingInterval(20, TimeUnit.SECONDS)
+            .pingInterval(10, TimeUnit.SECONDS)
             .build()
 
     val request = Request.Builder()
@@ -76,6 +76,7 @@ class SocketCilent(
                                         private val applicationContext: Context) : WebSocketListener() {
 
         @Volatile var alonePingCount = 0
+        @Volatile var recentlySendPingCount = 0
 
         private lateinit var executor: ScheduledThreadPoolExecutor
 
@@ -93,6 +94,7 @@ class SocketCilent(
 
         override fun onPing(webSocket: WebSocket) {
             this.alonePingCount++;
+            recentlySendPingCount++
             Log.d(TAG, "ping sent")
         }
 
@@ -106,6 +108,7 @@ class SocketCilent(
             Log.i(TAG, "Reconnection")
             executor.shutdown()
             reconnectCallBack?.call()
+            reconnectCallBack = null
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -113,6 +116,7 @@ class SocketCilent(
             t.printStackTrace()
             Log.i(TAG, "Reconnection onFailure")
             reconnectCallBack?.call()
+            reconnectCallBack = null
         }
 
         inner class PingPongCheckerRunnable : Runnable {
@@ -120,11 +124,23 @@ class SocketCilent(
             private val pingTimeoutThreshold = 3
 
             override fun run() {
+                var disconnected = false
                 if (alonePingCount > pingTimeoutThreshold) {
+                    disconnected = true
                     Log.i(TAG, "ping-timeout threshold $pingTimeoutThreshold reached, reconnecting")
+                }
+                if (recentlySendPingCount == 0) {
+                    disconnected = true
+                    Log.i(TAG, "recently sent ping count = 0, reconnecting")
+                }
+                if (disconnected) {
                     executor.shutdown()
                     reconnectCallBack?.call()
+                    reconnectCallBack = null
+                } else {
+                    Log.d(TAG, "ping-pong check ok")
                 }
+                recentlySendPingCount = 0
             }
         }
 

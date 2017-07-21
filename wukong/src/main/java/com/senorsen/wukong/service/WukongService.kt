@@ -587,6 +587,8 @@ class WukongService : Service() {
         thread {
             try {
                 http.downvote(RequestSong("dummy", "dummy", null))
+            } catch (e: HttpClient.InvalidRequestException) {
+                Log.i(TAG, "song update - server should respond")
             } catch (e: Exception) {
                 Log.e(TAG, "song update request failed", e)
             }
