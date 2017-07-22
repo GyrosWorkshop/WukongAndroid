@@ -293,20 +293,25 @@ class WukongService : Service() {
 
 
     private val afChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
-        when (focusChange) {
-            AudioManager.AUDIOFOCUS_LOSS ->
-                switchPause()
 
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT ->
-                switchPause()
+        try {
+            when (focusChange) {
+                AudioManager.AUDIOFOCUS_LOSS ->
+                    switchPause()
 
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK ->
-                mediaPlayer.setVolume(0.1f, 0.1f)
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT ->
+                    switchPause()
 
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                mediaPlayer.setVolume(1.0f, 1.0f)
-                switchPlay()
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK ->
+                    mediaPlayer.setVolume(0.1f, 0.1f)
+
+                AudioManager.AUDIOFOCUS_GAIN -> {
+                    mediaPlayer.setVolume(1.0f, 1.0f)
+                    switchPlay()
+                }
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "afChangeListener $focusChange error", e)
         }
     }
 
