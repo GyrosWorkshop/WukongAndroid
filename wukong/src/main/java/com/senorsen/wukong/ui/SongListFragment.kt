@@ -7,7 +7,6 @@ import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.os.AsyncTask
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
@@ -22,9 +21,12 @@ import android.widget.TextView
 import android.widget.Toast
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.Song
+import com.senorsen.wukong.network.HttpClient
 import com.senorsen.wukong.service.WukongService
+import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore
 import java.util.*
+import kotlin.concurrent.thread
 
 
 class SongListFragment : Fragment() {
@@ -34,6 +36,8 @@ class SongListFragment : Fragment() {
     var connected = false
     var wukongService: WukongService? = null
     private lateinit var songListLocalStore: SongListLocalStore
+    private lateinit var configurationStore: ConfigurationLocalStore
+    private lateinit var http: HttpClient
 
     val serviceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -101,29 +105,31 @@ class SongListFragment : Fragment() {
     }
 
     fun fetchSongList() {
-        if (wukongService == null) {
-            Toast.makeText(activity, "Wukong: service not start, cannot fetch", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        Toast.makeText(activity, "Wukong: sync...", Toast.LENGTH_SHORT).show()
-
-        object : AsyncTask<Void, Void, List<Song>>() {
-            override fun doInBackground(vararg params: Void?): List<Song>? {
-                val configuration = wukongService!!.fetchConfiguration()
-                if (configuration != null && configuration.syncPlaylists != null) {
-                    return wukongService!!.getSongLists(configuration.syncPlaylists!!, configuration.cookies)
-                } else {
-                    return listOf()
+        val configuration = configurationStore.load()
+        if (configuration.syncPlaylists.isNullOrBlank()) {
+            Toast.makeText(activity, "Playlist is empty", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(activity, "Wukong: sync...", Toast.LENGTH_SHORT).show()
+            thread {
+                try {
+                    val list = http.getSongLists(configuration.syncPlaylists!!, configuration.cookies)
+                    handler.post {
+                        adapter.list = list
+                    }
+                    try {
+                        wukongService?.userSongList = list.toMutableList()
+                        wukongService?.doUpdateNextSong()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    handler.post {
+                        Toast.makeText(activity, "Wukong: sync error, " + e.message, Toast.LENGTH_LONG).show()
+                    }
                 }
             }
-
-            override fun onPostExecute(result: List<Song>?) {
-                super.onPostExecute(result)
-                adapter.list = result?.toMutableList()
-                wukongService!!.doUpdateNextSong()
-            }
-        }.execute()
+        }
     }
 
     fun updateSongListFromService() {
@@ -157,6 +163,12 @@ class SongListFragment : Fragment() {
         val localList = songListLocalStore.load()
         if (localList != null)
             adapter.list = localList.toMutableList()
+
+        configurationStore = ConfigurationLocalStore(activity)
+        thread {
+            http = HttpClient(activity.getSharedPreferences("wukong", Context.MODE_PRIVATE)
+                    .getString("cookies", ""))
+        }
 
         bindService()
     }

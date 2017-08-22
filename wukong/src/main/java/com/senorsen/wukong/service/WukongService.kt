@@ -124,7 +124,7 @@ class WukongService : Service() {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
-    fun fetchConfiguration(): Configuration? {
+    fun fetchConfiguration(http: HttpClient = this.http): Configuration? {
         try {
             configuration = http.getConfiguration()
         } catch (e: HttpClient.UserUnauthorizedException) {
@@ -145,16 +145,7 @@ class WukongService : Service() {
     }
 
     fun getSongLists(urls: String, cookies: String?): List<Song> {
-        val songLists = urls.split('\n').map { it.trim() }.filter { it.isNotBlank() }.map { url ->
-            try {
-                http.getSongListWithUrl(url, cookies)
-            } catch (e: Exception) {
-                Log.e(HttpClient::class.simpleName, "getSongLists")
-                e.printStackTrace()
-                null
-            }
-        }
-        userSongList = songLists.map { it?.songs ?: listOf() }.flatMap { it }.toMutableList()
+        userSongList = http.getSongLists(urls, cookies).toMutableList()
         return userSongList
     }
 

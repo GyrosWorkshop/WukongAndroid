@@ -5,10 +5,7 @@ import com.google.common.net.HttpHeaders
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.senorsen.wukong.BuildConfig
-import com.senorsen.wukong.model.Configuration
-import com.senorsen.wukong.model.Message
-import com.senorsen.wukong.model.RequestSong
-import com.senorsen.wukong.model.User
+import com.senorsen.wukong.model.*
 import com.senorsen.wukong.network.message.SongList
 import com.senorsen.wukong.network.message.SongListWithUrlRequest
 import okhttp3.*
@@ -52,7 +49,7 @@ class HttpClient(private val cookies: String = "") {
         }
     }
 
-    fun fetchApiBaseUrl() {
+    private fun fetchApiBaseUrl() {
         val ret = get(ApiUrls.dynamicApiBaseUrl)
         val detail = Gson().fromJson(ret, ApiBaseUrlDetail::class.java)
         detail.linkUrl.trimEnd('/')
@@ -102,6 +99,19 @@ class HttpClient(private val cookies: String = "") {
     fun getSongListWithUrl(url: String, cookies: String?): SongList {
         val ret = post(ApiUrls.providerSongListWithUrlEndpoint, Gson().toJson(SongListWithUrlRequest(url, cookies)))
         return Gson().fromJson(ret, SongList::class.java)
+    }
+
+    fun getSongLists(urls: String, cookies: String?): List<Song> {
+        val songLists = urls.split('\n').map { it.trim() }.filter { it.isNotBlank() }.map { url ->
+            try {
+                getSongListWithUrl(url, cookies)
+            } catch (e: Exception) {
+                Log.e(HttpClient::class.simpleName, "getSongLists")
+                e.printStackTrace()
+                null
+            }
+        }
+        return songLists.map { it?.songs ?: listOf() }.flatMap { it }
     }
 
     fun getMessage(lastId: Long, user: String?): List<Message> {
