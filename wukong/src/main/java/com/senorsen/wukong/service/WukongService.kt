@@ -35,7 +35,7 @@ import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.model.User
 import com.senorsen.wukong.network.ApiUrls
 import com.senorsen.wukong.network.HttpClient
-import com.senorsen.wukong.network.SocketCilent
+import com.senorsen.wukong.network.SocketClient
 import com.senorsen.wukong.network.message.Protocol
 import com.senorsen.wukong.network.message.WebSocketReceiveProtocol
 import com.senorsen.wukong.store.ConfigurationLocalStore
@@ -64,7 +64,7 @@ class WukongService : Service() {
 
     lateinit var mediaSourceSelector: MediaSourceSelector
     lateinit var http: HttpClient
-    var socket: SocketCilent? = null
+    var socket: SocketClient? = null
     lateinit var currentUser: User
 
     val handler = Handler()
@@ -397,7 +397,7 @@ class WukongService : Service() {
 
                 var serverSentSongUpdate: Boolean
 
-                val receiver = object : SocketCilent.SocketReceiver {
+                val receiver = object : SocketClient.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
                         // FIXME: 该分层了。。。
 
@@ -515,7 +515,7 @@ class WukongService : Service() {
                     http.channelJoin(channelId)
                     fetchConfiguration()
                     if (socket == null) {
-                        socket = SocketCilent(ApiUrls.wsEndpoint, cookies, channelId, reconnectCallback as SocketCilent.Callback, receiver, handler, applicationContext)
+                        socket = SocketClient(ApiUrls.wsEndpoint, cookies, channelId, reconnectCallback as SocketClient.Callback, receiver, handler, applicationContext)
                     } else {
                         socket!!.connect()
                     }
@@ -536,7 +536,7 @@ class WukongService : Service() {
                     }, 10, 10, TimeUnit.SECONDS)
                 }
 
-                reconnectCallback = object : SocketCilent.Callback {
+                reconnectCallback = object : SocketClient.Callback {
                     override fun call() {
                         var retry = true
                         while (retry && this@WukongService.connected) {

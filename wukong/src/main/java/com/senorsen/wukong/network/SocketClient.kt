@@ -12,7 +12,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 
-class SocketCilent(
+class SocketClient(
         private val wsUrl: String,
         val cookies: String,
         private val channelId: String,
