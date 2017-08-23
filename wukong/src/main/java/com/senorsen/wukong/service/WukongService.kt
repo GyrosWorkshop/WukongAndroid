@@ -202,7 +202,8 @@ class WukongService : Service() {
         songListLocalStore = SongListLocalStore(this)
         userInfoLocalStore = UserInfoLocalStore(this)
         mediaSourceSelector = MediaSourceSelector(this)
-        mediaCache = MediaCache(this)
+
+        // Create media cache later (on start).
 
         val filter = IntentFilter()
         filter.addAction(ACTION_DOWNVOTE)
@@ -354,6 +355,8 @@ class WukongService : Service() {
         currentSong = null
 
         workThread = thread {
+
+            mediaCache = MediaCache(this)
 
             try {
                 http = HttpClient(cookies)

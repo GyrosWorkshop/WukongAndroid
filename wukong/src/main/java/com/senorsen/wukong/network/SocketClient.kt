@@ -51,7 +51,7 @@ class SocketClient(
 
     @Synchronized
     fun connect() {
-        Log.i(TAG, "Connect ws: $wsUrl")
+        Log.i(TAG, "Connect ws $this: $wsUrl")
         listener?.reconnectCallBack = null
         ws?.close(CLOSE_GOING_AWAY, "Going away")
         listener = ActualWebSocketListener(socketReceiver, reconnectCallback, handler, applicationContext)

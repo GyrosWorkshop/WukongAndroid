@@ -24,7 +24,7 @@ class MediaCache(private val context: Context) {
     }
 
     private fun initDiskCache(cacheDir: File) {
-        val maxCacheSize = PreferenceManager.getDefaultSharedPreferences(context).getLong(KEY_PREF_MAX_MEDIA_CACHE_SIZE, 1 * 1024 * 1024 * 1024)
+        val maxCacheSize = PreferenceManager.getDefaultSharedPreferences(context).getLong(KEY_PREF_MAX_MEDIA_CACHE_SIZE, 2 * 1024 * 1024 * 1024)
         Log.d(TAG, "maxCacheSize: $maxCacheSize")
         mDiskLruCache = DiskLruCache.open(cacheDir, 1, 1, maxCacheSize)
         mDiskCacheStarting = false

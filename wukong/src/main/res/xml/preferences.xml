@@ -13,6 +13,12 @@
         android:title="Use local media" />
     <!-- After user grant WRITE_EXTERNAL_STORAGE permission, this will be changed to true automatically. -->
 
+    <EditTextPreference
+        android:key="pref_maxMediaCacheSize"
+        android:title="Cache size (Gigabyte)"
+        android:summary="%s"
+        android:defaultValue="2" />
+
     <ListPreference
         android:defaultValue="@string/pref_preferAudioQualityData_default"
         android:dialogTitle="Preferred Maximum Audio Quality"
