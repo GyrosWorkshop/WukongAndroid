@@ -105,10 +105,14 @@ class SettingsFragment : PreferenceFragment(), SharedPreferences.OnSharedPrefere
                 Toast.makeText(activity, "Cannot upload configuration: $e", Toast.LENGTH_LONG).show()
             }
         }
+        if (key == KEY_PREF_MAX_MEDIA_CACHE_SIZE) {
+            Toast.makeText(activity, "Apply new cache setting needs to re-enter channel", Toast.LENGTH_SHORT).show()
+        }
     }
 
     companion object {
         private val KEY_PREF_COOKIES = "pref_cookies"
         private val KEY_PREF_SYNC_PLAYLISTS = "pref_syncPlaylists"
+        private val KEY_PREF_MAX_MEDIA_CACHE_SIZE = "pref_maxMediaCacheSize"
     }
 }

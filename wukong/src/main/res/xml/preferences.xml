@@ -14,10 +14,10 @@
     <!-- After user grant WRITE_EXTERNAL_STORAGE permission, this will be changed to true automatically. -->
 
     <EditTextPreference
+        android:defaultValue="2"
         android:key="pref_maxMediaCacheSize"
-        android:title="Cache size (Gigabyte)"
-        android:summary="%s"
-        android:defaultValue="2" />
+        android:title="Cache size"
+        android:summary="Maximum cache size (gigabyte)"/>
 
     <ListPreference
         android:defaultValue="@string/pref_preferAudioQualityData_default"
