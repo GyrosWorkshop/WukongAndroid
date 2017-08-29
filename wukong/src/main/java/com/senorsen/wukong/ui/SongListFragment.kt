@@ -118,6 +118,9 @@ class SongListFragment : Fragment() {
                     handler.post {
                         adapter.list = list
                         adapter.reloadFilteredList()
+                        if (list.isEmpty()) {
+                            Toast.makeText(activity, "Wukong: playlist is empty, or sync error", Toast.LENGTH_SHORT).show()
+                        }
                     }
                     try {
                         wukongService?.userSongList = list.toMutableList()
