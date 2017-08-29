@@ -10,6 +10,7 @@ import com.senorsen.wukong.network.message.SongList
 import com.senorsen.wukong.network.message.SongListWithUrlRequest
 import okhttp3.*
 import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 
 
 class HttpClient(private val cookies: String = "") {
@@ -20,7 +21,8 @@ class HttpClient(private val cookies: String = "") {
 
     private val JSON = MediaType.parse("application/json; charset=utf-8")
 
-    val client = OkHttpClient()
+    private val client = OkHttpClient.Builder()
+            .readTimeout(15, TimeUnit.SECONDS).build()!!
 
     class UserUnauthorizedException : Exception {
         constructor(e: Exception) : super(e)
@@ -43,20 +45,21 @@ class HttpClient(private val cookies: String = "") {
 
     init {
         try {
-            fetchApiBaseUrl()
+            ApiUrls.base = fetchBaseUrl("WukongApi")
+            ApiUrls.providerEndpoint = fetchBaseUrl("WukongProvider")
         } catch (e: Exception) {
             Log.e(TAG, "fetchApiBaseUrl failed, will use the default one")
         }
     }
 
-    private fun fetchApiBaseUrl() {
-        val ret = get(ApiUrls.dynamicApiBaseUrl)
+    private fun fetchBaseUrl(key: String): String {
+        val ret = get(ApiUrls.dynamicBaseUrl(key))
         val detail = Gson().fromJson(ret, ApiBaseUrlDetail::class.java)
         detail.linkUrl.trimEnd('/')
         detail.apply {
-            Log.i(TAG, "Api base url: $linkUrl, updated at $updatedAt")
+            Log.i(TAG, "$key url: $linkUrl, updated at $updatedAt")
         }
-        ApiUrls.base = detail.linkUrl
+        return detail.linkUrl
     }
 
     inner class ApiBaseUrlDetail(val linkUrl: String,
@@ -102,16 +105,18 @@ class HttpClient(private val cookies: String = "") {
     }
 
     fun getSongLists(urls: String, cookies: String?): List<Song> {
-        val songLists = urls.split('\n').map { it.trim() }.filter { it.isNotBlank() }.map { url ->
+        val songLists = urls.split('\n').map(String::trim).filter(String::isNotBlank).map { url ->
             try {
-                getSongListWithUrl(url, cookies)
+                val songList = getSongListWithUrl(url, cookies)
+                Log.i(TAG, "${songList.songs?.size}, ${songList.name}, ${songList.creator?.name} of $url")
+                songList
             } catch (e: Exception) {
                 Log.e(HttpClient::class.simpleName, "getSongLists")
                 e.printStackTrace()
                 null
             }
         }
-        return songLists.map { it?.songs ?: listOf() }.flatMap { it }
+        return songLists.mapNotNull { it?.songs }.flatMap { it }
     }
 
     fun getMessage(lastId: Long, user: String?): List<Message> {

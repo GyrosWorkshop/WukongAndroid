@@ -3,7 +3,7 @@ package com.senorsen.wukong.network
 object ApiUrls {
 
     // Dynamic Api base.
-    val dynamicApiBaseUrl = "https://redir.senorsen.com/WukongApi?detail=1"
+    fun dynamicBaseUrl(key: String) = "https://redir.senorsen.com/$key?detail=1"
 
     // Message Api.
     val messageApiUrl = "https://redir.senorsen.com/messages/wukong"
@@ -32,8 +32,7 @@ object ApiUrls {
         get() = "$apiEndpoint/channel/downVote"
 
     // Music Provider API endpoints.
-    val providerEndpoint: String
-        get() = "$base/provider"
+    var providerEndpoint = "https://api2.wukongmusic.us/provider" // Default, will be dynamically updated.
     val providerSearchSongsEndpoint: String
         get() = "$providerEndpoint/searchSongs"
     val providerSongInfoEndpoint: String
