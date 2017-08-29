@@ -46,7 +46,7 @@ class AlbumArtCache(private val context: Context) {
         val cacheDir = getDiskCacheDir(DISK_CACHE_SUBDIR)
         initDiskCache(cacheDir)
         Log.i(TAG, "cacheDir: $cacheDir")
-        val memCacheSize = (Runtime.getRuntime().maxMemory() / 4).toInt()
+        val memCacheSize = (Runtime.getRuntime().maxMemory() / 10).toInt()
         Log.i(TAG, "memCacheSize=$memCacheSize")
         mMemoryCache = object : LruCache<String, Array<Bitmap>>(memCacheSize) {
             override fun sizeOf(key: String, value: Array<Bitmap>): Int {

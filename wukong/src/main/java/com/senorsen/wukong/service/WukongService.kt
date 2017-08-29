@@ -420,8 +420,9 @@ class WukongService : Service() {
                                 Log.d(TAG, "preload ${protocol.song?.songKey} image " + protocol.song)
 
                                 // Preload artwork image.
-                                if (protocol.song?.artwork != null)
-                                    albumArtCache.fetch(protocol.song.artwork?.file!!, null, protocol.song.songKey)
+                                protocol.song?.artwork?.let { artwork ->
+                                    albumArtCache.fetch(artwork.file!!, null, protocol.song.songKey)
+                                }
 
                                 val song = protocol.song!!
 
@@ -454,12 +455,12 @@ class WukongService : Service() {
 
                             Protocol.PLAY -> {
 
+                                serverSentSongUpdate = true
+
                                 if (protocol.song == null) {
                                     setNotification("Channel $channelId: play null")
                                     return
                                 }
-
-                                serverSentSongUpdate = true
 
                                 val song = protocol.song
 
@@ -526,12 +527,12 @@ class WukongService : Service() {
                     doUpdateNextSong()
 
                     // Check whether server sent us a song after 10s.
-                    executor?.shutdown()
+                    executor?.shutdownNow()
                     executor = ScheduledThreadPoolExecutor(1)
                     executor?.scheduleAtFixedRate({
                         if (serverSentSongUpdate) {
                             Log.i(TAG, "server already sent us a song, check executor shutdown")
-                            executor?.shutdown()
+                            executor?.shutdownNow()
                         } else {
                             Log.i(TAG, "server not send us a song, requesting")
                             sendSongUpdateRequest()
