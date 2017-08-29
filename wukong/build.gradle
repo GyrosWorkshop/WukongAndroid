@@ -15,7 +15,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 25
         versionCode 141
-        versionName "0.1.43"
+        versionName "0.1.44"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

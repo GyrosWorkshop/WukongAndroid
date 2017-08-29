@@ -72,7 +72,7 @@ data class Song(
 
 // A File is an object which contains uri and other required metadata.
 data class File(
-        var available: Boolean? = null,
+        var unavailable: Boolean? = null,
         var file: String? = null,
         var fileViaCdn: String? = null,
         var format: String? = null,

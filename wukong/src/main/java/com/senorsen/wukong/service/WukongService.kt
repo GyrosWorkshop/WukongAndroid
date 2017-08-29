@@ -431,7 +431,7 @@ class WukongService : Service() {
                                         if (out != null) {
                                             Log.d(TAG, "cache exists, skip preload ${song.songKey}")
                                         } else {
-                                            val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song)
+                                            val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song, false)
                                             Log.d(TAG, "preload media sources: $mediaSources")
 
                                             val source = MediaSourcePreparer.setMediaSources(mediaPlayerForPreloadVerification, mediaSources)

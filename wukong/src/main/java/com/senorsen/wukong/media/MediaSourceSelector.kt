@@ -51,10 +51,11 @@ class MediaSourceSelector(private val context: Context) {
         }.filterNotNull()
     }
 
-    fun selectFromMultipleMediaFiles(song: Song): Pair<List<File>, List<String>> {
+    fun selectFromMultipleMediaFiles(song: Song, acceptUnavailable: Boolean = true): Pair<List<File>, List<String>> {
         pullSettings()
         val defaultQualityIndex = qualities.indexOf(preferAudioQualityData)
-        val originalFiles = song.musics?.sortedByDescending(File::audioBitrate) ?:
+        val files = if (acceptUnavailable) song.musics else song.musics?.filterNot { it.unavailable == true}
+        val originalFiles = files?.sortedByDescending(File::audioBitrate) ?:
                 return Pair(listOf(), listOf())
 
         val resultFiles = originalFiles.filter { qualities.indexOf(it.audioQuality) >= defaultQualityIndex }.toMutableList()
