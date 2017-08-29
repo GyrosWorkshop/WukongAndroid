@@ -14,8 +14,8 @@ android {
         applicationId "com.senorsen.wukong"
         minSdkVersion 21
         targetSdkVersion 25
-        versionCode 141
-        versionName "0.1.46"
+        versionCode 147
+        versionName "0.1.47"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -47,6 +47,7 @@ dependencies {
     }
     compile 'com.squareup.okio:okio:1.13.0'
     compile 'de.hdodenhof:circleimageview:2.1.0'
+    compile 'jp.wasabeef:recyclerview-animators:2.2.7'
 
     testCompile 'junit:junit:4.12'
 }

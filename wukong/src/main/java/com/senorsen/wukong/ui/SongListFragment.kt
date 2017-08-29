@@ -23,6 +23,7 @@ import com.senorsen.wukong.network.HttpClient
 import com.senorsen.wukong.service.WukongService
 import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore
+import jp.wasabeef.recyclerview.animators.SlideInRightAnimator
 import java.util.*
 import kotlin.concurrent.thread
 
@@ -33,6 +34,7 @@ class SongListFragment : Fragment() {
     val adapter = SongListAdapter(this)
     var connected = false
     var wukongService: WukongService? = null
+    private lateinit var recyclerView: RecyclerView
     private lateinit var songListLocalStore: SongListLocalStore
     private lateinit var configurationStore: ConfigurationLocalStore
     private lateinit var http: HttpClient
@@ -50,7 +52,7 @@ class SongListFragment : Fragment() {
             this@SongListFragment.wukongService = wukongService
             wukongService.songListUpdateCallback = this@SongListFragment::onSongListUpdate
 
-            if (adapter.list?.isEmpty() ?: true) {
+            if (adapter.list?.isEmpty() != false) {
                 fetchSongList()
             } else {
                 // If song list in service is empty, service is not setup.
@@ -68,6 +70,7 @@ class SongListFragment : Fragment() {
         handler.post {
             Log.d(SongListFragment::class.simpleName, "onSongListUpdate ${list.firstOrNull()}")
             adapter.list = list.toMutableList()
+            adapter.reloadFilteredList()
         }
     }
 
@@ -87,10 +90,11 @@ class SongListFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup, savedInstanceState: Bundle?): View {
-        val recyclerView = inflater.inflate(R.layout.fragment_song_list, container, false) as RecyclerView
+        recyclerView = inflater.inflate(R.layout.fragment_song_list, container, false) as RecyclerView
         recyclerView.adapter = adapter
         recyclerView.layoutManager = LinearLayoutManager(activity)
-        recyclerView.setHasFixedSize(true)
+        recyclerView.setHasFixedSize(false)
+        recyclerView.itemAnimator = SlideInRightAnimator()
 
         songListLocalStore = SongListLocalStore(this.activity)
 
@@ -113,6 +117,7 @@ class SongListFragment : Fragment() {
                     val list = http.getSongLists(configuration.syncPlaylists!!, configuration.cookies)
                     handler.post {
                         adapter.list = list
+                        adapter.reloadFilteredList()
                     }
                     try {
                         wukongService?.userSongList = list.toMutableList()
@@ -133,6 +138,7 @@ class SongListFragment : Fragment() {
     fun updateSongListFromService() {
         if (wukongService?.userSongList?.isNotEmpty() ?: false) {
             adapter.list = wukongService!!.userSongList
+            adapter.reloadFilteredList()
         }
     }
 
@@ -141,6 +147,7 @@ class SongListFragment : Fragment() {
             val list = adapter.list!!
             Collections.shuffle(list, Random(System.nanoTime()))
             adapter.list = list
+            adapter.reloadFilteredList()
             wukongService?.userSongList = list.toMutableList()
             wukongService?.doUpdateNextSong()
         }
@@ -149,6 +156,7 @@ class SongListFragment : Fragment() {
     fun clearSongList() {
         if (adapter.list != null) {
             adapter.list = mutableListOf()
+            adapter.reloadFilteredList()
             wukongService?.userSongList = adapter.list!!.toMutableList()
             wukongService?.doUpdateNextSong()
         }
@@ -159,8 +167,10 @@ class SongListFragment : Fragment() {
 
         // Load local list first.
         val localList = songListLocalStore.load()
-        if (localList != null)
+        if (localList != null) {
             adapter.list = localList.toMutableList()
+            adapter.reloadFilteredList()
+        }
 
         configurationStore = ConfigurationLocalStore(activity)
         thread {
@@ -178,7 +188,7 @@ class SongListFragment : Fragment() {
         super.onStop()
     }
 
-    class SongListAdapter(val fragment: SongListFragment) : RecyclerView.Adapter<SongListAdapter.ViewHolder>(), Filterable {
+    inner class SongListAdapter(val fragment: SongListFragment) : RecyclerView.Adapter<SongListAdapter.ViewHolder>(), Filterable {
 
         var lastNeedle: String? = null
 
@@ -186,7 +196,6 @@ class SongListFragment : Fragment() {
             get() = field
             set(value) {
                 field = value
-                filter.filter(lastNeedle ?: "")
                 fragment.songListLocalStore.save(value)
             }
 
@@ -194,14 +203,17 @@ class SongListFragment : Fragment() {
             get() = field
             set(value) {
                 field = value
-                notifyDataSetChanged()
             }
+
+        fun reloadFilteredList() {
+            filter.filter(lastNeedle ?: "")
+        }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val song = filteredList?.getOrNull(position) ?: return
             holder.name.text = song.title
             holder.caption.text = "${song.artist} - ${song.album}"
-            holder.id = position
+            holder.songKey = song.songKey
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -235,6 +247,7 @@ class SongListFragment : Fragment() {
                 @Suppress("UNCHECKED_CAST")
                 override fun publishResults(constraint: CharSequence, results: FilterResults) {
                     filteredList = results.values as List<Song>?
+                    notifyDataSetChanged()
                 }
             }
         }
@@ -246,27 +259,42 @@ class SongListFragment : Fragment() {
             val caption = view.findViewById(android.R.id.text2) as TextView
             val upIcon = view.findViewById(R.id.song_list_up) as ImageView
             val removeIcon = view.findViewById(R.id.song_list_remove) as ImageView
-            var id: Int = -1
+            var songKey: String = ""
 
             init {
                 upIcon.setOnClickListener {
-                    Log.d(TAG, "up $id")
+                    Log.d(TAG, "up $songKey")
+
                     val tempList = list!!.toMutableList()
-                    val song = filteredList!![id]
+                    val song = filteredList!!.find { it.songKey == songKey }!!
+
+                    notifyItemMoved(filteredList!!.indexOf(song), 0)
+                    recyclerView.layoutManager.scrollToPosition(0)
+
                     tempList.remove(song)
                     tempList.add(0, song)
                     list = tempList
+                    val tempFilteredList = filteredList!!.toMutableList()
+                    tempFilteredList.remove(song)
+                    tempFilteredList.add(0, song)
+                    filteredList = tempFilteredList
 
                     fragment.wukongService?.userSongList = tempList
                     fragment.wukongService?.doUpdateNextSong()
                 }
 
                 removeIcon.setOnClickListener {
-                    Log.d(TAG, "remove $id")
+                    Log.d(TAG, "remove $songKey")
                     val tempList = list!!.toMutableList()
-                    val song = filteredList!![id]
+                    val song = filteredList!!.find { it.songKey == songKey }
+
+                    notifyItemRemoved(filteredList!!.indexOf(song))
+
                     tempList.remove(song)
                     list = tempList
+                    val tempFilteredList = filteredList!!.toMutableList()
+                    tempFilteredList.remove(song)
+                    filteredList = tempFilteredList
 
                     fragment.wukongService?.userSongList = tempList
                     fragment.wukongService?.doUpdateNextSong()
