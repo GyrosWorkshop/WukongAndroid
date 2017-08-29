@@ -15,14 +15,17 @@ import android.preference.PreferenceManager
 import android.support.design.widget.NavigationView
 import android.support.v4.content.LocalBroadcastManager
 import android.support.v4.view.GravityCompat
+import android.support.v4.view.MenuItemCompat
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.SearchView
 import android.support.v7.widget.Toolbar
 import android.text.Html
 import android.text.InputType
 import android.text.SpannableStringBuilder
 import android.util.Log
+import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
@@ -32,7 +35,6 @@ import android.widget.Toast
 import com.github.javiersantos.appupdater.AppUpdater
 import com.github.javiersantos.appupdater.enums.UpdateFrom
 import com.senorsen.wukong.R
-import com.senorsen.wukong.model.Message
 import com.senorsen.wukong.model.User
 import com.senorsen.wukong.network.HttpClient
 import com.senorsen.wukong.service.WukongService
@@ -232,6 +234,14 @@ class MainActivity : AppCompatActivity() {
         mDrawerToggle.onConfigurationChanged(newConfig)
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        val search = menu.findItem(R.id.search)
+        val searchView = MenuItemCompat.getActionView(search) as SearchView
+        search(searchView)
+        return true
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         Log.d(TAG, "onOptionsItemSelected $item")
         when (item.itemId) {
@@ -242,8 +252,8 @@ class MainActivity : AppCompatActivity() {
                 showChannelDialog()
 
             R.id.nav_settings -> {
-                val currentFragment = fragmentManager.findFragmentByTag("SETTINGS")
-                if (currentFragment == null || !currentFragment.isVisible) {
+                val settingsFragment = getSettingsFragment()
+                if (settingsFragment == null || !settingsFragment.isVisible) {
                     fragmentManager.beginTransaction()
                             .replace(R.id.fragment, SettingsFragment(), "SETTINGS")
                             .addToBackStack("tag")
@@ -258,30 +268,44 @@ class MainActivity : AppCompatActivity() {
                 stopService(Intent(this, WukongService::class.java))
 
             R.id.nav_sync_playlist -> {
-                val currentFragment = fragmentManager.findFragmentByTag("MAIN")
-                if (currentFragment != null) {
-                    val fragment = currentFragment as MainFragment
-                    val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
-                    if (childFragment != null) {
-                        val songListFragment = childFragment as SongListFragment
-                        songListFragment.fetchSongList()
-                    }
-                }
+                getSongListFragment()?.fetchSongList()
             }
 
             R.id.nav_clear_playlist -> {
-                val currentFragment = fragmentManager.findFragmentByTag("MAIN")
-                if (currentFragment != null) {
-                    val fragment = currentFragment as MainFragment
-                    val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
-                    if (childFragment != null) {
-                        val songListFragment = childFragment as SongListFragment
-                        songListFragment.clearSongList()
-                    }
-                }
+                getSongListFragment()?.clearSongList()
             }
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    private fun getSettingsFragment() : SettingsFragment? {
+        return fragmentManager.findFragmentByTag("SETTINGS") as SettingsFragment
+    }
+
+    private fun getSongListFragment(): SongListFragment? {
+        val currentFragment = fragmentManager.findFragmentByTag("MAIN")
+        if (currentFragment != null) {
+            val fragment = currentFragment as MainFragment
+            val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
+            if (childFragment != null) {
+                return childFragment as SongListFragment
+            }
+        }
+        return null
+    }
+
+    private fun search(searchView: SearchView) {
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String): Boolean {
+                Log.i(TAG, "search $newText")
+                getSongListFragment()?.adapter?.filter?.filter(newText)
+                return true
+            }
+        })
     }
 
     override fun onResume() {
@@ -342,7 +366,7 @@ class MainActivity : AppCompatActivity() {
             Html.fromHtml("<b>${users.size}</b> player${if (users.size > 1) "s" else ""}: "
                     + users.map { if (it.id == currentPlayUserId) "<b>${it.userName}</b>" else it.userName }.joinToString())
         else
-            Html.fromHtml("disconnected")
+            Html.fromHtml("Disconnected")
     }
 
     fun updateSongList() {

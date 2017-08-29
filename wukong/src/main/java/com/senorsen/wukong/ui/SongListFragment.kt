@@ -16,9 +16,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.network.HttpClient
@@ -32,7 +30,7 @@ import kotlin.concurrent.thread
 class SongListFragment : Fragment() {
 
     private val handler = Handler()
-    private val adapter = SongListAdapter(this)
+    val adapter = SongListAdapter(this)
     var connected = false
     var wukongService: WukongService? = null
     private lateinit var songListLocalStore: SongListLocalStore
@@ -180,18 +178,27 @@ class SongListFragment : Fragment() {
         super.onStop()
     }
 
-    private class SongListAdapter(val fragment: SongListFragment) : RecyclerView.Adapter<SongListAdapter.ViewHolder>() {
+    class SongListAdapter(val fragment: SongListFragment) : RecyclerView.Adapter<SongListAdapter.ViewHolder>(), Filterable {
+
+        var lastNeedle: String? = null
 
         var list: List<Song>? = null
             get() = field
             set(value) {
                 field = value
-                notifyDataSetChanged()
+                filter.filter(lastNeedle ?: "")
                 fragment.songListLocalStore.save(value)
             }
 
+        private var filteredList: List<Song>? = null
+            get() = field
+            set(value) {
+                field = value
+                notifyDataSetChanged()
+            }
+
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val song = list?.get(position) ?: return
+            val song = filteredList?.getOrNull(position) ?: return
             holder.name.text = song.title
             holder.caption.text = "${song.artist} - ${song.album}"
             holder.id = position
@@ -203,6 +210,34 @@ class SongListFragment : Fragment() {
         }
 
         override fun getItemCount() = list?.size ?: 0
+
+        override fun getFilter(): Filter {
+            return object : Filter() {
+
+                override fun performFiltering(constraint: CharSequence): FilterResults {
+                    val needle = constraint.toString().toLowerCase()
+                    lastNeedle = needle
+                    val resultList = if (needle.isBlank()) {
+                        list
+                    } else {
+                        list?.filter {
+                            it.title?.toLowerCase()?.contains(needle) ?: false
+                                    || it.album?.toLowerCase()?.contains(needle) ?: false
+                                    || it.artist?.toLowerCase()?.contains(needle) ?: false
+                                    || it.songId == needle
+                        }
+                    }
+                    val filterResults = FilterResults()
+                    filterResults.values = resultList
+                    return filterResults
+                }
+
+                @Suppress("UNCHECKED_CAST")
+                override fun publishResults(constraint: CharSequence, results: FilterResults) {
+                    filteredList = results.values as List<Song>?
+                }
+            }
+        }
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
@@ -217,7 +252,7 @@ class SongListFragment : Fragment() {
                 upIcon.setOnClickListener {
                     Log.d(TAG, "up $id")
                     val tempList = list!!.toMutableList()
-                    val song = tempList[id]
+                    val song = filteredList!![id]
                     tempList.remove(song)
                     tempList.add(0, song)
                     list = tempList
@@ -229,7 +264,7 @@ class SongListFragment : Fragment() {
                 removeIcon.setOnClickListener {
                     Log.d(TAG, "remove $id")
                     val tempList = list!!.toMutableList()
-                    val song = tempList[id]
+                    val song = filteredList!![id]
                     tempList.remove(song)
                     list = tempList
 
@@ -237,7 +272,6 @@ class SongListFragment : Fragment() {
                     fragment.wukongService?.doUpdateNextSong()
                 }
             }
-
         }
     }
 }
