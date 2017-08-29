@@ -95,6 +95,7 @@ class SongListFragment : Fragment() {
         recyclerView.layoutManager = LinearLayoutManager(activity)
         recyclerView.setHasFixedSize(false)
         recyclerView.itemAnimator = SlideInRightAnimator()
+        recyclerView.addItemDecoration(DividerItemDecoration(activity))
 
         songListLocalStore = SongListLocalStore(this.activity)
 
@@ -214,6 +215,7 @@ class SongListFragment : Fragment() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val song = filteredList?.getOrNull(position) ?: return
+            holder.icon.text = holder.layoutPosition.toString()
             holder.name.text = song.title
             holder.caption.text = "${song.artist} - ${song.album}"
             holder.songKey = song.songKey
@@ -257,7 +259,7 @@ class SongListFragment : Fragment() {
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
-            val icon = view.findViewById(android.R.id.icon) as ImageView
+            val icon = view.findViewById(android.R.id.icon) as TextView
             val name = view.findViewById(android.R.id.text1) as TextView
             val caption = view.findViewById(android.R.id.text2) as TextView
             val upIcon = view.findViewById(R.id.song_list_up) as ImageView
@@ -271,7 +273,9 @@ class SongListFragment : Fragment() {
                     val tempList = list!!.toMutableList()
                     val song = filteredList!!.find { it.songKey == songKey }!!
 
-                    notifyItemMoved(filteredList!!.indexOf(song), 0)
+                    val index = adapterPosition
+                    notifyItemMoved(index, 0)
+                    notifyItemRangeChanged(0, index + 1)
                     recyclerView.layoutManager.scrollToPosition(0)
 
                     tempList.remove(song)
@@ -291,7 +295,12 @@ class SongListFragment : Fragment() {
                     val tempList = list!!.toMutableList()
                     val song = filteredList!!.find { it.songKey == songKey }
 
-                    notifyItemRemoved(filteredList!!.indexOf(song))
+                    val index = adapterPosition
+                    notifyItemRemoved(index)
+                    // If there are more elements after this, should update their index number.
+                    if (filteredList!!.size > index) {
+                        notifyItemRangeChanged(index, filteredList!!.size - index)
+                    }
 
                     tempList.remove(song)
                     list = tempList
