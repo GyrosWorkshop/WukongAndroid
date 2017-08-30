@@ -75,15 +75,12 @@ class SocketClient(
                                         private val handler: Handler,
                                         private val applicationContext: Context) : WebSocketListener() {
 
-        @Volatile var alonePingCount = 0
-        @Volatile var recentlySendPingCount = 0
-
-        private lateinit var executor: ScheduledThreadPoolExecutor
+        var alonePingCount = 0
+        var recentlySendPingCount = 0
+        private val pingCheck = PingPongCheckerRunnable()
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
             Log.i(TAG, "WebSocket open")
-            executor = ScheduledThreadPoolExecutor(1)
-            executor.scheduleAtFixedRate(PingPongCheckerRunnable(), 20, 20, TimeUnit.SECONDS)
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
@@ -96,6 +93,7 @@ class SocketClient(
             this.alonePingCount++;
             recentlySendPingCount++
             Log.d(TAG, "ping sent")
+            pingCheck.run()
         }
 
         override fun onPong(webSocket: WebSocket, sendPingCount: Int, pongCount: Int) {
@@ -106,7 +104,6 @@ class SocketClient(
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             Log.d(TAG, "Closing: $code $reason")
             Log.i(TAG, "Reconnection")
-            executor.shutdown()
             if (code != CLOSE_NORMAL_CLOSURE) {
                 reconnectCallBack?.call()
                 reconnectCallBack = null
@@ -114,7 +111,6 @@ class SocketClient(
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-            executor.shutdown()
             t.printStackTrace()
             Log.i(TAG, "Reconnection onFailure")
             reconnectCallBack?.call()
@@ -136,7 +132,6 @@ class SocketClient(
                     Log.i(TAG, "recently sent ping count = 0, reconnecting")
                 }
                 if (disconnected) {
-                    executor.shutdown()
                     reconnectCallBack?.call()
                     reconnectCallBack = null
                 } else {

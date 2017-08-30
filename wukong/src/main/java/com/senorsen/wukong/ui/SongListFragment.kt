@@ -213,17 +213,17 @@ class SongListFragment : Fragment() {
             filter.filter(lastNeedle ?: "")
         }
 
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val inflater = LayoutInflater.from(parent.rootView.context)
+            return ViewHolder(inflater.inflate(R.layout.item_song, parent, false))
+        }
+
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val song = filteredList?.getOrNull(position) ?: return
             holder.icon.text = holder.layoutPosition.toString()
             holder.name.text = song.title
             holder.caption.text = "${song.artist} - ${song.album}"
             holder.songKey = song.songKey
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val inflater = LayoutInflater.from(parent.rootView.context)
-            return ViewHolder(inflater.inflate(R.layout.item_song, parent, false))
         }
 
         override fun getItemCount() = list?.size ?: 0
@@ -275,7 +275,7 @@ class SongListFragment : Fragment() {
 
                     val index = adapterPosition
                     notifyItemMoved(index, 0)
-                    notifyItemRangeChanged(0, index + 1)
+                    notifyItemRangeChanged(0, index + 1, Object())
                     recyclerView.layoutManager.scrollToPosition(0)
 
                     tempList.remove(song)
@@ -299,7 +299,7 @@ class SongListFragment : Fragment() {
                     notifyItemRemoved(index)
                     // If there are more elements after this, should update their index number.
                     if (filteredList!!.size > index) {
-                        notifyItemRangeChanged(index, filteredList!!.size - index)
+                        notifyItemRangeChanged(index, filteredList!!.size - index, Object())
                     }
 
                     tempList.remove(song)

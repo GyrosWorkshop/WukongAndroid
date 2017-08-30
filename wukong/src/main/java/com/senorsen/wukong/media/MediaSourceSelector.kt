@@ -54,7 +54,7 @@ class MediaSourceSelector(private val context: Context) {
     fun selectFromMultipleMediaFiles(song: Song, acceptUnavailable: Boolean = true): Pair<List<File>, List<String>> {
         pullSettings()
         val defaultQualityIndex = qualities.indexOf(preferAudioQualityData)
-        val files = if (acceptUnavailable) song.musics else song.musics?.filterNot { it.unavailable == true}
+        val files = if (acceptUnavailable) song.musics else song.musics?.filterNot { it.unavailable == true }
         val originalFiles = files?.sortedByDescending(File::audioBitrate) ?:
                 return Pair(listOf(), listOf())
 
@@ -72,10 +72,26 @@ class MediaSourceSelector(private val context: Context) {
             "/netease/cloudmusic/Music",
             "/qqmusic/song").map { Environment.getExternalStorageDirectory().absolutePath + it }
 
+    private val cacheDirectoryPrefixes = arrayOf(
+            "/xiami/cache/audios").map { Environment.getExternalStorageDirectory().absolutePath + it }
+
     private fun allPossibleFiles(song: Song): List<String> {
         return mediaDirectoryPrefixes.map { path ->
-            arrayOf(".flac", " [mqms2].flac", ".mp3", " [mqms2].mp3").map { "$path/${song.artist?.replace(" / ", " ")} - ${song.title}$it" }
+            arrayOf(".flac", ".FLAC", " [mqms2].flac", ".mp3", ".MP3", " [mqms2].mp3", ".xoa")
+                    .map { suffix ->
+                        listOf(
+                                // Q* and N*'s way
+                                "$path/${song.artist?.replace(" / ", " ")} - ${song.title}$suffix",
+                                // X*'s way
+                                "$path/${song.title}_${song.artist}$suffix"
+                        )
+                    }.flatMap { it }
         }.flatMap { it }
+                .plus(listOf(
+                        if (song.siteId == "Xiami") "/xiami/cache/audios/${song.songId}@s" else null,
+                        if (song.siteId == "Xiami") "/xiami/cache/audios/${song.songId}@h" else null,
+                        if (song.siteId == "QQMusic") "/qqmusic/cache/${song.songId}.mqcc" else null
+                ).mapNotNull { Environment.getExternalStorageDirectory().absolutePath + it })
     }
 
     fun getValidLocalMedia(song: Song): String? {
