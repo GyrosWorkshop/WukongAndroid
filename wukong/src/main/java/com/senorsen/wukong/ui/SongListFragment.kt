@@ -93,7 +93,7 @@ class SongListFragment : Fragment() {
         recyclerView = inflater.inflate(R.layout.fragment_song_list, container, false) as RecyclerView
         recyclerView.adapter = adapter
         recyclerView.layoutManager = LinearLayoutManager(activity)
-        recyclerView.setHasFixedSize(false)
+        recyclerView.setHasFixedSize(true)
         recyclerView.itemAnimator = SlideInRightAnimator()
         recyclerView.addItemDecoration(DividerItemDecoration(activity))
 
