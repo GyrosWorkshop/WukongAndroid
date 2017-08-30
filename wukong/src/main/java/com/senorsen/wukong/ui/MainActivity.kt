@@ -279,7 +279,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getSettingsFragment() : SettingsFragment? {
-        return fragmentManager.findFragmentByTag("SETTINGS") as SettingsFragment
+        return fragmentManager.findFragmentByTag("SETTINGS") as SettingsFragment?
     }
 
     private fun getSongListFragment(): SongListFragment? {
