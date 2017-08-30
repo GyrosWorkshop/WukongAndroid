@@ -93,7 +93,7 @@ class MediaSourceSelector(private val context: Context) {
                         if (song.siteId == "Xiami") "/xiami/cache/audios/${song.songId}@s" else null,
                         if (song.siteId == "Xiami") "/xiami/cache/audios/${song.songId}@h" else null,
                         if (song.siteId == "QQMusic") "/qqmusic/cache/${song.songId}.mqcc" else null
-                ).mapNotNull { Environment.getExternalStorageDirectory().absolutePath + it })
+                ).filterNotNull().map { Environment.getExternalStorageDirectory().absolutePath + it })
                 .plus(if (song.siteId == "netease-cloud-music") listOf("Music", "Music1").map {
                     java.io.File(Environment.getExternalStorageDirectory().absolutePath + "/netease/cloudmusic/Cache/$it")
                             .listFiles({ _, name ->

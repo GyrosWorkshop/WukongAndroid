@@ -220,7 +220,7 @@ class SongListFragment : Fragment() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val song = filteredList?.getOrNull(position) ?: return
-            holder.icon.text = holder.layoutPosition.toString()
+            holder.icon.text = list!!.indexOf(song).toString()
             holder.name.text = song.title
             holder.caption.text = "${song.artist} - ${song.album}"
             holder.songKey = song.songKey
