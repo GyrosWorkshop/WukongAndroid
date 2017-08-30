@@ -61,6 +61,7 @@ class SongListFragment : Fragment() {
                     wukongService.userSongList = adapter.list!!.toMutableList()
                 } else {
                     adapter.list = wukongService.userSongList
+                    adapter.reloadFilteredList()
                 }
             }
         }
