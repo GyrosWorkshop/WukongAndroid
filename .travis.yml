@@ -32,7 +32,7 @@ before_install:
 - chmod +x gradlew
 - ./gradlew dependencies || true
 script:
-- ./gradlew clean build
+- ./gradlew assembleRelease
 deploy:
   provider: releases
   api_key:
