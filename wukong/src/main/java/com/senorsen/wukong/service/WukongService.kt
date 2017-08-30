@@ -82,6 +82,7 @@ class WukongService : Service() {
     private lateinit var wifiLock: WifiLock
 
     var isPaused = false
+    @Volatile var serverSentSongUpdate: Boolean = false
 
     var connected = false
     var currentSong: Song? = null
@@ -398,8 +399,6 @@ class WukongService : Service() {
                     }
                 }
 
-                var serverSentSongUpdate: Boolean
-
                 val receiver = object : SocketClient.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
                         // FIXME: 该分层了。。。
@@ -543,7 +542,7 @@ class WukongService : Service() {
                 reconnectCallback = object : SocketClient.Callback {
                     override fun call() {
                         var retry = true
-                        while (retry && this@WukongService.connected) {
+                        while (retry && connected) {
                             try {
                                 Thread.sleep(3000)
                                 handler.post {
