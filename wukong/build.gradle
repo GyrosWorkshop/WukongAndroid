@@ -23,6 +23,11 @@ android {
             debuggable true
             signingConfig signingConfigs.config
         }
+        release {
+            debuggable false
+            signingConfig signingConfigs.config
+            minifyEnabled false
+        }
     }
     lintOptions {
         abortOnError false
