@@ -219,14 +219,14 @@ class SongListFragment : Fragment() {
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val song = filteredList?.getOrNull(position) ?: return
+            val song = filteredList!![position]
             holder.icon.text = list!!.indexOf(song).toString()
             holder.name.text = song.title
             holder.caption.text = "${song.artist} - ${song.album}"
             holder.songKey = song.songKey
         }
 
-        override fun getItemCount() = list?.size ?: 0
+        override fun getItemCount() = filteredList?.size ?: 0
 
         override fun getFilter(): Filter {
             return object : Filter() {
