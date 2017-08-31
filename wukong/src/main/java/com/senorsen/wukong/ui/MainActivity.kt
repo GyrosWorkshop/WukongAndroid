@@ -32,8 +32,6 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import com.github.javiersantos.appupdater.AppUpdater
-import com.github.javiersantos.appupdater.enums.UpdateFrom
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.User
 import com.senorsen.wukong.network.HttpClient
@@ -188,13 +186,7 @@ class MainActivity : AppCompatActivity() {
         fragmentManager.beginTransaction().replace(R.id.fragment, MainFragment(), "MAIN").commit()
 
         mayRequestPermission()
-
-        AppUpdater(this)
-                .setButtonDoNotShowAgain("")
-                .setUpdateFrom(UpdateFrom.GITHUB)
-                .setGitHubUserAndRepo("GyrosWorkshop", "WukongAndroid")
-                .start()
-
+        
         thread {
             try {
                 val lastMessageLocalStore = LastMessageLocalStore(this)
