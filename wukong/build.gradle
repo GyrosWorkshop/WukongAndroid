@@ -54,8 +54,5 @@ dependencies {
 }
 repositories {
     jcenter()
-    maven {
-        url "https://jitpack.io"
-    }
     google()
 }
