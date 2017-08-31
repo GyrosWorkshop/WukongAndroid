@@ -7,14 +7,17 @@
     android:minHeight="70dp"
     android:orientation="horizontal"
     android:paddingEnd="16dp"
-    android:paddingStart="16dp">
+    android:paddingStart="16dp"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
 
     <TextView
         android:id="@android:id/icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="2dp"
         android:layout_marginEnd="16dp"
+        android:layout_marginStart="2dp"
         android:layout_weight="0"
         tools:text="1" />
 
@@ -47,6 +50,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="0"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="Upvote this song"
+        android:focusable="true"
         android:src="@drawable/ic_keyboard_arrow_up_black_24px" />
 
     <ImageView
@@ -55,6 +62,10 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_weight="0"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="Remove this song"
+        android:focusable="true"
         android:src="@drawable/ic_remove_song_24dp" />
 
 </LinearLayout>

@@ -24,6 +24,9 @@
             android:layout_weight="0"
             android:src="@drawable/ic_shuffle_playlist"
             android:contentDescription="@string/shuffle_playlist"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
             tools:ignore="InefficientWeight" />
 
     </LinearLayout>
