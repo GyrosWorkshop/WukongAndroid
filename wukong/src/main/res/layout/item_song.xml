@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:textAppearance="@style/TextAppearance.AppCompat.Body2"
-            tools:text="不为谁做的歌" />
+            tools:text="不为谁而作的歌" />
 
         <TextView
             android:id="@android:id/text2"
@@ -42,7 +42,7 @@
             android:singleLine="true"
             android:textAppearance="@style/Base.TextAppearance.AppCompat.Caption"
             android:textColor="#666"
-            tools:text="孙燕姿：我怀念的" />
+            tools:text="孙燕姿 - 我怀念的" />
     </LinearLayout>
 
     <ImageView
@@ -52,7 +52,7 @@
         android:layout_weight="0"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
-        android:contentDescription="Upvote this song"
+        android:contentDescription="@string/upvote_this_song"
         android:focusable="true"
         android:src="@drawable/ic_keyboard_arrow_up_black_24px" />
 
@@ -64,7 +64,7 @@
         android:layout_weight="0"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
-        android:contentDescription="Remove this song"
+        android:contentDescription="@string/remove_this_song"
         android:focusable="true"
         android:src="@drawable/ic_remove_song_24dp" />
 

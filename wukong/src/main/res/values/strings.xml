@@ -20,4 +20,6 @@
     <string name="clear">Clear</string>
     <string name="shuffle_playlist">Shuffle playlist</string>
     <string name="disconnected">Disconnected</string>
+    <string name="upvote_this_song">Upvote this song</string>
+    <string name="remove_this_song">Remove this song</string>
 </resources>
