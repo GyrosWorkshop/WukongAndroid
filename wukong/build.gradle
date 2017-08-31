@@ -14,8 +14,8 @@ android {
         applicationId "com.senorsen.wukong"
         minSdkVersion 21
         targetSdkVersion 26
-        versionCode 152
-        versionName "0.1.52"
+        versionCode 9999
+        versionName "1.0.0-alpha"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
