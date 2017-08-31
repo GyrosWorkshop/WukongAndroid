@@ -17,11 +17,12 @@ import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
 import android.os.PowerManager
+import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.content.LocalBroadcastManager
+import android.support.v4.media.app.NotificationCompat.MediaStyle
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.support.v7.app.NotificationCompat
 import android.util.Log
 import android.widget.Toast
 import com.senorsen.wukong.R
@@ -82,7 +83,8 @@ class WukongService : Service() {
     private lateinit var wifiLock: WifiLock
 
     var isPaused = false
-    @Volatile var serverSentSongUpdate: Boolean = false
+    @Volatile
+    var serverSentSongUpdate: Boolean = false
 
     var connected = false
     var currentSong: Song? = null
@@ -686,7 +688,7 @@ class WukongService : Service() {
         val contextIntent = PendingIntent.getActivity(this, 0, intent, 0)
 
         val notificationBuilder = NotificationCompat.Builder(this)
-                .setStyle(NotificationCompat.MediaStyle()
+                .setStyle(MediaStyle()
                         .setShowActionsInCompactView()
                         .setMediaSession(mSession))
                 .setColor(mNotificationColor)
@@ -696,7 +698,7 @@ class WukongService : Service() {
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setSmallIcon(R.mipmap.ic_notification)
                 .setContentTitle(title)
-                .setContentText(content) as android.support.v7.app.NotificationCompat.Builder
+                .setContentText(content)
 
         if (!isPaused) {
             val serviceIntent = Intent(ACTION_PAUSE).setPackage(packageName)
