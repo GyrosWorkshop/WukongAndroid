@@ -2,21 +2,6 @@ package com.senorsen.wukong.model
 
 import android.graphics.Bitmap
 import android.support.v4.media.MediaMetadataCompat
-import java.io.Serializable
-
-object SongQuality {
-    val LOSSLESS: String
-        get() = "lossless"
-
-    val HIGH: String
-        get() = "high"
-
-    val LOW: String
-        get() = "low"
-
-    val MEDIUM: String
-        get() = "medium"
-}
 
 interface SongIdentifier {
     var siteId: String?
@@ -31,7 +16,14 @@ data class RequestSong(
         // The `withCookie` contains a cookie string, which helps music providers to fetch more data,
         // based on user identity of the music site.
         var withCookie: String?
-) : SongIdentifier, Serializable
+) : SongIdentifier {
+    override fun toString(): String {
+        return "$siteId.$songId"
+    }
+}
+
+fun String.toRequestSong(withCookie: String? = null)
+        = RequestSong(this.split('.')[0], this.split('.')[1], withCookie)
 
 // A Song is an object contains all the data of a song.
 data class Song(
@@ -46,7 +38,7 @@ data class Song(
         var mvId: String? = null,
         var mvWebUrl: String? = null,
         var musics: List<File>? = null
-) : SongIdentifier, Serializable {
+) : SongIdentifier {
     fun toRequestSong(): RequestSong {
         return RequestSong(siteId = siteId, songId = songId, withCookie = null)
     }
@@ -78,11 +70,11 @@ data class File(
         var format: String? = null,
         var audioQuality: String? = null,
         var audioBitrate: Int? = null
-) : Serializable
+)
 
 // A lovely lyric.
 class Lyric(
         var lrc: Boolean? = null,
         var translated: Boolean? = null,
         var data: String? = null
-) : Serializable
+)

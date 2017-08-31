@@ -30,10 +30,7 @@ import com.senorsen.wukong.media.AlbumArtCache
 import com.senorsen.wukong.media.MediaCache
 import com.senorsen.wukong.media.MediaSourcePreparer
 import com.senorsen.wukong.media.MediaSourceSelector
-import com.senorsen.wukong.model.Configuration
-import com.senorsen.wukong.model.RequestSong
-import com.senorsen.wukong.model.Song
-import com.senorsen.wukong.model.User
+import com.senorsen.wukong.model.*
 import com.senorsen.wukong.network.ApiUrls
 import com.senorsen.wukong.network.HttpClient
 import com.senorsen.wukong.network.SocketClient
@@ -218,7 +215,7 @@ class WukongService : Service() {
                 if (intent != null) {
                     Log.d(TAG, intent.action)
                     when (intent.action) {
-                        ACTION_DOWNVOTE -> sendDownvote(ObjectSerializer.deserialize(intent.getStringExtra("song")) as RequestSong)
+                        ACTION_DOWNVOTE -> sendDownvote(intent.getStringExtra("song").toRequestSong())
 
                         ACTION_PAUSE -> switchPause()
 
@@ -475,9 +472,16 @@ class WukongService : Service() {
                                     doUpdateNextSong()
                                 }
 
+                                // Reduce noise or glitch.
+                                val startTime = currentTimeMillis() - (protocol.elapsed!! * 1000).toLong()
+                                if (currentSong?.songKey == song.songKey && Math.abs(startTime - songStartTime) < 5000) {
+                                    Log.i(TAG, "server may send exactly the same song ${song.songKey}, skipping")
+                                    return
+                                }
+
                                 currentSong = song
-                                downvoted = protocol.downVote ?: false
-                                songStartTime = currentTimeMillis() - (protocol.elapsed!! * 1000).toLong()
+                                downvoted = protocol.downvote ?: false
+                                songStartTime = startTime
 
                                 handler.post {
                                     setNotification()
@@ -700,24 +704,21 @@ class WukongService : Service() {
                 .setContentTitle(title)
                 .setContentText(content)
 
-        if (!isPaused) {
-            val serviceIntent = Intent(ACTION_PAUSE).setPackage(packageName)
-            val pauseIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
-            val action = android.support.v4.app.NotificationCompat.Action(R.drawable.ic_pause, "Pause", pauseIntent)
-            notificationBuilder.addAction(action)
+        val (playButtonAction, playButtonIcon, playButtonTitle) = if (isPaused) {
+            Triple(ACTION_PLAY, R.drawable.ic_play, "Play")
         } else {
-            val serviceIntent = Intent(ACTION_PLAY).setPackage(packageName)
-            val playIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
-            val action = android.support.v4.app.NotificationCompat.Action(R.drawable.ic_play, "Play", playIntent)
-            notificationBuilder.addAction(action)
+            Triple(ACTION_PAUSE, R.drawable.ic_pause, "Pause")
         }
+        notificationBuilder.addAction(NotificationCompat.Action(playButtonIcon, playButtonTitle,
+                PendingIntent.getBroadcast(this, 100,
+                        Intent(playButtonAction).setPackage(packageName), PendingIntent.FLAG_CANCEL_CURRENT)))
 
         if (currentSong != null && !downvoted) {
-            val serviceIntent = Intent(ACTION_DOWNVOTE).setPackage(packageName)
-            serviceIntent.putExtra("song", ObjectSerializer.serialize(currentSong!!.toRequestSong()))
-            val downvoteIntent = PendingIntent.getBroadcast(this, 100, serviceIntent, PendingIntent.FLAG_CANCEL_CURRENT)
-            val action = android.support.v4.app.NotificationCompat.Action(R.drawable.ic_downvote, "Downvote", downvoteIntent)
-            notificationBuilder.addAction(action)
+            notificationBuilder.addAction(NotificationCompat.Action(R.drawable.ic_downvote, "Downvote",
+                    PendingIntent.getBroadcast(this, 100,
+                            Intent(ACTION_DOWNVOTE).setPackage(packageName)
+                                    .putExtra("song", currentSong!!.toRequestSong().toString()),
+                            PendingIntent.FLAG_CANCEL_CURRENT)))
         }
 
         var art: Bitmap? = null
