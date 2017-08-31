@@ -8,12 +8,12 @@ else
 
 
 android {
-    compileSdkVersion 25
+    compileSdkVersion 26
     buildToolsVersion "26.0.0"
     defaultConfig {
         applicationId "com.senorsen.wukong"
         minSdkVersion 21
-        targetSdkVersion 25
+        targetSdkVersion 26
         versionCode 152
         versionName "0.1.52"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -41,9 +41,9 @@ dependencies {
     })
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-    compile 'com.android.support:appcompat-v7:25.4.0'
-    compile 'com.android.support:support-v4:25.4.0'
-    compile 'com.android.support:design:25.4.0'
+    compile 'com.android.support:appcompat-v7:26.0.1'
+    compile 'com.android.support:support-v4:26.0.1'
+    compile 'com.android.support:design:26.0.1'
     compile 'com.google.code.gson:gson:2.8.1'
     compile 'com.github.satyan:sugar:1.4'
     compile 'com.squareup.okio:okio:1.13.0'
@@ -57,4 +57,5 @@ repositories {
     maven {
         url "https://jitpack.io"
     }
+    google()
 }

@@ -28,10 +28,7 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.User
 import com.senorsen.wukong.network.HttpClient
@@ -140,13 +137,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val toolbar = findViewById(R.id.toolbar) as Toolbar
+        val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
 
         userInfoLocalStore = UserInfoLocalStore(this)
 
-        mDrawerLayout = findViewById(R.id.main) as DrawerLayout
-        mDrawerView = findViewById(R.id.left_drawer) as NavigationView
+        mDrawerLayout = findViewById<DrawerLayout>(R.id.main)
+        mDrawerView = findViewById<NavigationView>(R.id.left_drawer)
 
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START)
 
@@ -169,7 +166,7 @@ class MainActivity : AppCompatActivity() {
         supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         supportActionBar!!.setHomeButtonEnabled(true)
 
-        navigationView = findViewById(R.id.left_drawer) as NavigationView
+        navigationView = findViewById<NavigationView>(R.id.left_drawer)
 
         navigationView.setNavigationItemSelectedListener { item ->
             mDrawerLayout.closeDrawer(GravityCompat.START)
@@ -177,7 +174,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         headerLayout = navigationView.inflateHeaderView(R.layout.nav_header)
-        headerLayout.findViewById(R.id.drawer_user).setOnClickListener {
+        headerLayout.findViewById<RelativeLayout>(R.id.drawer_user).setOnClickListener {
             mDrawerLayout.closeDrawer(GravityCompat.START)
             startActivityForResult(Intent(this, WebViewActivity::class.java), REQUEST_COOKIES)
         }
@@ -186,7 +183,7 @@ class MainActivity : AppCompatActivity() {
         fragmentManager.beginTransaction().replace(R.id.fragment, MainFragment(), "MAIN").commit()
 
         mayRequestPermission()
-        
+
         thread {
             try {
                 val lastMessageLocalStore = LastMessageLocalStore(this)
@@ -270,7 +267,7 @@ class MainActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun getSettingsFragment() : SettingsFragment? {
+    private fun getSettingsFragment(): SettingsFragment? {
         return fragmentManager.findFragmentByTag("SETTINGS") as SettingsFragment?
     }
 
@@ -354,11 +351,15 @@ class MainActivity : AppCompatActivity() {
 
     fun updateChannelInfo(connected: Boolean, users: List<User>?, currentPlayUserId: String? = null) {
         Log.d(TAG, "updateChannelInfo $connected, $currentPlayUserId")
-        (findViewById(R.id.channel_info) as TextView).text = if (connected && users != null)
-            Html.fromHtml("<b>${users.size}</b> player${if (users.size > 1) "s" else ""}: "
-                    + users.map { if (it.id == currentPlayUserId) "<b>${it.userName}</b>" else it.userName }.joinToString())
-        else
-            Html.fromHtml("Disconnected")
+        (findViewById<TextView>(R.id.channel_info)).text =
+                if (connected && users != null)
+                    Html.fromHtml("<b>${users.size}</b> player${if (users.size > 1) "s" else ""}: "
+                            + users.joinToString {
+                        val escapedName = Html.escapeHtml(it.userName)
+                        if (it.id == currentPlayUserId) "<b>$escapedName</b>" else escapedName
+                    })
+                else
+                    Html.fromHtml(resources.getString(R.string.disconnected))
     }
 
     fun updateSongList() {
@@ -377,10 +378,10 @@ class MainActivity : AppCompatActivity() {
         handler.post {
             Log.d(TAG, "$user, $avatar")
             if (user?.userName != null) {
-                (headerLayout.findViewById(R.id.text_drawer_user) as TextView).text = user.userName
+                (headerLayout.findViewById<TextView>(R.id.text_drawer_user)).text = user.userName
             }
             if (avatar != null) {
-                (headerLayout.findViewById(R.id.icon_drawer_user) as ImageView).setImageBitmap(avatar)
+                (headerLayout.findViewById<ImageView>(R.id.icon_drawer_user)).setImageBitmap(avatar)
             }
         }
     }
@@ -389,7 +390,7 @@ class MainActivity : AppCompatActivity() {
         handler.post {
             val channelId = getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", "")
             if (channelId.isNotBlank()) {
-                (findViewById(R.id.left_drawer) as NavigationView).menu.findItem(R.id.nav_channel).title = Html.fromHtml("Channel: $channelId")
+                (findViewById<NavigationView>(R.id.left_drawer)).menu.findItem(R.id.nav_channel).title = Html.fromHtml("Channel: $channelId")
             }
         }
     }

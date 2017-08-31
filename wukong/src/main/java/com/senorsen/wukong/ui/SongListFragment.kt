@@ -260,11 +260,11 @@ class SongListFragment : Fragment() {
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
-            val icon = view.findViewById(android.R.id.icon) as TextView
-            val name = view.findViewById(android.R.id.text1) as TextView
-            val caption = view.findViewById(android.R.id.text2) as TextView
-            val upIcon = view.findViewById(R.id.song_list_up) as ImageView
-            val removeIcon = view.findViewById(R.id.song_list_remove) as ImageView
+            val icon = view.findViewById<TextView>(android.R.id.icon)
+            val name = view.findViewById<TextView>(android.R.id.text1)
+            val caption = view.findViewById<TextView>(android.R.id.text2)
+            val upIcon = view.findViewById<ImageView>(R.id.song_list_up)
+            val removeIcon = view.findViewById<ImageView>(R.id.song_list_remove)
             var songKey: String = ""
 
             init {

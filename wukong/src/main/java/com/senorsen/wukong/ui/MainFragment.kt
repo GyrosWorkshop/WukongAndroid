@@ -15,7 +15,7 @@ class MainFragment : Fragment() {
 
         val view = inflater.inflate(R.layout.fragment_main, container, false)
 
-        view.findViewById(R.id.song_list_shuffle).setOnClickListener {
+        view.findViewById<View>(R.id.song_list_shuffle).setOnClickListener {
             val childFragment = childFragmentManager.findFragmentByTag("SONGLIST")
             if (childFragment != null) {
                 val songListFragment = childFragment as SongListFragment

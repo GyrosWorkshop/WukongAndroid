@@ -28,24 +28,24 @@ class WebViewActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.webview)
 
-        val toolbar = findViewById(R.id.toolbar) as Toolbar
+        val toolbar = findViewById<Toolbar>(R.id.toolbar)
         title = "Sign In"
         setSupportActionBar(toolbar)
 
-        webView = findViewById(R.id.webview) as WebView
+        webView = findViewById(R.id.webview)
         webView.settings.javaScriptEnabled = true
         CookieManager.getInstance().removeAllCookies(null)
         thread {
-            HttpClient("")
+            HttpClient()
         }.join()
         webView.loadUrl(ApiUrls.oAuthEndpoint)
 
         var loggedIn = false
 
-        webView.setWebViewClient(object : WebViewClient() {
+        webView.webViewClient = object : WebViewClient() {
 
-            @Suppress("OverridingDeprecatedMember")
-            override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                val url = request.url.toString()
                 if (url.startsWith(ApiUrls.base)) {
                     CookieManager.getInstance().setCookie(url, "")
                 }
@@ -74,7 +74,7 @@ class WebViewActivity : AppCompatActivity() {
                 super.onReceivedError(view, request, error)
             }
 
-        })
+        }
 
     }
 

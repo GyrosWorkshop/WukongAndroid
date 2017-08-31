@@ -19,4 +19,5 @@
     <string name="shuffle">Shuffle</string>
     <string name="clear">Clear</string>
     <string name="shuffle_playlist">Shuffle playlist</string>
+    <string name="disconnected">Disconnected</string>
 </resources>
