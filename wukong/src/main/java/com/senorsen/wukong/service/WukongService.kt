@@ -486,9 +486,10 @@ class WukongService : Service() {
                                 try {
                                     val out = mediaCache.getMediaFromDiskCache(song.songKey)
                                     if (out != null) {
-                                        Log.i(TAG, "using cache: $out")
+                                        Log.i(TAG, "cache HIT: $out")
                                         MediaSourcePreparer.setMediaSource(mediaPlayer, out, protocol.elapsed)
                                     } else {
+                                        Log.i(TAG, "media cache MISS")
                                         val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song)
                                         Log.d(TAG, "play media sources: $mediaSources")
                                         MediaSourcePreparer.setMediaSources(mediaPlayer, mediaSources, protocol.elapsed)
