@@ -119,11 +119,12 @@ class WukongService : Service() {
         return binder
     }
 
-    fun onUpdateChannelInfo(connected: Boolean, users: List<User>?, currentPlayUserId: String? = null) {
+    fun onUpdateChannelInfo(connected: Boolean, users: List<User>?, currentPlayUserId: String? = null, lyric: String? = null) {
         val intent = Intent(MainActivity.UPDATE_CHANNEL_INFO_INTENT)
         intent.putExtra("connected", connected)
         intent.putExtra("users", ObjectSerializer.serialize(if (users == null) null else users as Serializable))
         intent.putExtra("currentPlayUserId", currentPlayUserId)
+        intent.putExtra("lyric", lyric)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
@@ -468,7 +469,8 @@ class WukongService : Service() {
                                 currentPlayUserId = protocol.user
                                 currentPlayUser = User.getUserFromList(userList, currentPlayUserId) ?: currentPlayUser
 
-                                onUpdateChannelInfo(connected, userList, currentPlayUserId)
+                                onUpdateChannelInfo(connected, userList, currentPlayUserId, song.lyrics?.find { it.lrc == true && it.translated != true && !it.data.isNullOrBlank() }?.data)
+
 
                                 if (currentUser.id == protocol.user) {
                                     mayLoopSongList(song)

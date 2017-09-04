@@ -29,6 +29,8 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.*
+import cn.zhaiyifan.lyric.LyricUtils
+import cn.zhaiyifan.lyric.widget.LyricView
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.User
 import com.senorsen.wukong.network.HttpClient
@@ -36,6 +38,8 @@ import com.senorsen.wukong.service.WukongService
 import com.senorsen.wukong.store.LastMessageLocalStore
 import com.senorsen.wukong.store.UserInfoLocalStore
 import com.senorsen.wukong.utils.ObjectSerializer
+import java.io.ByteArrayInputStream
+import java.nio.charset.StandardCharsets
 import kotlin.concurrent.thread
 
 
@@ -78,8 +82,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun pullChannelInfo() {
-        if (wukongService != null)
+        if (wukongService != null) {
             updateChannelInfo(wukongService!!.connected, wukongService!!.userList, wukongService!!.currentPlayUserId)
+            updateLyric(wukongService!!.currentSong?.lyrics?.find { it.lrc == true && it.translated != true && !it.data.isNullOrBlank() }?.data)
+        }
     }
 
     val bindRunnable = object : Runnable {
@@ -271,6 +277,15 @@ class MainActivity : AppCompatActivity() {
         return fragmentManager.findFragmentByTag("SETTINGS") as SettingsFragment?
     }
 
+    private fun getLyricView(): LyricView? {
+        val currentFragment = fragmentManager.findFragmentByTag("MAIN")
+        if (currentFragment != null) {
+            val fragment = currentFragment as MainFragment
+            return fragment.view.findViewById(R.id.lyricView)
+        }
+        return null
+    }
+
     private fun getSongListFragment(): SongListFragment? {
         val currentFragment = fragmentManager.findFragmentByTag("MAIN")
         if (currentFragment != null) {
@@ -313,11 +328,13 @@ class MainActivity : AppCompatActivity() {
     inner class ChannelUpdateBroadcastReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
-                UPDATE_CHANNEL_INFO_INTENT ->
+                UPDATE_CHANNEL_INFO_INTENT -> {
                     @Suppress("UNCHECKED_CAST")
                     updateChannelInfo(intent.getBooleanExtra("connected", false),
                             ObjectSerializer.deserialize(intent.getStringExtra("users")) as List<User>?,
                             intent.getStringExtra("currentPlayUserId"))
+                    updateLyric(intent.getStringExtra("lyric"))
+                }
 
                 UPDATE_SONG_LIST_INTENT ->
                     updateSongList()
@@ -392,6 +409,20 @@ class MainActivity : AppCompatActivity() {
             if (channelId.isNotBlank()) {
                 (findViewById<NavigationView>(R.id.left_drawer)).menu.findItem(R.id.nav_channel).title = Html.fromHtml("Channel: $channelId")
             }
+        }
+    }
+
+    fun updateLyric(lyric: String?) {
+        handler.post {
+            val lyricView = getLyricView() ?: return@post
+            if (lyric == null) {
+                lyricView.stop()
+                return@post
+            }
+            val inputStream = ByteArrayInputStream(lyric.toByteArray())
+            lyricView.setLyric(LyricUtils.parseLyric(inputStream, StandardCharsets.UTF_8.name()))
+            lyricView.setLyricIndex(0)
+            lyricView.play()
         }
     }
 

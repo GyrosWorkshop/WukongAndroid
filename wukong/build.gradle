@@ -14,8 +14,8 @@ android {
         applicationId "com.senorsen.wukong"
         minSdkVersion 21
         targetSdkVersion 26
-        versionCode 154
-        versionName "0.1.54"
+        versionCode 9999
+        versionName "1.0.0-alpha"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -49,6 +49,7 @@ dependencies {
     compile 'com.squareup.okio:okio:1.13.0'
     compile 'de.hdodenhof:circleimageview:2.1.0'
     compile 'jp.wasabeef:recyclerview-animators:2.2.7'
+    compile 'cn.zhaiyifan:lyricview:1.0.1'
 
     testCompile 'junit:junit:4.12'
 }
