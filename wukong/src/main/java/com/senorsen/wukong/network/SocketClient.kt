@@ -112,9 +112,6 @@ class SocketClient(
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             t.printStackTrace()
-            Log.i(TAG, "Reconnection onFailure")
-            reconnectCallBack?.call()
-            reconnectCallBack = null
         }
 
         inner class PingPongCheckerRunnable : Runnable {
