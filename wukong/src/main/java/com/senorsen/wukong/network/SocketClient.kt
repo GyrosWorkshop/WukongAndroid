@@ -103,8 +103,8 @@ class SocketClient(
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             Log.d(TAG, "Closing: $code $reason")
-            Log.i(TAG, "Reconnection")
             if (code != CLOSE_NORMAL_CLOSURE) {
+                Log.i(TAG, "Reconnection")
                 reconnectCallBack?.call()
                 reconnectCallBack = null
             }
