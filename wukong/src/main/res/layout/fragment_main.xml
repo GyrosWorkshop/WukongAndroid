@@ -58,10 +58,10 @@
 
         </LinearLayout>
     </LinearLayout>
-    <cn.zhaiyifan.lyric.widget.LyricView
+    <!--<cn.zhaiyifan.lyric.widget.LyricView
         android:id="@+id/lyricView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"/>-->
 
     <FrameLayout
         android:id="@+id/main_fragment_container"

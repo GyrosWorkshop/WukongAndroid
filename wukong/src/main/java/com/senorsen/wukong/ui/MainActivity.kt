@@ -278,11 +278,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getLyricView(): LyricView? {
-        val currentFragment = fragmentManager.findFragmentByTag("MAIN")
+        /*val currentFragment = fragmentManager.findFragmentByTag("MAIN")
         if (currentFragment != null) {
             val fragment = currentFragment as MainFragment
             return fragment.view.findViewById(R.id.lyricView)
-        }
+        }*/
         return null
     }
 
