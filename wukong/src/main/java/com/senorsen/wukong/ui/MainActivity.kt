@@ -355,7 +355,7 @@ class MainActivity : AppCompatActivity() {
                 if (connected && users != null)
                     Html.fromHtml("<b>${users.size}</b> player${if (users.size > 1) "s" else ""}: "
                             + users.joinToString {
-                        val escapedName = Html.escapeHtml(it.userName)
+                        val escapedName = Html.escapeHtml(it.displayName ?: it.userName)
                         if (it.id == currentPlayUserId) "<b>$escapedName</b>" else escapedName
                     })
                 else
