@@ -102,16 +102,19 @@ class SocketClient(
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-            Log.d(TAG, "Closing: $code $reason")
+            Log.i(TAG, "Closing: $code $reason")
             if (code != CLOSE_NORMAL_CLOSURE) {
-                Log.i(TAG, "Reconnection")
+                Log.i(TAG, "Reconnect")
                 reconnectCallBack?.call()
                 reconnectCallBack = null
             }
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+            Log.e(TAG, "failure, reconnect")
             t.printStackTrace()
+            reconnectCallBack?.call()
+            reconnectCallBack = null
         }
 
         inner class PingPongCheckerRunnable : Runnable {
