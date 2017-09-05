@@ -180,15 +180,18 @@ class WukongService : Service() {
 
     private val mNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-
-            when (intent?.action) {
-                AudioManager.ACTION_AUDIO_BECOMING_NOISY ->
-                    if (mediaPlayer.isPlaying) handler.post {
-                        switchPause()
-                        Toast.makeText(context, "Wukong paused.", Toast.LENGTH_SHORT).show()
-                    }
+            try {
+                when (intent?.action) {
+                    AudioManager.ACTION_AUDIO_BECOMING_NOISY ->
+                        if (mediaPlayer.isPlaying) handler.post {
+                            switchPause()
+                            Toast.makeText(context, "Wukong paused.", Toast.LENGTH_SHORT).show()
+                        }
+                }
+                Log.d(TAG, "noisy receiver: " + intent?.action + ", ${mediaPlayer.isPlaying}")
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            Log.d(TAG, "noisy receiver: " + intent?.action + ", ${mediaPlayer.isPlaying}")
         }
     }
 
