@@ -460,7 +460,11 @@ class MainActivity : AppCompatActivity() {
         val serviceIntent = Intent(this, WukongService::class.java)
                 .putExtra("cookies", cookies)
                 .putExtra("channel", channel)
-        startService(serviceIntent)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            startService(serviceIntent)
+        } else {
+            startForegroundService(serviceIntent)
+        }
     }
 
     companion object {
