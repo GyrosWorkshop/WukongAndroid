@@ -1,7 +1,6 @@
 package com.senorsen.wukong.service
 
-import android.app.PendingIntent
-import android.app.Service
+import android.app.*
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -13,10 +12,8 @@ import android.media.AudioManager
 import android.media.MediaPlayer
 import android.net.wifi.WifiManager
 import android.net.wifi.WifiManager.WifiLock
-import android.os.Binder
-import android.os.Handler
-import android.os.IBinder
-import android.os.PowerManager
+import android.os.*
+import android.support.annotation.RequiresApi
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.content.LocalBroadcastManager
@@ -356,6 +353,7 @@ class WukongService : Service() {
 
         downvoted = false
         currentSong = null
+        setNotification("Connecting")
 
         workThread = thread {
 
@@ -677,6 +675,22 @@ class WukongService : Service() {
         mNotificationColor = ResourceHelper.getThemeColor(this, R.attr.colorPrimary, Color.DKGRAY)
     }
 
+    private val CHANNEL_ID = "wukong_media_playback_channel"
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun createChannel() {
+        val mNotificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val id = CHANNEL_ID
+        val name = "Media playback"
+        val description = "Media playback controls"
+        val importance = NotificationManager.IMPORTANCE_LOW
+        val mChannel = NotificationChannel(id, name, importance)
+        mChannel.setDescription(description);
+        mChannel.setShowBadge(false);
+        mChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        mNotificationManager.createNotificationChannel(mChannel)
+    }
+
     private fun makeNotificationBuilder(nContent: String?): NotificationCompat.Builder {
         var title: String = "Wukong"
         var content = nContent
@@ -688,7 +702,13 @@ class WukongService : Service() {
         val intent = Intent(this, MainActivity::class.java)
         val contextIntent = PendingIntent.getActivity(this, 0, intent, 0)
 
-        val notificationBuilder = NotificationCompat.Builder(this)
+        val notificationBuilder = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
+            NotificationCompat.Builder(this)
+        else {
+            createChannel()
+            NotificationCompat.Builder(this, CHANNEL_ID)
+        }
+        notificationBuilder
                 .setStyle(MediaStyle()
                         .setShowActionsInCompactView()
                         .setMediaSession(mSession))

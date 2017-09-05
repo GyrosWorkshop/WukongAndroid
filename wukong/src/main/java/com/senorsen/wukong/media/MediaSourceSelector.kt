@@ -98,7 +98,7 @@ class MediaSourceSelector(private val context: Context) {
                             .listFiles({ _, name ->
                                 name.startsWith("${song.songId}-") && name.endsWith(".uc!")
                             })
-                            .firstOrNull()?.absolutePath
+                            ?.firstOrNull()?.absolutePath
                 }.filterNotNull() else emptyList())
     }
 
