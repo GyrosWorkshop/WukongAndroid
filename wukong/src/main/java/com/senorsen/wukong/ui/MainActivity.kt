@@ -279,22 +279,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getLyricView(): LyricView? {
-        val mLyricView = findViewById(R.id.custom_lyric_view) as LyricView
-
-//step 3
-        mLyricView.setLyricFile(lyricFile)
-
-//step 4, update LyricView every interval
-        mLyricView.setCurrentTimeMillis(progress)
-
-//step 5, implement the interface when user drag lyrics and click the play icon
-        mLyricView.setOnPlayerClickListener { progress, content -> }
-        /*val currentFragment = fragmentManager.findFragmentByTag("MAIN")
-        if (currentFragment != null) {
-            val fragment = currentFragment as MainFragment
-            return fragment.view.findViewById(R.id.lyricView)
-        }*/
-        return null
+        return findViewById<LyricView>(R.id.custom_lyric_view)
     }
 
     private fun getSongListFragment(): SongListFragment? {
