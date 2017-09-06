@@ -38,6 +38,7 @@ import com.senorsen.wukong.service.WukongService
 import com.senorsen.wukong.store.LastMessageLocalStore
 import com.senorsen.wukong.store.UserInfoLocalStore
 import com.senorsen.wukong.utils.ObjectSerializer
+import me.zhengken.lyricview.LyricView
 import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
 import kotlin.concurrent.thread
@@ -278,6 +279,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getLyricView(): LyricView? {
+        val mLyricView = findViewById(R.id.custom_lyric_view) as LyricView
+
+//step 3
+        mLyricView.setLyricFile(lyricFile)
+
+//step 4, update LyricView every interval
+        mLyricView.setCurrentTimeMillis(progress)
+
+//step 5, implement the interface when user drag lyrics and click the play icon
+        mLyricView.setOnPlayerClickListener { progress, content -> }
         /*val currentFragment = fragmentManager.findFragmentByTag("MAIN")
         if (currentFragment != null) {
             val fragment = currentFragment as MainFragment

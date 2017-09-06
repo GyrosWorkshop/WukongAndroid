@@ -49,11 +49,12 @@ dependencies {
     compile 'com.squareup.okio:okio:1.13.0'
     compile 'de.hdodenhof:circleimageview:2.1.0'
     compile 'jp.wasabeef:recyclerview-animators:2.2.7'
-    compile 'cn.zhaiyifan:lyricview:1.0.1'
+    compile 'com.github.zhengken:LyricViewDemo:v1.2'
 
     testCompile 'junit:junit:4.12'
 }
 repositories {
     jcenter()
     google()
+    maven { url 'https://jitpack.io' }
 }
