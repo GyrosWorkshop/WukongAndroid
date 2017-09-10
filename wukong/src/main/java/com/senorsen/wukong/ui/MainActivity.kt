@@ -7,6 +7,7 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -29,18 +30,15 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.*
-import cn.zhaiyifan.lyric.LyricUtils
-import cn.zhaiyifan.lyric.widget.LyricView
 import com.senorsen.wukong.R
+import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.model.User
 import com.senorsen.wukong.network.HttpClient
 import com.senorsen.wukong.service.WukongService
 import com.senorsen.wukong.store.LastMessageLocalStore
 import com.senorsen.wukong.store.UserInfoLocalStore
-import com.senorsen.wukong.utils.ObjectSerializer
 import me.zhengken.lyricview.LyricView
-import java.io.ByteArrayInputStream
-import java.nio.charset.StandardCharsets
+import java.util.*
 import kotlin.concurrent.thread
 
 
@@ -78,6 +76,7 @@ class MainActivity : AppCompatActivity() {
             if (wukongService.connected) {
                 updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
                 pullChannelInfo()
+
             }
         }
     }
@@ -85,7 +84,9 @@ class MainActivity : AppCompatActivity() {
     fun pullChannelInfo() {
         if (wukongService != null) {
             updateChannelInfo(wukongService!!.connected, wukongService!!.userList, wukongService!!.currentPlayUserId)
-            updateLyric(wukongService!!.currentSong?.lyrics?.find { it.lrc == true && it.translated != true && !it.data.isNullOrBlank() }?.data)
+            setLyric(wukongService!!.currentSong?.lyrics?.find { it.lrc == true && it.translated != true && !it.data.isNullOrBlank() }?.data)
+            updateSongInfo(wukongService!!.currentSong)
+            updateAlbumArtwork(wukongService!!.getSongArtwork(wukongService!!.currentSong, null, false))
         }
     }
 
@@ -112,12 +113,19 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         bindService()
+        if (mTimer == null) {
+            mTimer = Timer()
+            mLrcTask = LrcTask()
+            mTimer!!.scheduleAtFixedRate(mLrcTask, 0, 500)
+        }
     }
 
     override fun onStop() {
         wukongService?.registerUpdateUserInfo(null)
         handler.removeCallbacks(bindRunnable)
         if (connected) unbindService(serviceConnection)
+        mTimer?.cancel()
+        mTimer = null
         super.onStop()
     }
 
@@ -146,6 +154,7 @@ class MainActivity : AppCompatActivity() {
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
+        defaultArtwork = BitmapFactory.decodeResource(resources, R.mipmap.ic_default_art)
 
         userInfoLocalStore = UserInfoLocalStore(this)
 
@@ -279,7 +288,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getLyricView(): LyricView? {
-        return findViewById<LyricView>(R.id.custom_lyric_view)
+        return findViewById(R.id.custom_lyric_view)
     }
 
     private fun getSongListFragment(): SongListFragment? {
@@ -321,16 +330,22 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
     }
 
+    @Suppress("UNCHECKED_CAST")
     inner class ChannelUpdateBroadcastReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 UPDATE_CHANNEL_INFO_INTENT -> {
-                    @Suppress("UNCHECKED_CAST")
                     updateChannelInfo(intent.getBooleanExtra("connected", false),
-                            ObjectSerializer.deserialize(intent.getStringExtra("users")) as List<User>?,
+                            intent.getSerializableExtra("users") as List<User>?,
                             intent.getStringExtra("currentPlayUserId"))
-                    updateLyric(intent.getStringExtra("lyric"))
+                    val song = intent.getSerializableExtra("song") as Song?
+                    setLyric(song?.lyrics?.find { it.lrc == true && it.translated != true && !it.data.isNullOrBlank() }?.data)
+                    updateSongInfo(song)
+                    updateAlbumArtwork(wukongService!!.getSongArtwork(song, null, false))
                 }
+
+                UPDATE_SONG_ARTWORK ->
+                    updateAlbumArtwork(intent.getParcelableExtra<Bitmap>("artwork"))
 
                 UPDATE_SONG_LIST_INTENT ->
                     updateSongList()
@@ -399,7 +414,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun updateChannelText() {
+    fun updateSongInfo(song: Song?) {
+        if (song == null) return
+        handler.post {
+            findViewById<TextView>(R.id.song_footer_line_one).setText(song.title)
+            findViewById<TextView>(R.id.song_footer_line_two).setText(song.artist)
+        }
+    }
+
+    private lateinit var defaultArtwork: Bitmap
+
+    fun updateAlbumArtwork(bitmap: Bitmap?) {
+        handler.post {
+            findViewById<ImageView>(R.id.artwork_thumbnail).setImageBitmap(bitmap ?: defaultArtwork)
+        }
+    }
+
+    private fun updateChannelText() {
         handler.post {
             val channelId = getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", "")
             if (channelId.isNotBlank()) {
@@ -408,21 +439,42 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun updateLyric(lyric: String?) {
+    private fun setLyric(lyric: String?) {
         handler.post {
             val lyricView = getLyricView() ?: return@post
             if (lyric == null) {
-                lyricView.stop()
+                lyricView.reset()
                 return@post
             }
-            val inputStream = ByteArrayInputStream(lyric.toByteArray())
-            lyricView.setLyric(LyricUtils.parseLyric(inputStream, StandardCharsets.UTF_8.name()))
-            lyricView.setLyricIndex(0)
-            lyricView.play()
+            lyricView.setLyric(lyric)
         }
     }
 
-    fun showChannelDialog() {
+    private var mTimer: Timer? = null
+    private var mLrcTask: LrcTask? = null
+
+    private inner class LrcTask : TimerTask() {
+        override fun run() {
+            try {
+                updateLyric(wukongService?.timePassed)
+            } catch (e: Exception) {
+            }
+        }
+    }
+
+    private fun updateLyric(time: Long?) {
+        if (time == null) return
+        handler.post {
+            val lyricView = getLyricView() ?: return@post
+            lyricView.setCurrentTimeMillis(time)
+            val current = lyricView.currentLine
+            if (current != null && time >= 3000) {
+                findViewById<TextView>(R.id.song_footer_line_two).setText(current)
+            }
+        }
+    }
+
+    private fun showChannelDialog() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Channel")
         var channel: String = getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", "")
@@ -443,7 +495,7 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
-    fun startWukongService() {
+    private fun startWukongService() {
         val pref = getSharedPreferences("wukong", Context.MODE_PRIVATE)
         val cookies = pref.getString("cookies", "")
         val channel = pref.getString("channel", "")
@@ -467,6 +519,7 @@ class MainActivity : AppCompatActivity() {
         val REQUEST_WRITE_EXTERNAL_STORAGE = 0
         val KEY_PREF_USE_LOCAL_MEDIA = "pref_useLocalMedia"
         val UPDATE_CHANNEL_INFO_INTENT = "UPDATE_CHANNEL_INFO"
+        val UPDATE_SONG_ARTWORK = "UPDATE_SONG_ARTWORK"
         val UPDATE_SONG_LIST_INTENT = "UPDATE_SONG_LIST"
     }
 }

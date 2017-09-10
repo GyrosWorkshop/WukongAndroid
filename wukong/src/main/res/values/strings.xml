@@ -22,4 +22,7 @@
     <string name="disconnected">Disconnected</string>
     <string name="upvote_this_song">Upvote this song</string>
     <string name="remove_this_song">Remove this song</string>
+    <string name="album_artwork">Album artwork</string>
+
+    <string name="default_hint">No Lyrics</string>
 </resources>

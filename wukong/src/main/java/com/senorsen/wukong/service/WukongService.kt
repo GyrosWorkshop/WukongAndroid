@@ -38,7 +38,6 @@ import com.senorsen.wukong.store.SongListLocalStore
 import com.senorsen.wukong.store.UserInfoLocalStore
 import com.senorsen.wukong.ui.MainActivity
 import com.senorsen.wukong.utils.Debounce
-import com.senorsen.wukong.utils.ObjectSerializer
 import com.senorsen.wukong.utils.ResourceHelper
 import java.io.IOException
 import java.io.Serializable
@@ -59,27 +58,23 @@ class WukongService : Service() {
 
     lateinit var mediaSourceSelector: MediaSourceSelector
     lateinit var http: HttpClient
-    var socket: SocketClient? = null
+    private var socket: SocketClient? = null
     lateinit var currentUser: User
 
-    val handler = Handler()
-    var workThread: Thread? = null
+    private val handler = Handler()
+    private var workThread: Thread? = null
 
     private lateinit var am: AudioManager
     private lateinit var mediaPlayer: MediaPlayer
     private lateinit var mSessionCompat: MediaSessionCompat
     private lateinit var mSession: MediaSessionCompat.Token
     private lateinit var mediaPlayerForPreloadVerification: MediaPlayer
-    private val debounce = Debounce(5000)
-
     private lateinit var mediaCache: MediaCache
+    private val debounce = Debounce(5000)
 
     private lateinit var wifiLock: WifiLock
 
     var isPaused = false
-    @Volatile
-    var serverSentSongUpdate: Boolean = false
-
     var connected = false
     var currentSong: Song? = null
     var userList: List<User>? = null
@@ -113,12 +108,18 @@ class WukongService : Service() {
         return binder
     }
 
-    fun onUpdateChannelInfo(connected: Boolean, users: List<User>?, currentPlayUserId: String? = null, lyric: String? = null) {
+    fun onUpdateChannelInfo(connected: Boolean, users: List<User>?, currentPlayUserId: String? = null, song: Song? = null) {
         val intent = Intent(MainActivity.UPDATE_CHANNEL_INFO_INTENT)
         intent.putExtra("connected", connected)
-        intent.putExtra("users", ObjectSerializer.serialize(if (users == null) null else users as Serializable))
+        intent.putExtra("users", if (users == null) null else users as Serializable)
         intent.putExtra("currentPlayUserId", currentPlayUserId)
-        intent.putExtra("lyric", lyric)
+        intent.putExtra("song", song)
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+    }
+
+    fun onUpdateSongArtwork(artwork: Bitmap) {
+        val intent = Intent(MainActivity.UPDATE_SONG_ARTWORK)
+        intent.putExtra("artwork", artwork)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
@@ -235,12 +236,27 @@ class WukongService : Service() {
 
         prepareNotification()
         createMedia()
+
+        defaultArtwork = BitmapFactory.decodeResource(resources, R.mipmap.ic_default_art)
     }
+
+    private var mTimer: Timer? = null
+    private var mTask: LrcTask? = null
 
     private fun createMedia() {
         mediaPlayer = MediaPlayer()
         mediaPlayer.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
+        mediaPlayer.setOnPreparedListener {
+            if (mTimer == null) {
+                mTimer = Timer()
+                mTask = LrcTask()
+                mTimer!!.scheduleAtFixedRate(mTask, 0, 500)
+            }
+        }
+        mediaPlayer.setOnCompletionListener {
+            stopLrc()
+        }
 
         mediaPlayerForPreloadVerification = MediaPlayer()
         mediaPlayerForPreloadVerification.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
@@ -284,6 +300,22 @@ class WukongService : Service() {
         albumArtCache = AlbumArtCache(this)
     }
 
+    var timePassed: Long = 0
+
+    private inner class LrcTask : TimerTask() {
+        override fun run() {
+            try {
+                timePassed = mediaPlayer.currentPosition.toLong()
+            } catch (e: Exception) {
+                timePassed = 0
+            }
+        }
+    }
+
+    private fun stopLrc() {
+        mTimer?.cancel()
+        mTimer = null
+    }
 
     private val afChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
 
@@ -455,8 +487,6 @@ class WukongService : Service() {
 
                             Protocol.PLAY -> {
 
-                                serverSentSongUpdate = true
-
                                 if (protocol.song == null) {
                                     setNotification("Channel $channelId: play null")
                                     return
@@ -467,7 +497,7 @@ class WukongService : Service() {
                                 currentPlayUserId = protocol.user
                                 currentPlayUser = User.getUserFromList(userList, currentPlayUserId) ?: currentPlayUser
 
-                                onUpdateChannelInfo(connected, userList, currentPlayUserId, song.lyrics?.find { it.lrc == true && it.translated != true && !it.data.isNullOrBlank() }?.data)
+                                onUpdateChannelInfo(connected, userList, currentPlayUserId, protocol.song)
 
 
                                 if (currentUser.id == protocol.user) {
@@ -524,7 +554,6 @@ class WukongService : Service() {
                 var executor: ScheduledThreadPoolExecutor? = null
 
                 val doConnect = fun() {
-                    serverSentSongUpdate = false
                     http.channelJoin(channelId)
                     fetchConfiguration()
                     if (socket == null) {
@@ -534,19 +563,6 @@ class WukongService : Service() {
                     }
                     connected = true
                     doUpdateNextSong()
-
-                    // Check whether server sent us a song after 10s.
-                    executor?.shutdownNow()
-                    executor = ScheduledThreadPoolExecutor(1)
-                    executor?.scheduleAtFixedRate({
-                        if (serverSentSongUpdate) {
-                            Log.i(TAG, "server already sent us a song, check executor shutdown")
-                            executor?.shutdownNow()
-                        } else {
-                            Log.i(TAG, "server not send us a song, requesting")
-                            sendSongUpdateRequest()
-                        }
-                    }, 10, 10, TimeUnit.SECONDS)
                 }
 
                 reconnectCallback = object : SocketClient.Callback {
@@ -747,28 +763,11 @@ class WukongService : Service() {
                             PendingIntent.FLAG_CANCEL_CURRENT)))
         }
 
-        var art: Bitmap? = null
-        var fetchArtUrl: String? = null
-        if (currentSong != null) {
-            fetchArtUrl = currentSong!!.artwork?.file
-            if (fetchArtUrl != null) {
-                art = albumArtCache.getBigImage(fetchArtUrl, currentSong!!.songKey)
-            }
-        }
-
-        if (art == null) {
-            // use a placeholder art while the remote art is being downloaded
-            art = BitmapFactory.decodeResource(resources,
-                    R.mipmap.ic_default_art)
-
-            if (fetchArtUrl != null) {
-                fetchBitmapFromURLAsync(fetchArtUrl, currentSong!!, notificationBuilder)
-            }
-        } else {
+        val art = getSongArtwork(currentSong, notificationBuilder)
+        if (currentSong != null)
             updateMediaSessionMeta(art)
-        }
+        notificationBuilder.setLargeIcon(art ?: defaultArtwork)
 
-        notificationBuilder.setLargeIcon(art)
         return notificationBuilder
     }
 
@@ -797,7 +796,7 @@ class WukongService : Service() {
         startForeground(NOTIFICATION_ID, notification)
     }
 
-    private fun updateMediaSessionMeta(bitmap: Bitmap) {
+    private fun updateMediaSessionMeta(bitmap: Bitmap?) {
         mSessionCompat.setMetadata(currentSong!!.toMediaMetaData(bitmap))
         mSessionCompat.isActive = true
         updateMediaSessionState()
@@ -814,16 +813,34 @@ class WukongService : Service() {
         mSessionCompat.isActive = true
     }
 
-    private fun fetchBitmapFromURLAsync(bitmapUrl: String, song: Song, builder: NotificationCompat.Builder) {
+    private lateinit var defaultArtwork: Bitmap
+
+    fun getSongArtwork(song: Song?, builder: NotificationCompat.Builder? = null, fetch: Boolean = true): Bitmap? {
+        return if (song?.artwork?.file == null) {
+            null
+        } else {
+            val fetchArtUrl = song.artwork?.file
+            if (fetchArtUrl != null) {
+                val cache = albumArtCache.getBigImage(fetchArtUrl, song.songKey)
+                if (cache == null && fetch) {
+                    fetchBitmapFromURLAsync(fetchArtUrl, song, builder)
+                }
+                cache
+            } else null
+        }
+    }
+
+    private fun fetchBitmapFromURLAsync(bitmapUrl: String, song: Song, builder: NotificationCompat.Builder? = null) {
         albumArtCache.fetch(bitmapUrl, object : AlbumArtCache.FetchListener() {
             override fun onFetched(artUrl: String, bigImage: Bitmap, iconImage: Bitmap) {
                 if (currentSong == song) {
                     // If the media is still the same, update the notification:
                     Log.d(TAG, "fetchBitmapFromURLAsync: set bitmap to " + artUrl)
-                    builder.setLargeIcon(bigImage)
-                    mNotificationManager.notify(NOTIFICATION_ID, builder.build())
-
                     updateMediaSessionMeta(bigImage)
+                    builder?.setLargeIcon(bigImage)
+                    mNotificationManager.notify(NOTIFICATION_ID, builder?.build())
+                    // Update UI's thumbnail
+                    onUpdateSongArtwork(bigImage)
                 }
             }
         }, song.songKey)

@@ -5,11 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import cn.zhaiyifan.lyric.LyricUtils
-import cn.zhaiyifan.lyric.widget.LyricView
 import com.senorsen.wukong.R
-import java.io.ByteArrayInputStream
-import java.nio.charset.StandardCharsets
 import kotlin.reflect.full.createInstance
 
 class MainFragment : Fragment() {
