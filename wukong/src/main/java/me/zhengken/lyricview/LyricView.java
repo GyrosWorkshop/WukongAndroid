@@ -727,7 +727,7 @@ public class LyricView extends View {
 
     public String getCurrentLine() {
         if (mLyricInfo != null && mLyricInfo.songLines != null && mCurrentPlayLine < mLyricInfo.songLines.size())
-            return mLyricInfo.songLines.get(mCurrentPlayLine).content;
+            return mLyricInfo.songLines.get(mCurrentPlayLine - 1).content;
         else
             return null;
     }
@@ -800,7 +800,7 @@ public class LyricView extends View {
             Matcher matcher = timePattern.matcher(line);
             while (matcher.find()) {
                 LineInfo lineInfo = new LineInfo();
-                String content = line.substring(index + 1, line.length());
+                String content = line.substring(index + 1, line.length()).trim();
                 if (content.trim().isEmpty()) return;
                 lineInfo.content = content;
                 lineInfo.start = measureStartTimeMillis(matcher.group());
