@@ -182,7 +182,7 @@ class MainActivity : AppCompatActivity() {
         supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         supportActionBar!!.setHomeButtonEnabled(true)
 
-        navigationView = findViewById<NavigationView>(R.id.left_drawer)
+        navigationView = findViewById(R.id.left_drawer)
 
         navigationView.setNavigationItemSelectedListener { item ->
             mDrawerLayout.closeDrawer(GravityCompat.START)

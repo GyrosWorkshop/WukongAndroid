@@ -8,7 +8,7 @@ import com.google.gson.Gson
 import com.senorsen.wukong.BuildConfig
 import com.senorsen.wukong.network.message.WebSocketReceiveProtocol
 import okhttp3.*
-import java.util.concurrent.ScheduledThreadPoolExecutor
+import okhttp3.internal.ws.RealWebSocket
 import java.util.concurrent.TimeUnit
 
 
@@ -16,7 +16,7 @@ class SocketClient(
         private val wsUrl: String,
         val cookies: String,
         private val channelId: String,
-        val reconnectCallback: Callback,
+        private val reconnectCallback: Callback,
         val socketReceiver: SocketReceiver,
         val handler: Handler,
         val applicationContext: Context
@@ -26,13 +26,14 @@ class SocketClient(
 
     private val userAgent = "WukongAndroid/${BuildConfig.VERSION_NAME}(${BuildConfig.VERSION_CODE})"
 
-    var ws: WebSocket? = null
+    var ws: RealWebSocket? = null
 
     companion object {
         val CLOSE_NORMAL_CLOSURE = 1000
         val CLOSE_GOING_AWAY = 1001
     }
 
+    var disconnected = true
 
     val client = OkHttpClient.Builder()
             .readTimeout(0, TimeUnit.MILLISECONDS)
@@ -51,14 +52,17 @@ class SocketClient(
 
     @Synchronized
     fun connect() {
+        disconnected = false
         Log.i(TAG, "Connect ws $this: $wsUrl")
         listener?.reconnectCallBack = null
         ws?.close(CLOSE_GOING_AWAY, "Going away")
-        listener = ActualWebSocketListener(socketReceiver, reconnectCallback, handler, applicationContext)
-        ws = client.newWebSocket(request, listener)
+        listener = ActualWebSocketListener(socketReceiver, reconnectCallback)
+        ws = client.newWebSocket(request, listener) as RealWebSocket
     }
 
     fun disconnect() {
+        disconnected = true
+        ws?.cancel()
         ws?.close(CLOSE_NORMAL_CLOSURE, "Bye")
     }
 
@@ -71,9 +75,7 @@ class SocketClient(
     }
 
     inner class ActualWebSocketListener(private val socketReceiver: SocketReceiver,
-                                        var reconnectCallBack: Callback?,
-                                        private val handler: Handler,
-                                        private val applicationContext: Context) : WebSocketListener() {
+                                        var reconnectCallBack: Callback?) : WebSocketListener() {
 
         var alonePingCount = 0
         var recentlySendPingCount = 0
@@ -122,16 +124,17 @@ class SocketClient(
             private val pingTimeoutThreshold = 3
 
             override fun run() {
-                var disconnected = false
+                if (disconnected) return
+                var tryReconnect = false
                 if (alonePingCount > pingTimeoutThreshold) {
-                    disconnected = true
+                    tryReconnect = true
                     Log.i(TAG, "ping-timeout threshold $pingTimeoutThreshold reached, reconnecting")
                 }
                 if (recentlySendPingCount == 0) {
-                    disconnected = true
+                    tryReconnect = true
                     Log.i(TAG, "recently sent ping count = 0, reconnecting")
                 }
-                if (disconnected) {
+                if (tryReconnect) {
                     reconnectCallBack?.call()
                     reconnectCallBack = null
                 } else {
@@ -140,6 +143,5 @@ class SocketClient(
                 recentlySendPingCount = 0
             }
         }
-
     }
 }

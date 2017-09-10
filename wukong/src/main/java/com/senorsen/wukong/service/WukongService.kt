@@ -44,7 +44,6 @@ import java.io.Serializable
 import java.lang.System.currentTimeMillis
 import java.util.*
 import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 
@@ -553,7 +552,7 @@ class WukongService : Service() {
 
                 var executor: ScheduledThreadPoolExecutor? = null
 
-                val doConnect = fun() {
+                val doConnectWebSocket = fun() {
                     http.channelJoin(channelId)
                     fetchConfiguration()
                     if (socket == null) {
@@ -575,7 +574,7 @@ class WukongService : Service() {
                                     setNotification("Reconnecting")
                                     Toast.makeText(applicationContext, "Wukong: Reconnecting...", Toast.LENGTH_SHORT).show()
                                 }
-                                doConnect()
+                                doConnectWebSocket()
                                 retry = false
                             } catch (e: IOException) {
                                 e.printStackTrace()
@@ -586,7 +585,7 @@ class WukongService : Service() {
                 }
 
                 try {
-                    doConnect()
+                    doConnectWebSocket()
                     setNotification("Channel $channelId idle.")
                 } catch (e: IOException) {
                     Log.e(TAG, "socket exception: " + e.message)
@@ -681,14 +680,10 @@ class WukongService : Service() {
     override fun onDestroy() {
 
         stopPrevConnect()
-
-        mediaPlayer.release()
-        wifiLock.release()
-
         onUpdateChannelInfo(connected, null, null)
+        unregisterReceiver(receiver)
 
         super.onDestroy()
-        unregisterReceiver(receiver)
         Log.d(TAG, "onDestroy")
     }
 
