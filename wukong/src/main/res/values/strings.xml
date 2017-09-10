@@ -25,4 +25,6 @@
     <string name="album_artwork">Album artwork</string>
 
     <string name="default_hint">No Lyrics</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
 </resources>

@@ -726,7 +726,7 @@ public class LyricView extends View {
     }
 
     public String getCurrentLine() {
-        if (mLyricInfo != null && mLyricInfo.songLines != null && mCurrentPlayLine < mLyricInfo.songLines.size())
+        if (mLyricInfo != null && mLyricInfo.songLines != null && mCurrentPlayLine > 0 && mCurrentPlayLine < mLyricInfo.songLines.size())
             return mLyricInfo.songLines.get(mCurrentPlayLine - 1).content;
         else
             return null;

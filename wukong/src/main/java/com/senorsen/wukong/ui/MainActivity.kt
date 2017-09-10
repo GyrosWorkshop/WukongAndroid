@@ -341,11 +341,11 @@ class MainActivity : AppCompatActivity() {
                     val song = intent.getSerializableExtra("song") as Song?
                     setLyric(song?.lyrics?.find { it.lrc == true && it.translated != true && !it.data.isNullOrBlank() }?.data)
                     updateSongInfo(song)
-                    updateAlbumArtwork(wukongService!!.getSongArtwork(song, null, false))
+                    updateAlbumArtwork(wukongService?.getSongArtwork(song, null, false))
                 }
 
                 UPDATE_SONG_ARTWORK ->
-                    updateAlbumArtwork(intent.getParcelableExtra<Bitmap>("artwork"))
+                    updateAlbumArtwork(intent.getParcelableExtra("artwork"))
 
                 UPDATE_SONG_LIST_INTENT ->
                     updateSongList()
