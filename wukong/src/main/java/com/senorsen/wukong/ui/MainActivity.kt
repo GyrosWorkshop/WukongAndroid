@@ -76,7 +76,8 @@ class MainActivity : AppCompatActivity() {
             if (wukongService.connected) {
                 updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
                 pullChannelInfo()
-
+            } else {
+                onServiceStopped()
             }
         }
     }
@@ -155,6 +156,7 @@ class MainActivity : AppCompatActivity() {
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         defaultArtwork = BitmapFactory.decodeResource(resources, R.mipmap.ic_default_art)
+        wukongArtwork = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher_round)
 
         userInfoLocalStore = UserInfoLocalStore(this)
 
@@ -321,7 +323,9 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (broadcastReceiver == null) broadcastReceiver = ChannelUpdateBroadcastReceiver()
         val intentFilter = IntentFilter(UPDATE_CHANNEL_INFO_INTENT)
+        intentFilter.addAction(UPDATE_SONG_ARTWORK)
         intentFilter.addAction(UPDATE_SONG_LIST_INTENT)
+        intentFilter.addAction(SERVICE_STOPPED)
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, intentFilter)
     }
 
@@ -349,6 +353,9 @@ class MainActivity : AppCompatActivity() {
 
                 UPDATE_SONG_LIST_INTENT ->
                     updateSongList()
+
+                SERVICE_STOPPED ->
+                    onServiceStopped()
             }
         }
     }
@@ -414,6 +421,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun onServiceStopped() {
+        handler.post {
+            updateAlbumArtwork(wukongArtwork)
+            findViewById<TextView>(R.id.song_footer_line_one).setText(R.string.app_name)
+            findViewById<TextView>(R.id.song_footer_line_two).setText(R.string.flows_from_heaven_to_the_soul)
+        }
+    }
+
     fun updateSongInfo(song: Song?) {
         if (song == null) return
         handler.post {
@@ -423,9 +438,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var defaultArtwork: Bitmap
+    private lateinit var wukongArtwork: Bitmap
 
     fun updateAlbumArtwork(bitmap: Bitmap?) {
         handler.post {
+            Log.d(TAG, "updateAlbumArtwork " + bitmap.toString())
             findViewById<ImageView>(R.id.artwork_thumbnail).setImageBitmap(bitmap ?: defaultArtwork)
         }
     }
@@ -521,5 +538,6 @@ class MainActivity : AppCompatActivity() {
         val UPDATE_CHANNEL_INFO_INTENT = "UPDATE_CHANNEL_INFO"
         val UPDATE_SONG_ARTWORK = "UPDATE_SONG_ARTWORK"
         val UPDATE_SONG_LIST_INTENT = "UPDATE_SONG_LIST"
+        val SERVICE_STOPPED = "SERVICE_STOPPED"
     }
 }

@@ -112,7 +112,7 @@
                     android:id="@+id/song_footer_line_one"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="9dp"
                     android:maxLines="1"
                     android:text="@string/app_name"
                     android:textColor="#000"
@@ -125,7 +125,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:maxLines="1"
-                    android:text="Flows from heaven to the soul"
+                    android:text="@string/flows_from_heaven_to_the_soul"
                     android:textColor="#666"
                     android:textSize="12sp"
                     tools:text="王力宏" />

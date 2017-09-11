@@ -117,8 +117,14 @@ class WukongService : Service() {
     }
 
     fun onUpdateSongArtwork(artwork: Bitmap) {
+        Log.d(TAG, "onUpdateSongArtwork " + artwork)
         val intent = Intent(MainActivity.UPDATE_SONG_ARTWORK)
         intent.putExtra("artwork", artwork)
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+    }
+
+    private fun onServiceStopped() {
+        val intent = Intent(MainActivity.SERVICE_STOPPED)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
@@ -651,6 +657,7 @@ class WukongService : Service() {
 
     private fun switchPlay() {
         try {
+            Log.d(TAG, Thread.currentThread().name)
             requestAudioFocus()
             mediaPlayer.seekTo((currentTimeMillis() - songStartTime).toInt())
             mediaPlayer.start()
@@ -683,6 +690,8 @@ class WukongService : Service() {
         onUpdateChannelInfo(connected, null, null)
         unregisterReceiver(receiver)
 
+        onServiceStopped()
+
         super.onDestroy()
         Log.d(TAG, "onDestroy")
     }
@@ -712,7 +721,7 @@ class WukongService : Service() {
     }
 
     private fun makeNotificationBuilder(nContent: String?): NotificationCompat.Builder {
-        var title: String = "Wukong"
+        var title = "Wukong"
         var content = nContent
         if (nContent == null && currentSong != null) {
             title = currentSong?.title!!

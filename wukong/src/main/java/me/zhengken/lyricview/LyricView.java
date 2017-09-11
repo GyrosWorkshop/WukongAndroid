@@ -803,7 +803,13 @@ public class LyricView extends View {
                 String content = line.substring(index + 1, line.length()).trim();
                 if (content.trim().isEmpty()) return;
                 lineInfo.content = content;
-                lineInfo.start = measureStartTimeMillis(matcher.group());
+                try {
+                    lineInfo.start = measureStartTimeMillis(matcher.group());
+                } catch (Exception e) {
+                    Log.e(TAG, "measureStartTimeMillis error for line " + line);
+                    e.printStackTrace();
+                    continue;
+                }
                 lyricInfo.songLines.add(lineInfo);
             }
         }
@@ -813,9 +819,9 @@ public class LyricView extends View {
      * 从字符串中获得时间值
      */
     private long measureStartTimeMillis(String str) {
-        long minute = Long.parseLong(str.substring(1, 3));
-        long second = Long.parseLong(str.substring(4, 6));
-        long millisecond = Long.parseLong(str.substring(7, str.indexOf(']') - 1));
+        long minute = Long.parseLong(str.substring(1, str.indexOf(':')));
+        long second = Long.parseLong(str.substring(str.indexOf(':') + 1, str.indexOf('.') - 1));
+        long millisecond = Long.parseLong(str.substring(str.indexOf('.') + 1, str.indexOf(']') - 1));
         return millisecond + second * 1000 + minute * 60 * 1000;
     }
 
