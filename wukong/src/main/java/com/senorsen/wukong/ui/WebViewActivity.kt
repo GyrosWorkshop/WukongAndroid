@@ -3,6 +3,7 @@ package com.senorsen.wukong.ui
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.support.v7.app.AppCompatActivity
@@ -70,7 +71,8 @@ class WebViewActivity : AppCompatActivity() {
             }
 
             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError) {
-                Log.d(TAG, error.toString())
+                if (Build.VERSION.SDK_INT >= 23)
+                    Log.d(TAG, error.description.toString() + " " + request?.url)
                 super.onReceivedError(view, request, error)
             }
 

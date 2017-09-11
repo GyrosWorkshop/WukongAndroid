@@ -14,8 +14,8 @@ android {
         applicationId "com.senorsen.wukong"
         minSdkVersion 21
         targetSdkVersion 26
-        versionCode 157
-        versionName "0.1.57"
+        versionCode 9000
+        versionName "1.0.0-alpha1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -55,4 +55,5 @@ dependencies {
 repositories {
     jcenter()
     google()
+    maven { url 'https://jitpack.io' }
 }

@@ -198,8 +198,8 @@ class AlbumArtCache(private val context: Context) {
 
         private val DISK_CACHE_SUBDIR = "music_artwork"
         private val MAX_ALBUM_ART_CACHE_SIZE: Long = 50 * 1024 * 1024  // 50 MB
-        private val MAX_ART_WIDTH = 2000  // pixels
-        private val MAX_ART_HEIGHT = 2000  // pixels
+        private val MAX_ART_WIDTH = 1000  // pixels
+        private val MAX_ART_HEIGHT = 1000  // pixels
 
         // Resolution reasonable for carrying around as an icon (generally in
         // MediaDescription.getIconBitmap). This should not be bigger than necessary, because

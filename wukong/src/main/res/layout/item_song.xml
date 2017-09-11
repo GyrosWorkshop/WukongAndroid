@@ -32,7 +32,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:singleLine="true"
-            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+            android:textColor="#000"
+            android:textSize="14sp"
             tools:text="不为谁而作的歌" />
 
         <TextView
@@ -42,6 +43,7 @@
             android:singleLine="true"
             android:textAppearance="@style/Base.TextAppearance.AppCompat.Caption"
             android:textColor="#666"
+            android:textSize="12sp"
             tools:text="孙燕姿 - 我怀念的" />
     </LinearLayout>
 

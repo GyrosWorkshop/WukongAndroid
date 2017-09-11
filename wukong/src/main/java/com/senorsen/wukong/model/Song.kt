@@ -4,20 +4,6 @@ import android.graphics.Bitmap
 import android.support.v4.media.MediaMetadataCompat
 import java.io.Serializable
 
-object SongQuality {
-    val LOSSLESS: String
-        get() = "lossless"
-
-    val HIGH: String
-        get() = "high"
-
-    val LOW: String
-        get() = "low"
-
-    val MEDIUM: String
-        get() = "medium"
-}
-
 interface SongIdentifier {
     var siteId: String?
     var songId: String?
@@ -31,7 +17,14 @@ data class RequestSong(
         // The `withCookie` contains a cookie string, which helps music providers to fetch more data,
         // based on user identity of the music site.
         var withCookie: String?
-) : SongIdentifier, Serializable
+) : SongIdentifier {
+    override fun toString(): String {
+        return "$siteId.$songId"
+    }
+}
+
+fun String.toRequestSong(withCookie: String? = null)
+        = RequestSong(this.split('.')[0], this.split('.')[1], withCookie)
 
 // A Song is an object contains all the data of a song.
 data class Song(
@@ -58,7 +51,7 @@ data class Song(
     val songKey: String
         get() = "$siteId.$songId"
 
-    fun toMediaMetaData(bitmap: Bitmap): MediaMetadataCompat {
+    fun toMediaMetaData(bitmap: Bitmap?): MediaMetadataCompat {
         val builder = MediaMetadataCompat.Builder()
         return builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap)
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
@@ -78,11 +71,11 @@ data class File(
         var format: String? = null,
         var audioQuality: String? = null,
         var audioBitrate: Int? = null
-) : Serializable
+): Serializable
 
 // A lovely lyric.
 class Lyric(
         var lrc: Boolean? = null,
         var translated: Boolean? = null,
         var data: String? = null
-) : Serializable
+): Serializable
