@@ -101,7 +101,7 @@
                 android:layout_marginStart="10dp"
                 android:layout_marginTop="10dp"
                 android:contentDescription="@string/album_artwork"
-                android:src="@mipmap/ic_launcher" />
+                android:src="@mipmap/ic_init_art" />
 
             <LinearLayout
                 android:layout_width="wrap_content"

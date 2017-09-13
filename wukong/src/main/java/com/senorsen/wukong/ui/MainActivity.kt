@@ -156,7 +156,7 @@ class MainActivity : AppCompatActivity() {
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         defaultArtwork = BitmapFactory.decodeResource(resources, R.mipmap.ic_default_art)
-        wukongArtwork = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher_round)
+        wukongArtwork = BitmapFactory.decodeResource(resources, R.mipmap.ic_init_art)
 
         userInfoLocalStore = UserInfoLocalStore(this)
 
