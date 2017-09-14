@@ -120,15 +120,16 @@ class AlbumArtCache(private val context: Context) {
         bitmap.compress(Bitmap.CompressFormat.WEBP, 100, out)
     }
 
-    fun getBitmapFromCache(key: String): Array<Bitmap>? {
+    private fun getBitmapFromCache(key: String): Array<Bitmap>? {
         return getBitmapFromMemCache(key) ?: getBitmapFromDiskCache(key)
     }
 
-    fun addBitmapToMemoryCache(key: String, bitmaps: Array<Bitmap>) {
+    private fun addBitmapToMemoryCache(key: String, bitmaps: Array<Bitmap>) {
+        Log.d(TAG, "put memory cache $key ${bitmaps.map { it.byteCount }.joinToString()}")
         mMemoryCache.put(key, bitmaps)
     }
 
-    fun getBitmapFromMemCache(key: String): Array<Bitmap>? {
+    private fun getBitmapFromMemCache(key: String): Array<Bitmap>? {
         return mMemoryCache.get(key)
     }
 
