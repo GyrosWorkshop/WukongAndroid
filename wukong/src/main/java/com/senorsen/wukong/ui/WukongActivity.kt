@@ -7,7 +7,6 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -155,8 +154,6 @@ class WukongActivity : AppCompatActivity() {
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
-        defaultArtwork = BitmapFactory.decodeResource(resources, R.mipmap.ic_default_art)
-        userInfoLocalStore = UserInfoLocalStore(this)
 
         mDrawerLayout = findViewById<DrawerLayout>(R.id.main)
         mDrawerView = findViewById<NavigationView>(R.id.left_drawer)
@@ -194,6 +191,8 @@ class WukongActivity : AppCompatActivity() {
             mDrawerLayout.closeDrawer(GravityCompat.START)
             startActivityForResult(Intent(this, WebViewActivity::class.java), REQUEST_COOKIES)
         }
+
+        userInfoLocalStore = UserInfoLocalStore(this)
         updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
         updateChannelText()
         fragmentManager.beginTransaction().replace(R.id.fragment, MainFragment(), "MAIN").commit()
@@ -435,7 +434,7 @@ class WukongActivity : AppCompatActivity() {
         }
     }
 
-    private lateinit var defaultArtwork: Bitmap
+    private val defaultArtwork = R.mipmap.ic_default_art
     private val wukongArtwork = R.mipmap.ic_launcher
 
     fun updateAlbumArtwork(resourceId: Int) {
@@ -445,10 +444,13 @@ class WukongActivity : AppCompatActivity() {
     }
 
     fun updateAlbumArtwork(bitmap: Bitmap?) {
-        handler.post {
-            Log.d(TAG, "updateAlbumArtwork " + bitmap.toString())
-            findViewById<ImageView>(R.id.artwork_thumbnail).setImageBitmap(bitmap ?: defaultArtwork)
-        }
+        if (bitmap == null)
+            updateAlbumArtwork(defaultArtwork)
+        else
+            handler.post {
+                Log.d(TAG, "updateAlbumArtwork " + bitmap.toString())
+                findViewById<ImageView>(R.id.artwork_thumbnail).setImageBitmap(bitmap)
+            }
     }
 
     private fun updateChannelText() {
