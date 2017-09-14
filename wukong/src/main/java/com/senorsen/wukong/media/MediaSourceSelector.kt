@@ -10,7 +10,7 @@ import android.preference.PreferenceManager
 import android.util.Log
 import com.senorsen.wukong.model.File
 import com.senorsen.wukong.model.Song
-import com.senorsen.wukong.ui.MainActivity
+import com.senorsen.wukong.ui.WukongActivity
 
 class MediaSourceSelector(private val context: Context) {
 
@@ -37,7 +37,7 @@ class MediaSourceSelector(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
                 && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
             useLocalMedia = false
-            PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(MainActivity.KEY_PREF_USE_LOCAL_MEDIA, false).apply()
+            PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(WukongActivity.KEY_PREF_USE_LOCAL_MEDIA, false).apply()
         }
     }
 

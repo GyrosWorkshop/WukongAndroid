@@ -36,7 +36,7 @@ import com.senorsen.wukong.network.message.WebSocketReceiveProtocol
 import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore
 import com.senorsen.wukong.store.UserInfoLocalStore
-import com.senorsen.wukong.ui.MainActivity
+import com.senorsen.wukong.ui.WukongActivity
 import com.senorsen.wukong.utils.Debounce
 import com.senorsen.wukong.utils.ResourceHelper
 import java.io.IOException
@@ -108,7 +108,7 @@ class WukongService : Service() {
     }
 
     fun onUpdateChannelInfo(connected: Boolean, users: List<User>?, currentPlayUserId: String? = null, song: Song? = null) {
-        val intent = Intent(MainActivity.UPDATE_CHANNEL_INFO_INTENT)
+        val intent = Intent(WukongActivity.UPDATE_CHANNEL_INFO_INTENT)
         intent.putExtra("connected", connected)
         intent.putExtra("users", if (users == null) null else users as Serializable)
         intent.putExtra("currentPlayUserId", currentPlayUserId)
@@ -118,13 +118,13 @@ class WukongService : Service() {
 
     fun onUpdateSongArtwork(artwork: Bitmap) {
         Log.d(TAG, "onUpdateSongArtwork " + artwork)
-        val intent = Intent(MainActivity.UPDATE_SONG_ARTWORK)
+        val intent = Intent(WukongActivity.UPDATE_SONG_ARTWORK)
         intent.putExtra("artwork", artwork)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     private fun onServiceStopped() {
-        val intent = Intent(MainActivity.SERVICE_STOPPED)
+        val intent = Intent(WukongActivity.SERVICE_STOPPED)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
@@ -671,7 +671,7 @@ class WukongService : Service() {
     private fun shuffleSongList() {
         Collections.shuffle(userSongList, Random(System.nanoTime()))
         doUpdateNextSong()
-        val intent = Intent(MainActivity.UPDATE_SONG_LIST_INTENT)
+        val intent = Intent(WukongActivity.UPDATE_SONG_LIST_INTENT)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
@@ -728,7 +728,7 @@ class WukongService : Service() {
             content = "(${currentPlayUser?.displayName ?: currentPlayUser?.userName}) ${currentSong?.artist} - ${currentSong?.album}"
         }
 
-        val intent = Intent(this, MainActivity::class.java)
+        val intent = Intent(this, WukongActivity::class.java)
         val contextIntent = PendingIntent.getActivity(this, 0, intent, 0)
 
         val notificationBuilder = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)

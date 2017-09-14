@@ -42,7 +42,7 @@ import java.util.*
 import kotlin.concurrent.thread
 
 
-class MainActivity : AppCompatActivity() {
+class WukongActivity : AppCompatActivity() {
 
     private val TAG = javaClass.simpleName
 
@@ -71,8 +71,8 @@ class MainActivity : AppCompatActivity() {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             connected = true
             val wukongService = (service as WukongService.WukongServiceBinder).getService()
-            this@MainActivity.wukongService = wukongService
-            wukongService.registerUpdateUserInfo(this@MainActivity::updateUserTextAndAvatar)
+            this@WukongActivity.wukongService = wukongService
+            wukongService.registerUpdateUserInfo(this@WukongActivity::updateUserTextAndAvatar)
             if (wukongService.connected) {
                 updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
                 pullChannelInfo()
@@ -93,10 +93,10 @@ class MainActivity : AppCompatActivity() {
 
     val bindRunnable = object : Runnable {
         override fun run() {
-            if (isServiceStarted()) bindService(Intent(this@MainActivity, WukongService::class.java), serviceConnection, 0)
+            if (isServiceStarted()) bindService(Intent(this@WukongActivity, WukongService::class.java), serviceConnection, 0)
             else {
                 handler.postDelayed(this, 1000)
-                Log.d(MainActivity::class.simpleName, "delayed")
+                Log.d(WukongActivity::class.simpleName, "delayed")
             }
         }
     }
@@ -156,8 +156,6 @@ class MainActivity : AppCompatActivity() {
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         defaultArtwork = BitmapFactory.decodeResource(resources, R.mipmap.ic_default_art)
-        wukongArtwork = BitmapFactory.decodeResource(resources, R.mipmap.ic_init_art)
-
         userInfoLocalStore = UserInfoLocalStore(this)
 
         mDrawerLayout = findViewById<DrawerLayout>(R.id.main)
@@ -349,7 +347,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 UPDATE_SONG_ARTWORK ->
-                    updateAlbumArtwork(intent.getParcelableExtra("artwork"))
+                    updateAlbumArtwork(intent.getParcelableExtra<Bitmap>("artwork"))
 
                 UPDATE_SONG_LIST_INTENT ->
                     updateSongList()
@@ -438,7 +436,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var defaultArtwork: Bitmap
-    private lateinit var wukongArtwork: Bitmap
+    private val wukongArtwork = R.mipmap.ic_launcher
+
+    fun updateAlbumArtwork(resourceId: Int) {
+        handler.post {
+            findViewById<ImageView>(R.id.artwork_thumbnail).setImageResource(resourceId)
+        }
+    }
 
     fun updateAlbumArtwork(bitmap: Bitmap?) {
         handler.post {
