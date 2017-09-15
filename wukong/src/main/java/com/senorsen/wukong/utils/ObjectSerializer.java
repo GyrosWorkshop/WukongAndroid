@@ -18,6 +18,8 @@
 
 package com.senorsen.wukong.utils;
 
+import android.support.annotation.Nullable;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,7 +29,7 @@ import java.io.Serializable;
 
 public class ObjectSerializer {
 
-    public static String serialize(Serializable obj) throws IOException {
+    public static String serialize(@Nullable Serializable obj) throws IOException {
         if (obj == null) return "";
         try {
             ByteArrayOutputStream serialObj = new ByteArrayOutputStream();
@@ -40,7 +42,7 @@ public class ObjectSerializer {
         }
     }
 
-    public static Object deserialize(String str) throws IOException {
+    public static Object deserialize(@Nullable String str) throws IOException {
         if (str == null || str.length() == 0) return null;
         try {
             ByteArrayInputStream serialObj = new ByteArrayInputStream(decodeBytes(str));
@@ -51,18 +53,18 @@ public class ObjectSerializer {
         }
     }
 
-    public static String encodeBytes(byte[] bytes) {
-        StringBuffer strBuf = new StringBuffer();
+    private static String encodeBytes(byte[] bytes) {
+        StringBuilder strBuf = new StringBuilder();
 
-        for (int i = 0; i < bytes.length; i++) {
-            strBuf.append((char) (((bytes[i] >> 4) & 0xF) + ((int) 'a')));
-            strBuf.append((char) (((bytes[i]) & 0xF) + ((int) 'a')));
+        for (byte aByte : bytes) {
+            strBuf.append((char) (((aByte >> 4) & 0xF) + ((int) 'a')));
+            strBuf.append((char) (((aByte) & 0xF) + ((int) 'a')));
         }
 
         return strBuf.toString();
     }
 
-    public static byte[] decodeBytes(String str) {
+    private static byte[] decodeBytes(String str) {
         byte[] bytes = new byte[str.length() / 2];
         for (int i = 0; i < str.length(); i += 2) {
             char c = str.charAt(i);

@@ -1,18 +1,25 @@
 package com.senorsen.wukong.store
 
 import android.content.Context
-import com.google.gson.reflect.TypeToken
+import android.util.Log
 import com.senorsen.wukong.model.Song
+import com.senorsen.wukong.utils.ObjectSerializer
 
 @Suppress("UNCHECKED_CAST")
 class SongListLocalStore(context: Context) : PrefLocalStore(context, PREF_NAME) {
+    private val TAG = javaClass.simpleName
 
     fun save(songList: List<Song>?) {
-        saveToJson(KEY_PREF_SONGLIST, songList)
+        save(KEY_PREF_SONGLIST, ObjectSerializer.serialize(songList?.toTypedArray()))
     }
 
     fun load(): List<Song>? {
-        return loadFromJson(KEY_PREF_SONGLIST, object : TypeToken<List<Song>?>() {}.type)
+        return try {
+            (ObjectSerializer.deserialize(load(KEY_PREF_SONGLIST)) as Array<Song>?)?.toList()
+        } catch (e: Exception) {
+            Log.e(TAG, "load song list error: ", e)
+            null
+        }
     }
 
     companion object {

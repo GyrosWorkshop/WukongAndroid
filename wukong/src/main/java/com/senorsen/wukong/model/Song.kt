@@ -40,6 +40,10 @@ data class Song(
         var mvWebUrl: String? = null,
         var musics: List<File>? = null
 ) : SongIdentifier, Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1
+    }
+
     fun toRequestSong(): RequestSong {
         return RequestSong(siteId = siteId, songId = songId, withCookie = null)
     }
@@ -71,11 +75,19 @@ data class File(
         var format: String? = null,
         var audioQuality: String? = null,
         var audioBitrate: Int? = null
-): Serializable
+) : Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1
+    }
+}
 
 // A lovely lyric.
 class Lyric(
         var lrc: Boolean? = null,
         var translated: Boolean? = null,
         var data: String? = null
-): Serializable
+) : Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1
+    }
+}
