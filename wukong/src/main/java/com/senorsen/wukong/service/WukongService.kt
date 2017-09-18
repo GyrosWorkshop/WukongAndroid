@@ -456,15 +456,13 @@ class WukongService : Service() {
 
                                 Log.d(TAG, "preload ${protocol.song?.songKey} image " + protocol.song)
 
-                                // Preload artwork image.
-                                protocol.song?.artwork?.let { artwork ->
-                                    albumArtCache.fetch(artwork.file!!, null, protocol.song.songKey)
-                                }
-
                                 val song = protocol.song!!
 
                                 debounce.run {
                                     try {
+                                        // Preload artwork image.
+                                        getSongArtwork(song)
+                                        // Preload media.
                                         val out = mediaCache.getMediaFromDiskCache(song.songKey)
                                         if (out != null) {
                                             Log.d(TAG, "cache exists, skip preload ${song.songKey}")
@@ -809,22 +807,19 @@ class WukongService : Service() {
     private lateinit var defaultArtwork: Bitmap
 
     fun getSongArtwork(song: Song?, builder: NotificationCompat.Builder? = null, fetch: Boolean = true): Bitmap? {
-        return if (song?.artwork?.file == null) {
+        return if (song?.artwork == null) {
             null
         } else {
-            val fetchArtUrl = song.artwork?.file
-            if (fetchArtUrl != null) {
-                val cache = albumArtCache.getBigImage(fetchArtUrl, song.songKey)
-                if (cache == null && fetch) {
-                    fetchBitmapFromURLAsync(fetchArtUrl, song, builder)
-                }
-                cache
-            } else null
+            val cache = albumArtCache.getBigImage(song)
+            if (cache == null && fetch) {
+                fetchBitmapFromURLAsync(song, builder)
+            }
+            cache
         }
     }
 
-    private fun fetchBitmapFromURLAsync(bitmapUrl: String, song: Song, builder: NotificationCompat.Builder? = null) {
-        albumArtCache.fetch(bitmapUrl, object : AlbumArtCache.FetchListener() {
+    private fun fetchBitmapFromURLAsync(song: Song, builder: NotificationCompat.Builder? = null) {
+        albumArtCache.fetch(song, object : AlbumArtCache.FetchListener() {
             override fun onFetched(artUrl: String, bigImage: Bitmap, iconImage: Bitmap) {
                 if (currentSong == song) {
                     // If the media is still the same, update the notification:
@@ -834,11 +829,11 @@ class WukongService : Service() {
                         builder.setLargeIcon(bigImage)
                         mNotificationManager!!.notify(NOTIFICATION_ID, builder.build())
                     }
-                    // Update UI's thumbnail
+                    // Update UI
                     onUpdateSongArtwork(bigImage)
                 }
             }
-        }, song.songKey)
+        })
     }
 
 }

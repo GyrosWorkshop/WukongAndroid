@@ -17,14 +17,17 @@ package com.senorsen.wukong.media
  */
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.AsyncTask
 import android.os.Environment
 import android.os.Environment.isExternalStorageRemovable
+import android.preference.PreferenceManager
 import android.util.Base64
 import android.util.Log
 import android.util.LruCache
+import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.utils.BitmapHelper
 import java.io.*
 import java.io.File.separator
@@ -37,10 +40,16 @@ class AlbumArtCache(private val context: Context) {
 
     private val TAG = javaClass.simpleName
 
+    private val KEY_PREF_USE_CDN = "pref_useCdn"
+
+    private var useCdn: Boolean = false
+
     private lateinit var mDiskLruCache: DiskLruCache
     private var mDiskCacheStarting = false
     private val mDiskCacheLock = Object()
     private val mMemoryCache: LruCache<String, Array<Bitmap>>
+
+    private val sharedPref: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     init {
         val cacheDir = getDiskCacheDir(DISK_CACHE_SUBDIR)
@@ -53,6 +62,10 @@ class AlbumArtCache(private val context: Context) {
                 return value[BIG_BITMAP_INDEX].byteCount + value[ICON_BITMAP_INDEX].byteCount
             }
         }
+    }
+
+    private fun pullSettings() {
+        useCdn = sharedPref.getBoolean(KEY_PREF_USE_CDN, useCdn)
     }
 
     // Creates a unique subdirectory of the designated app cache directory. Tries to use external
@@ -134,13 +147,23 @@ class AlbumArtCache(private val context: Context) {
     }
 
     fun getBigImage(artUrl: String, key: String = artUrl): Bitmap? {
-        val result = getBitmapFromCache(key)
-        return if (result == null) null else result[BIG_BITMAP_INDEX]
+        return getBitmapFromCache(key)?.get(BIG_BITMAP_INDEX)
+    }
+
+    fun getBigImage(song: Song): Bitmap? {
+        return getBitmapFromCache(song.songKey)?.get(BIG_BITMAP_INDEX)
     }
 
     fun getIconImage(artUrl: String, key: String = artUrl): Bitmap? {
-        val result = getBitmapFromCache(key)
-        return if (result == null) null else result[ICON_BITMAP_INDEX]
+        return getBitmapFromCache(key)?.get(ICON_BITMAP_INDEX)
+    }
+
+    fun fetch(song: Song, listener: FetchListener?) {
+        pullSettings()
+        val key = song.songKey
+        val artUrl = if (useCdn) song.artwork?.fileViaCdn else song.artwork?.file
+        if (artUrl != null)
+            fetch(artUrl, listener, key)
     }
 
     fun fetch(artUrl: String, listener: FetchListener?, key: String = artUrl.hashCode().toString()) {
