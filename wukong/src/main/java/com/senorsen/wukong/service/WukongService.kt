@@ -647,6 +647,7 @@ class WukongService : Service() {
             isPaused = true
             setNotification()
             updateMediaSessionState()
+            am.abandonAudioFocus(afChangeListener)
         } catch (e: Exception) {
         }
     }
