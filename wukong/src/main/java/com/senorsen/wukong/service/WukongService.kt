@@ -453,11 +453,7 @@ class WukongService : Service() {
                             }
 
                             Protocol.PRELOAD -> {
-
-                                Log.d(TAG, "preload ${protocol.song?.songKey} image " + protocol.song)
-
                                 val song = protocol.song!!
-
                                 debounce.run {
                                     try {
                                         // Preload artwork image.
