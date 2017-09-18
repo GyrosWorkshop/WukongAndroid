@@ -515,11 +515,12 @@ class WukongService : Service() {
                                     return
                                 }
 
-
                                 try {
                                     val out = mediaCache.getMediaFromDiskCache(song.songKey)
+                                    // Stop playing first.
+                                    mediaPlayer.reset()
                                     if (out != null) {
-                                        Log.i(TAG, "cache HIT: $out")
+                                        Log.i(TAG, "media cache HIT: $out")
                                         MediaSourcePreparer.setMediaSource(mediaPlayer, out, protocol.elapsed)
                                     } else {
                                         Log.i(TAG, "media cache MISS")
@@ -531,7 +532,7 @@ class WukongService : Service() {
                                 } catch (e: Exception) {
                                     Log.e(TAG, "play", e)
                                     handler.post {
-                                        Toast.makeText(applicationContext, "Wukong: playback error, all media sources tried. See log for details.", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(applicationContext, "Wukong: playback error", Toast.LENGTH_LONG).show()
                                     }
                                 }
                             }

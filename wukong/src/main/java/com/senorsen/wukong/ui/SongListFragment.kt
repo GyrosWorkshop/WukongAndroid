@@ -37,7 +37,7 @@ class SongListFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var songListLocalStore: SongListLocalStore
     private lateinit var configurationStore: ConfigurationLocalStore
-    private lateinit var http: HttpClient
+    private var http: HttpClient? = null
 
     val serviceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -113,7 +113,8 @@ class SongListFragment : Fragment() {
         if (configuration.syncPlaylists.isNullOrBlank()) {
             Toast.makeText(activity, "Playlist is empty", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(activity, "Wukong: sync...", Toast.LENGTH_SHORT).show()
+            if ()
+            Toast.makeText(activity, "Wukong Sync", Toast.LENGTH_SHORT).show()
             thread {
                 try {
                     val list = http.getSongLists(configuration.syncPlaylists!!, configuration.cookies)
