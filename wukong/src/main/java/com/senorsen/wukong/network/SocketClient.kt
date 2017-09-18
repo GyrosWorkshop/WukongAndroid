@@ -37,7 +37,7 @@ class SocketClient(
 
     val client = OkHttpClient.Builder()
             .readTimeout(0, TimeUnit.MILLISECONDS)
-            .pingInterval(10, TimeUnit.SECONDS)
+            .pingInterval(5, TimeUnit.SECONDS)
             .build()
 
     val request = Request.Builder()
@@ -45,10 +45,6 @@ class SocketClient(
             .header(HttpHeaders.USER_AGENT, userAgent)
             .url(wsUrl).build()
     var listener: ActualWebSocketListener? = null
-
-    init {
-        connect()
-    }
 
     @Synchronized
     fun connect() {
@@ -62,7 +58,6 @@ class SocketClient(
 
     fun disconnect() {
         disconnected = true
-        ws?.cancel()
         ws?.close(CLOSE_NORMAL_CLOSURE, "Bye")
     }
 
@@ -109,19 +104,22 @@ class SocketClient(
                 Log.i(TAG, "Reconnect")
                 reconnectCallBack?.call()
                 reconnectCallBack = null
+            } else {
+                Log.i(TAG, "Server sent normal closure, please wait for ")
             }
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             Log.e(TAG, "failure, reconnect")
             t.printStackTrace()
+            disconnect()
             reconnectCallBack?.call()
             reconnectCallBack = null
         }
 
         inner class PingPongCheckerRunnable : Runnable {
 
-            private val pingTimeoutThreshold = 3
+            private val pingTimeoutThreshold = 2
 
             override fun run() {
                 if (disconnected) return

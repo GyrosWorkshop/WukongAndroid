@@ -116,7 +116,7 @@ class WukongActivity : AppCompatActivity() {
         if (mTimer == null) {
             mTimer = Timer()
             mLrcTask = LrcTask()
-            mTimer!!.scheduleAtFixedRate(mLrcTask, 0, 500)
+            mTimer!!.scheduleAtFixedRate(mLrcTask, 1000, 500)
         }
     }
 

@@ -25,22 +25,22 @@ abstract class PrefLocalStore {
     }
 
     fun <T> loadFromJson(key: String, classOfT: Class<T>): T? {
-        try {
-            return Gson().fromJson(pref.getString(key, "null"), classOfT)
+        return try {
+            Gson().fromJson(pref.getString(key, "null"), classOfT)
         } catch (e: Exception) {
             Log.e(TAG, "load")
             e.printStackTrace()
-            return null
+            null
         }
     }
 
     fun <T> loadFromJson(key: String, type: Type): T? {
-        try {
-            return Gson().fromJson(pref.getString(key, "null"), type)
+        return try {
+            Gson().fromJson(pref.getString(key, "null"), type)
         } catch (e: Exception) {
             Log.e(TAG, "load")
             e.printStackTrace()
-            return null
+            null
         }
     }
 

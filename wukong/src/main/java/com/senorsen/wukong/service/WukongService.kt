@@ -333,7 +333,7 @@ class WukongService : Service() {
                     switchPause()
 
                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK ->
-                    mediaPlayer.setVolume(0.1f, 0.1f)
+                    mediaPlayer.setVolume(0.4f, 0.4f)
 
                 AudioManager.AUDIOFOCUS_GAIN -> {
                     mediaPlayer.setVolume(1.0f, 1.0f)
@@ -502,8 +502,13 @@ class WukongService : Service() {
                                 currentPlayUserId = protocol.user
                                 currentPlayUser = User.getUserFromList(userList, currentPlayUserId) ?: currentPlayUser
 
-                                onUpdateChannelInfo(connected, userList, currentPlayUserId, protocol.song)
+                                currentSong = song
+                                downvoted = protocol.downvote ?: false
+                                val oldStartTime = songStartTime
+                                songStartTime = currentTimeMillis() - (protocol.elapsed!! * 1000).toLong()
 
+                                setNotification()
+                                onUpdateChannelInfo(connected, userList, currentPlayUserId, protocol.song)
 
                                 if (currentUser.id == protocol.user) {
                                     mayLoopSongList(song)
@@ -511,19 +516,11 @@ class WukongService : Service() {
                                 }
 
                                 // Reduce noise or glitch.
-                                val startTime = currentTimeMillis() - (protocol.elapsed!! * 1000).toLong()
-                                if (currentSong?.songKey == song.songKey && Math.abs(startTime - songStartTime) < 5000) {
+                                if (currentSong?.songKey == song.songKey && Math.abs(songStartTime - oldStartTime) < 5000) {
                                     Log.i(TAG, "server may send exactly the same song ${song.songKey}, skipping")
                                     return
                                 }
 
-                                currentSong = song
-                                downvoted = protocol.downvote ?: false
-                                songStartTime = startTime
-
-                                handler.post {
-                                    setNotification()
-                                }
 
                                 try {
                                     val out = mediaCache.getMediaFromDiskCache(song.songKey)
@@ -554,7 +551,7 @@ class WukongService : Service() {
                     }
                 }
 
-                var reconnectCallback: Any? = null
+                var reconnectCallback: SocketClient.Callback? = null
 
                 var executor: ScheduledThreadPoolExecutor? = null
 
@@ -562,10 +559,9 @@ class WukongService : Service() {
                     http.channelJoin(channelId)
                     fetchConfiguration()
                     if (socket == null) {
-                        socket = SocketClient(ApiUrls.wsEndpoint, cookies, channelId, reconnectCallback as SocketClient.Callback, receiver, handler, applicationContext)
-                    } else {
-                        socket!!.connect()
+                        socket = SocketClient(ApiUrls.wsEndpoint, cookies, channelId, reconnectCallback!!, receiver, handler, applicationContext)
                     }
+                    socket!!.connect()
                     connected = true
                     doUpdateNextSong()
                 }
@@ -576,8 +572,8 @@ class WukongService : Service() {
                         while (retry && connected) {
                             try {
                                 Thread.sleep(3000)
+                                setNotification("Reconnecting")
                                 handler.post {
-                                    setNotification("Reconnecting")
                                     Toast.makeText(applicationContext, "Wukong: Reconnecting...", Toast.LENGTH_SHORT).show()
                                 }
                                 doConnectWebSocket()
@@ -696,11 +692,12 @@ class WukongService : Service() {
         Log.d(TAG, "onDestroy")
     }
 
-    private lateinit var mNotificationManager: NotificationManagerCompat
+    private var mNotificationManager: NotificationManagerCompat? = null
     private var mNotificationColor: Int = 0
 
     private fun prepareNotification() {
-        mNotificationManager = NotificationManagerCompat.from(this)
+        if (mNotificationManager == null)
+            mNotificationManager = NotificationManagerCompat.from(this)
         mNotificationColor = ResourceHelper.getThemeColor(this, R.attr.colorPrimary, Color.DKGRAY)
     }
 
@@ -714,9 +711,9 @@ class WukongService : Service() {
         val description = "Media playback controls"
         val importance = NotificationManager.IMPORTANCE_LOW
         val mChannel = NotificationChannel(id, name, importance)
-        mChannel.setDescription(description);
-        mChannel.setShowBadge(false);
-        mChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        mChannel.setDescription(description)
+        mChannel.setShowBadge(false)
+        mChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC)
         mNotificationManager.createNotificationChannel(mChannel)
     }
 
@@ -775,29 +772,20 @@ class WukongService : Service() {
         return notificationBuilder
     }
 
-    private fun setNotification() {
-        val notification = makeNotificationBuilder(null)
-                .setWhen(songStartTime).build()
+    private fun isUIThread() = Thread.currentThread() == Looper.getMainLooper().thread
 
-        notification.flags = NotificationCompat.FLAG_ONGOING_EVENT
-        mNotificationManager.notify(NOTIFICATION_ID, notification)
-        startForeground(NOTIFICATION_ID, notification)
-    }
+    private fun setNotification(content: String? = null) {
+        handler.post {
+            Log.d(TAG, "setNotification $content")
+            val builder = makeNotificationBuilder(content)
+            if (content == null)
+                builder.setWhen(songStartTime)
+            val notification = builder.build()
 
-    private fun setNotification(content: String?) {
-        val notification = makeNotificationBuilder(content).build()
-
-        notification.flags = NotificationCompat.FLAG_ONGOING_EVENT
-        mNotificationManager.notify(NOTIFICATION_ID, notification)
-        startForeground(NOTIFICATION_ID, notification)
-    }
-
-    private fun setNotification(builder: NotificationCompat.Builder) {
-        val notification = builder.build()
-
-        notification.flags = NotificationCompat.FLAG_ONGOING_EVENT
-        mNotificationManager.notify(NOTIFICATION_ID, notification)
-        startForeground(NOTIFICATION_ID, notification)
+            notification.flags = NotificationCompat.FLAG_ONGOING_EVENT
+            mNotificationManager!!.notify(NOTIFICATION_ID, notification)
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     private fun updateMediaSessionMeta(bitmap: Bitmap?) {
@@ -841,8 +829,10 @@ class WukongService : Service() {
                     // If the media is still the same, update the notification:
                     Log.d(TAG, "fetchBitmapFromURLAsync: set bitmap to " + artUrl)
                     updateMediaSessionMeta(bigImage)
-                    builder?.setLargeIcon(bigImage)
-                    mNotificationManager.notify(NOTIFICATION_ID, builder?.build())
+                    if (builder != null) {
+                        builder.setLargeIcon(bigImage)
+                        mNotificationManager!!.notify(NOTIFICATION_ID, builder.build())
+                    }
                     // Update UI's thumbnail
                     onUpdateSongArtwork(bigImage)
                 }
