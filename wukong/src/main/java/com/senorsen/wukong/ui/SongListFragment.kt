@@ -138,7 +138,6 @@ class SongListFragment : Fragment() {
                     e.printStackTrace()
                     handler.post {
                         Snackbar.make(view, "Error: ${e.message}. What a shame!", Snackbar.LENGTH_LONG).show()
-                        Toast.makeText(activity, "Wukong: sync error, " + e.message, Toast.LENGTH_LONG).show()
                     }
                 }
             }
