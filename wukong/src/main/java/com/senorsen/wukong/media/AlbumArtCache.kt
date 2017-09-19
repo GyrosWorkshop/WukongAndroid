@@ -189,7 +189,7 @@ class AlbumArtCache(private val context: Context) {
                             MAX_ART_WIDTH_ICON, MAX_ART_HEIGHT_ICON)
                     bitmaps = arrayOf<Bitmap>(bitmap, icon)
                     addBitmapToCache(key, bitmaps)
-                } catch (e: IOException) {
+                } catch (e: Exception) {
                     e.printStackTrace()
                     return null
                 }
