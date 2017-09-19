@@ -27,7 +27,7 @@
     <string name="pause">暂停</string>
     <string name="flows_from_heaven_to_the_soul">流入灵魂与内心深处。</string>
 
-    <string name="numberOfPlayers">&lt;b>%d&lt;/b>位成员</string>
+    <string name="numberOfPlayers">&lt;b>%d&lt;/b> 位成员</string>
     <string name="start">开始</string>
     <string name="exit">退出</string>
     <string name="connecting">连接中</string>

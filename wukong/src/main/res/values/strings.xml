@@ -34,8 +34,8 @@
     <string name="exit">Exit</string>
 
     <plurals name="numberOfPlayers">
-        <item quantity="one">&lt;b>%d&lt;/b> player: </item>
-        <item quantity="other">&lt;b>%d&lt;/b> players: </item>
+        <item quantity="one">&lt;b>%d&lt;/b> player</item>
+        <item quantity="other">&lt;b>%d&lt;/b> players</item>
     </plurals>
     <string name="connecting">Connecting</string>
     <string name="reconnecting">Reconnecting</string>
