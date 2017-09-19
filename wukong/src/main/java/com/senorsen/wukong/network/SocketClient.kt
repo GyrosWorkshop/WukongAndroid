@@ -6,6 +6,7 @@ import android.util.Log
 import com.google.common.net.HttpHeaders
 import com.google.gson.Gson
 import com.senorsen.wukong.BuildConfig
+import com.senorsen.wukong.network.message.Protocol
 import com.senorsen.wukong.network.message.WebSocketReceiveProtocol
 import okhttp3.*
 import okhttp3.internal.ws.RealWebSocket
@@ -16,7 +17,7 @@ class SocketClient(
         private val wsUrl: String,
         val cookies: String,
         private val channelId: String,
-        private val reconnectCallback: Callback,
+        private val reconnectCallback: ChannelListener,
         val socketReceiver: SocketReceiver,
         val handler: Handler,
         val applicationContext: Context
@@ -50,7 +51,7 @@ class SocketClient(
     fun connect() {
         disconnected = false
         Log.i(TAG, "Connect ws $this: $wsUrl")
-        listener?.reconnectCallBack = null
+        listener?.channelListener = null
         ws?.close(CLOSE_GOING_AWAY, "Going away")
         listener = ActualWebSocketListener(socketReceiver, reconnectCallback)
         ws = client.newWebSocket(request, listener) as RealWebSocket
@@ -65,16 +66,18 @@ class SocketClient(
         fun onEventMessage(protocol: WebSocketReceiveProtocol)
     }
 
-    interface Callback {
-        fun call()
+    interface ChannelListener {
+        fun error()
+        fun disconnect(cause: String)
     }
 
     inner class ActualWebSocketListener(private val socketReceiver: SocketReceiver,
-                                        var reconnectCallBack: Callback?) : WebSocketListener() {
+                                        var channelListener: ChannelListener?) : WebSocketListener() {
 
         var alonePingCount = 0
         var recentlySendPingCount = 0
         private val pingCheck = PingPongCheckerRunnable()
+        private var disconnectCause: String = ""
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
             Log.i(TAG, "WebSocket open")
@@ -83,7 +86,10 @@ class SocketClient(
         override fun onMessage(webSocket: WebSocket, text: String) {
             Log.d(TAG, "Receiving: " + text)
             val receiveProtocol = Gson().fromJson(text, WebSocketReceiveProtocol::class.java)
-            socketReceiver.onEventMessage(receiveProtocol)
+            when (receiveProtocol.eventName) {
+                Protocol.DISCONNECT -> disconnectCause = receiveProtocol.cause ?: ""
+                else -> socketReceiver.onEventMessage(receiveProtocol)
+            }
         }
 
         override fun onPing(webSocket: WebSocket) {
@@ -102,10 +108,13 @@ class SocketClient(
             Log.i(TAG, "Closing: $code $reason")
             if (code != CLOSE_NORMAL_CLOSURE) {
                 Log.i(TAG, "Reconnect")
-                reconnectCallBack?.call()
-                reconnectCallBack = null
+                channelListener?.error()
+                channelListener = null
             } else {
-                Log.i(TAG, "Server sent normal closure, please wait for ")
+                Log.i(TAG, "Server sent normal closure, disconnected")
+                disconnected = true
+                channelListener?.disconnect(disconnectCause)
+                channelListener = null
             }
         }
 
@@ -113,8 +122,8 @@ class SocketClient(
             Log.e(TAG, "failure, reconnect")
             t.printStackTrace()
             disconnect()
-            reconnectCallBack?.call()
-            reconnectCallBack = null
+            channelListener?.error()
+            channelListener = null
         }
 
         inner class PingPongCheckerRunnable : Runnable {
@@ -133,8 +142,8 @@ class SocketClient(
                     Log.i(TAG, "recently sent ping count = 0, reconnecting")
                 }
                 if (tryReconnect) {
-                    reconnectCallBack?.call()
-                    reconnectCallBack = null
+                    channelListener?.error()
+                    channelListener = null
                 } else {
                     Log.d(TAG, "ping-pong check ok")
                 }

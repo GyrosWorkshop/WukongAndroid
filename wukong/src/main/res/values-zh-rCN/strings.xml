@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">悟空音乐</string>
+    <string name="sign_in">登录</string>
+    <string name="channel">频道</string>
+    <string name="channel_id">频道：%s</string>
+    <string name="ok">好</string>
+    <string name="cancel">取消</string>
+    <string name="permission_request">权限请求</string>
+    <string name="permission_request_description">悟空音乐需要读写外置存储权限以读取其他音乐软件的缓存。\n否则播放性能和流量可能受到影响。</string>
+    <string name="title_activity_settings">设置</string>
+    <string name="pref_preferAudioQualityData_default">high</string>
+    <string name="pref_preferAudioQualityWifi_default">high</string>
+    <string name="settings">设置</string>
+    <string name="drawer_open">打开抽屉</string>
+    <string name="drawer_close">关闭抽屉</string>
+    <string name="sync_playlists">同步歌单</string>
+    <string name="shuffle">随机歌单</string>
+    <string name="clear">清空歌单</string>
+    <string name="shuffle_playlist">随机播放列表</string>
+    <string name="disconnected">离线</string>
+    <string name="remove_this_song">删除</string>
+    <string name="album_artwork">专辑封面</string>
+    <string name="upvote_this_song">提升歌曲</string>
+    <string name="default_hint">无歌词</string>
+    <string name="play">播放</string>
+    <string name="pause">暂停</string>
+    <string name="flows_from_heaven_to_the_soul">流入灵魂与内心深处</string>
+
+    <string name="numberOfPlayers">&lt;b>%d&lt;/b>位成员</string>
+    <string name="start">开始</string>
+    <string name="exit">退出</string>
+    <string name="connecting">连接中</string>
+    <string name="reconnecting">重新连接中</string>
+    <string name="channel_id_idle">频道 %s 没有动静</string>
+</resources>

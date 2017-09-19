@@ -13,6 +13,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.preference.PreferenceManager
 import android.support.design.widget.NavigationView
+import android.support.design.widget.Snackbar
 import android.support.v4.content.LocalBroadcastManager
 import android.support.v4.view.GravityCompat
 import android.support.v4.view.MenuItemCompat
@@ -28,7 +29,10 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.*
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.RelativeLayout
+import android.widget.TextView
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.model.User
@@ -139,7 +143,8 @@ class WukongActivity : AppCompatActivity() {
         when (requestCode) {
             REQUEST_COOKIES -> {
                 cookies = data.getStringExtra("cookies")
-                Toast.makeText(this, "Sign in successfully.", Toast.LENGTH_SHORT).show()
+                val username = "xxx"
+                Snackbar.make(findViewById(R.id.mainCoordinatorLayout), "Logged in as $username.", Snackbar.LENGTH_SHORT).show()
 
                 val sharedPref = getSharedPreferences("wukong", Context.MODE_PRIVATE)
                 sharedPref.edit().putString("cookies", cookies).apply()
@@ -155,8 +160,8 @@ class WukongActivity : AppCompatActivity() {
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
 
-        mDrawerLayout = findViewById<DrawerLayout>(R.id.main)
-        mDrawerView = findViewById<NavigationView>(R.id.left_drawer)
+        mDrawerLayout = findViewById(R.id.main)
+        mDrawerView = findViewById(R.id.left_drawer)
 
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START)
 
@@ -385,8 +390,8 @@ class WukongActivity : AppCompatActivity() {
         Log.d(TAG, "updateChannelInfo $connected, $currentPlayUserId")
         (findViewById<TextView>(R.id.channel_info)).text =
                 if (connected && users != null)
-                    Html.fromHtml("<b>${users.size}</b> player${if (users.size > 1) "s" else ""}: "
-                            + users.joinToString {
+                    Html.fromHtml(String.format(resources.getString(R.string.numberOfPlayers), users.size)
+                            + ": " + users.joinToString {
                         val escapedName = Html.escapeHtml(it.displayName ?: it.userName)
                         if (it.id == currentPlayUserId) "<b>$escapedName</b>" else escapedName
                     })
@@ -457,7 +462,7 @@ class WukongActivity : AppCompatActivity() {
         handler.post {
             val channelId = getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", "")
             if (channelId.isNotBlank()) {
-                (findViewById<NavigationView>(R.id.left_drawer)).menu.findItem(R.id.nav_channel).title = Html.fromHtml("Channel: $channelId")
+                (findViewById<NavigationView>(R.id.left_drawer)).menu.findItem(R.id.nav_channel).title = Html.fromHtml(String.format(resources.getString(R.string.channel_id), channelId))
             }
         }
     }

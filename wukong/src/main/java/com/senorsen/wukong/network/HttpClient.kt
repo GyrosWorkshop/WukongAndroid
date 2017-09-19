@@ -104,11 +104,11 @@ class HttpClient(private val cookies: String = "") {
         return Gson().fromJson(ret, SongList::class.java)
     }
 
-    fun getSongLists(urls: String, cookies: String?): List<Song> {
+    fun getSongLists(urls: String, cookies: String?): List<SongList> {
         val songLists = urls.split('\n').map(String::trim).filter(String::isNotBlank).map { url ->
             try {
                 val songList = getSongListWithUrl(url, cookies)
-                Log.i(TAG, "${songList.songs?.size}, ${songList.name}, ${songList.creator?.name} of $url")
+                Log.i(TAG, "${songList.songs.size}, ${songList.name}, ${songList.creator?.name} of $url")
                 songList
             } catch (e: Exception) {
                 Log.e(HttpClient::class.simpleName, "getSongLists")
@@ -116,7 +116,7 @@ class HttpClient(private val cookies: String = "") {
                 null
             }
         }
-        return songLists.mapNotNull { it?.songs }.flatMap { it }
+        return songLists.filterNotNull()
     }
 
     fun getMessage(lastId: Long, user: String?): List<Message> {

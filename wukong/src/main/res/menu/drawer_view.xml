@@ -5,7 +5,7 @@
         <item
             android:id="@+id/nav_channel"
             android:icon="@drawable/ic_drawer_channel"
-            android:title="Channel" />
+            android:title="@string/channel" />
         <item
             android:id="@+id/nav_sync_playlist"
             android:icon="@drawable/ic_sync_playlist"
@@ -24,11 +24,11 @@
         <item
             android:id="@+id/nav_start_service"
             android:icon="@drawable/ic_drawer_start_service"
-            android:title="Start service" />
+            android:title="@string/start" />
         <item
             android:id="@+id/nav_stop_service"
             android:icon="@drawable/ic_drawer_stop_service"
-            android:title="Stop service" />
+            android:title="@string/exit" />
     </group>
 
 </menu>

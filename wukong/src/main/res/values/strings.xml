@@ -1,8 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Wukong</string>
 
     <string name="sign_in">Sign In</string>
-    <string name="channel_id">Channel</string>
+    <string name="channel">Channel</string>
+    <string name="channel_id">Channel: %s</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="permission_request">Permission request</string>
@@ -28,4 +30,14 @@
     <string name="play">Play</string>
     <string name="pause">Pause</string>
     <string name="flows_from_heaven_to_the_soul">Flows from heaven to the soul</string>
+    <string name="start">Start</string>
+    <string name="exit">Exit</string>
+
+    <plurals name="numberOfPlayers">
+        <item quantity="one">&lt;b>%d&lt;/b> player: </item>
+        <item quantity="other">&lt;b>%d&lt;/b> players: </item>
+    </plurals>
+    <string name="connecting">Connecting</string>
+    <string name="reconnecting">Reconnecting</string>
+    <string name="channel_id_idle">Channel %s idle.</string>
 </resources>

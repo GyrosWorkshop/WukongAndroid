@@ -19,7 +19,9 @@ data class WebSocketReceiveProtocol(
 
         val users: List<User>? = null,
 
-        val notification: Notification? = null
+        val notification: Notification? = null,
+
+        val cause: String? = null
 )
 
 object Protocol {
@@ -35,6 +37,9 @@ object Protocol {
 
     val NOTIFICATION: String
         get() = "Notification"
+
+    val DISCONNECT: String
+        get() = "Disconnect"
 
 }
 

@@ -10,6 +10,8 @@ import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
+import android.support.design.widget.CoordinatorLayout
+import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.util.Log
@@ -20,6 +22,7 @@ import android.widget.*
 import com.senorsen.wukong.R
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.network.HttpClient
+import com.senorsen.wukong.network.message.SongList
 import com.senorsen.wukong.service.WukongService
 import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore
@@ -85,7 +88,6 @@ class SongListFragment : Fragment() {
         }
     }
 
-    // Workaround for type recursive.
     fun bindService() {
         bindRunnable.run()
     }
@@ -109,24 +111,25 @@ class SongListFragment : Fragment() {
     }
 
     fun fetchSongList() {
+        val view = activity.findViewById<CoordinatorLayout>(R.id.mainCoordinatorLayout)
         val configuration = configurationStore.load()
         if (configuration.syncPlaylists.isNullOrBlank()) {
-            Toast.makeText(activity, "Playlist is empty", Toast.LENGTH_SHORT).show()
+            Snackbar.make(view, "Playlist is empty", Toast.LENGTH_SHORT).show()
         } else {
-            if ()
-            Toast.makeText(activity, "Wukong Sync", Toast.LENGTH_SHORT).show()
             thread {
                 try {
-                    val list = http.getSongLists(configuration.syncPlaylists!!, configuration.cookies)
+                    val list = http!!.getSongLists(configuration.syncPlaylists!!, configuration.cookies)
                     handler.post {
-                        adapter.list = list
-                        adapter.reloadFilteredList()
                         if (list.isEmpty()) {
-                            Toast.makeText(activity, "Wukong: playlist is empty, or sync error", Toast.LENGTH_SHORT).show()
+                            Snackbar.make(view, "Empty or sync error", Snackbar.LENGTH_SHORT).show()
+                        } else {
+                            Snackbar.make(view, "Sync ${list.size} lists, ${list.map(SongList::songs).reduce { a, b -> a + b }}", Snackbar.LENGTH_SHORT)
                         }
+                        adapter.list = list.flatMap { it.songs }
+                        adapter.reloadFilteredList()
                     }
                     try {
-                        wukongService?.userSongList = list.toMutableList()
+                        wukongService?.userSongList = list.flatMap(SongList::songs).toMutableList()
                         wukongService?.doUpdateNextSong()
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -134,6 +137,7 @@ class SongListFragment : Fragment() {
                 } catch (e: Exception) {
                     e.printStackTrace()
                     handler.post {
+                        Snackbar.make(view, "Error: ${e.message}. What a shame!", Snackbar.LENGTH_LONG).show()
                         Toast.makeText(activity, "Wukong: sync error, " + e.message, Toast.LENGTH_LONG).show()
                     }
                 }

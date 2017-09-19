@@ -32,6 +32,7 @@ import com.senorsen.wukong.network.ApiUrls
 import com.senorsen.wukong.network.HttpClient
 import com.senorsen.wukong.network.SocketClient
 import com.senorsen.wukong.network.message.Protocol
+import com.senorsen.wukong.network.message.SongList
 import com.senorsen.wukong.network.message.WebSocketReceiveProtocol
 import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore
@@ -149,7 +150,7 @@ class WukongService : Service() {
     }
 
     fun getSongLists(urls: String, cookies: String?): List<Song> {
-        userSongList = http.getSongLists(urls, cookies).toMutableList()
+        userSongList = http.getSongLists(urls, cookies).flatMap(SongList::songs).toMutableList()
         return userSongList
     }
 
@@ -391,7 +392,7 @@ class WukongService : Service() {
 
         downvoted = false
         currentSong = null
-        setNotification("Connecting")
+        setNotification(resources.getString(R.string.connecting))
 
         workThread = thread {
 
@@ -439,7 +440,6 @@ class WukongService : Service() {
 
                 val receiver = object : SocketClient.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
-                        // FIXME: 该分层了。。。
 
                         when (protocol.eventName) {
 
@@ -546,7 +546,7 @@ class WukongService : Service() {
                     }
                 }
 
-                var reconnectCallback: SocketClient.Callback? = null
+                var reconnectCallback: SocketClient.ChannelListener? = null
 
                 var executor: ScheduledThreadPoolExecutor? = null
 
@@ -561,13 +561,13 @@ class WukongService : Service() {
                     doUpdateNextSong()
                 }
 
-                reconnectCallback = object : SocketClient.Callback {
-                    override fun call() {
+                reconnectCallback = object : SocketClient.ChannelListener {
+                    override fun error() {
                         var retry = true
                         while (retry && connected) {
                             try {
                                 Thread.sleep(3000)
-                                setNotification("Reconnecting")
+                                setNotification(resources.getString(R.string.reconnecting))
                                 handler.post {
                                     Toast.makeText(applicationContext, "Wukong: Reconnecting...", Toast.LENGTH_SHORT).show()
                                 }
@@ -579,11 +579,15 @@ class WukongService : Service() {
                             }
                         }
                     }
+
+                    override fun disconnect(cause: String) {
+                        // TODO: show a dialog UI
+                    }
                 }
 
                 try {
                     doConnectWebSocket()
-                    setNotification("Channel $channelId idle.")
+                    setNotification(String.format(resources.getString(R.string.channel_id_idle), channelId))
                 } catch (e: IOException) {
                     Log.e(TAG, "socket exception: " + e.message)
                 }
@@ -714,7 +718,7 @@ class WukongService : Service() {
     }
 
     private fun makeNotificationBuilder(nContent: String?): NotificationCompat.Builder {
-        var title = "Wukong"
+        var title = resources.getString(R.string.app_name)
         var content = nContent
         if (nContent == null && currentSong != null) {
             title = currentSong?.title!!
@@ -744,9 +748,9 @@ class WukongService : Service() {
                 .setContentText(content)
 
         val (playButtonAction, playButtonIcon, playButtonTitle) = if (isPaused) {
-            Triple(ACTION_PLAY, R.drawable.ic_play, "Play")
+            Triple(ACTION_PLAY, R.drawable.ic_play, resources.getString(R.string.play))
         } else {
-            Triple(ACTION_PAUSE, R.drawable.ic_pause, "Pause")
+            Triple(ACTION_PAUSE, R.drawable.ic_pause, resources.getString(R.string.pause))
         }
         notificationBuilder.addAction(NotificationCompat.Action(playButtonIcon, playButtonTitle,
                 PendingIntent.getBroadcast(this, 100,

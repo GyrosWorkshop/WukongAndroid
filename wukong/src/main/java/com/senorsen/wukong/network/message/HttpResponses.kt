@@ -13,5 +13,5 @@ data class SongList(
         var name: String? = null,
         var playCount: Int? = null,
         var songCount: Int? = null,
-        var songs: List<Song>? = null
+        var songs: List<Song>
 )
