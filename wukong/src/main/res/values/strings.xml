@@ -4,7 +4,7 @@
 
     <string name="sign_in">Sign In</string>
     <string name="channel">Channel</string>
-    <string name="channel_id">Channel: %s</string>
+    <string name="channel_id">Channel: %1$s</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="permission_request">Permission request</string>
@@ -18,26 +18,42 @@
     <string name="drawer_open">Open Drawer</string>
     <string name="drawer_close">Close Drawer</string>
     <string name="sync_playlists">Sync</string>
+    <string name="sync_playlists_result">Sync %1$d lists with %2$d songs.</string>
+    <string name="sync_playlists_empty_or_error">Sync empty or error.</string>
+    <string name="sync_playlists_error">Sync error: %1$s. What a shame!</string>
+    <string name="sync_playlists_configuration_error">Fetch configuration failed</string>
     <string name="shuffle">Shuffle</string>
     <string name="clear">Clear</string>
     <string name="shuffle_playlist">Shuffle playlist</string>
     <string name="disconnected">Disconnected</string>
-    <string name="upvote_this_song">Upvote this song</string>
-    <string name="remove_this_song">Remove this song</string>
+    <string name="song_play_next">Play next</string>
+    <string name="song_remove">Remove</string>
     <string name="album_artwork">Album artwork</string>
-
     <string name="default_hint">No Lyrics</string>
     <string name="play">Play</string>
     <string name="pause">Pause</string>
+    <string name="downvote">Down vote</string>
     <string name="flows_from_heaven_to_the_soul">Flows from heaven to the soul</string>
     <string name="start">Start</string>
     <string name="exit">Exit</string>
-
     <plurals name="numberOfPlayers">
-        <item quantity="one">&lt;b>%d&lt;/b> player</item>
-        <item quantity="other">&lt;b>%d&lt;/b> players</item>
+        <item quantity="one">&lt;b>%1$d&lt;/b> player</item>
+        <item quantity="other">&lt;b>%1$d&lt;/b> players</item>
     </plurals>
     <string name="connecting">Connecting</string>
     <string name="reconnecting">Reconnecting</string>
-    <string name="channel_id_idle">Channel %s idle.</string>
+    <string name="channel_id_idle">Channel %1$s idle.</string>
+    <string name="disconnect_notification">Your account is connected on another device.\nDevice: %1$s </string>
+    <string name="reconnect">Reconnect</string>
+    <string name="pref_title_use_media_cdn">Enable media CDN</string>
+    <string name="pref_title_auto_use_local_media">Auto use local media</string>
+    <string name="pref_summary_auto_use_local_media">Load local media in your external storage.</string>
+    <string name="pref_title_cache_size">Cache size</string>
+    <string name="pref_summary_cache_size">Maximum cache size (gigabyte)</string>
+    <string name="pref_title_max_audio_quality">Preferred Maximum Audio Quality (Data)</string>
+    <string name="pref_title_sync_playlists">Sync Playlists (separated by line)</string>
+    <string name="pref_title_provider_cookies">Media Provider Cookies</string>
+    <string name="pref_title_network">Network</string>
+    <string name="pref_title_cache_playback"><![CDATA[Media Caching & Playback]]></string>
+    <string name="pref_title_playlists">Playlists</string>
 </resources>

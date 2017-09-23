@@ -11,8 +11,9 @@ import android.util.Log
 import com.senorsen.wukong.model.File
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.ui.WukongActivity
+import java.lang.ref.WeakReference
 
-class MediaSourceSelector(private val context: Context) {
+class MediaSourceSelector(private val context: WeakReference<Context>) {
 
     private val TAG = javaClass.simpleName
 
@@ -26,7 +27,7 @@ class MediaSourceSelector(private val context: Context) {
 
     private val qualities = arrayOf("lossless", "high", "medium", "low")
 
-    private val sharedPref: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+    private val sharedPref: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context.get())
 
     private fun pullSettings() {
         useCdn = sharedPref.getBoolean(KEY_PREF_USE_CDN, useCdn)
@@ -35,9 +36,9 @@ class MediaSourceSelector(private val context: Context) {
         Log.i(TAG, "useCdn=$useCdn, useLocalMedia=$useLocalMedia, preferAudioQualityData=$preferAudioQualityData")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-                && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
+                && context.get()?.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
             useLocalMedia = false
-            PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(WukongActivity.KEY_PREF_USE_LOCAL_MEDIA, false).apply()
+            PreferenceManager.getDefaultSharedPreferences(context.get()).edit().putBoolean(WukongActivity.KEY_PREF_USE_LOCAL_MEDIA, false).apply()
         }
     }
 

@@ -18,8 +18,12 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.Filter
+import android.widget.Filterable
+import android.widget.ImageView
+import android.widget.TextView
 import com.senorsen.wukong.R
+import com.senorsen.wukong.model.Configuration
 import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.network.HttpClient
 import com.senorsen.wukong.network.message.SongList
@@ -40,7 +44,9 @@ class SongListFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var songListLocalStore: SongListLocalStore
     private lateinit var configurationStore: ConfigurationLocalStore
-    private var http: HttpClient? = null
+    val http: HttpClient
+        get() = (activity as WukongActivity).http
+
 
     val serviceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -110,35 +116,49 @@ class SongListFragment : Fragment() {
         return manager.getRunningServices(Integer.MAX_VALUE).any { it.service.className.contains(WukongService::class.simpleName!!) }
     }
 
+    fun fetchConfiguration(): Configuration? {
+        val configuration = try {
+            http.getConfiguration()
+        } catch (e: HttpClient.UserUnauthorizedException) {
+            Log.d(TAG, e.message)
+            null
+        }
+        if (configuration != null) {
+            configurationStore.save(configuration)
+        }
+        return configuration
+    }
+
     fun fetchSongList() {
         val view = activity.findViewById<CoordinatorLayout>(R.id.mainCoordinatorLayout)
-        val configuration = configurationStore.load()
-        if (configuration.syncPlaylists.isNullOrBlank()) {
-            Snackbar.make(view, "Playlist is empty", Toast.LENGTH_SHORT).show()
-        } else {
-            thread {
+        var configuration: Configuration? = configurationStore.load()
+        thread {
+            try {
+                if (configuration?.syncPlaylists.isNullOrBlank()) {
+                    configuration = fetchConfiguration() ?: throw Exception(getString(R.string.sync_playlists_configuration_error))
+                }
+                val list = http.getSongLists(configuration!!.syncPlaylists!!, configuration!!.cookies)
+                handler.post {
+                    if (list.isEmpty()) {
+                        Snackbar.make(view, R.string.sync_playlists_empty_or_error, Snackbar.LENGTH_SHORT).show()
+                    } else {
+                        val listCount = list.size
+                        val songCount = list.map { it.songCount!! }.reduce { a, b -> a + b }
+                        Snackbar.make(view, getString(R.string.sync_playlists_result, listCount, songCount), Snackbar.LENGTH_SHORT).show()
+                    }
+                    adapter.list = list.flatMap { it.songs }
+                    adapter.reloadFilteredList()
+                }
                 try {
-                    val list = http!!.getSongLists(configuration.syncPlaylists!!, configuration.cookies)
-                    handler.post {
-                        if (list.isEmpty()) {
-                            Snackbar.make(view, "Empty or sync error", Snackbar.LENGTH_SHORT).show()
-                        } else {
-                            Snackbar.make(view, "Sync ${list.size} lists, ${list.map(SongList::songs).reduce { a, b -> a + b }}", Snackbar.LENGTH_SHORT)
-                        }
-                        adapter.list = list.flatMap { it.songs }
-                        adapter.reloadFilteredList()
-                    }
-                    try {
-                        wukongService?.userSongList = list.flatMap(SongList::songs).toMutableList()
-                        wukongService?.doUpdateNextSong()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    wukongService?.userSongList = list.flatMap(SongList::songs).toMutableList()
+                    wukongService?.doUpdateNextSong()
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    handler.post {
-                        Snackbar.make(view, "Error: ${e.message}. What a shame!", Snackbar.LENGTH_LONG).show()
-                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                handler.post {
+                    Snackbar.make(view, getString(R.string.sync_playlists_error, e.message), Snackbar.LENGTH_LONG).show()
                 }
             }
         }
@@ -180,13 +200,7 @@ class SongListFragment : Fragment() {
             adapter.list = localList.toMutableList()
             adapter.reloadFilteredList()
         }
-
         configurationStore = ConfigurationLocalStore(activity)
-        thread {
-            http = HttpClient(activity.getSharedPreferences("wukong", Context.MODE_PRIVATE)
-                    .getString("cookies", ""))
-        }
-
         bindService()
     }
 

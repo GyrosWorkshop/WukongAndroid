@@ -7,8 +7,9 @@ import android.util.Log
 import com.senorsen.wukong.network.MediaProviderClient
 import java.io.File
 import java.io.FileInputStream
+import java.lang.ref.WeakReference
 
-class MediaCache(private val context: Context) {
+class MediaCache(private val context: WeakReference<Context>) {
 
     private val TAG = javaClass.simpleName
 
@@ -24,14 +25,14 @@ class MediaCache(private val context: Context) {
     }
 
     private fun initDiskCache(cacheDir: File) {
-        val maxCacheSize = PreferenceManager.getDefaultSharedPreferences(context).getString(KEY_PREF_MAX_MEDIA_CACHE_SIZE, "2").toLong() * 1024 * 1024 * 1024
+        val maxCacheSize = PreferenceManager.getDefaultSharedPreferences(context.get()).getString(KEY_PREF_MAX_MEDIA_CACHE_SIZE, "2").toLong() * 1024 * 1024 * 1024
         Log.d(TAG, "maxCacheSize: $maxCacheSize")
         mDiskLruCache = DiskLruCache.open(cacheDir, 1, 1, maxCacheSize)
         mDiskCacheStarting = false
     }
 
     fun getDiskCacheDir(uniqueName: String): File {
-        val cachePath = context.externalCacheDir.path
+        val cachePath = context.get()?.externalCacheDir?.path
         return File(cachePath + File.separator + uniqueName)
     }
 
@@ -61,9 +62,11 @@ class MediaCache(private val context: Context) {
         synchronized(mDiskCacheLock) {
             val editor = mDiskLruCache.edit(key)
             val out = editor.newOutputStream(MEDIA_INDEX)
-            MediaProviderClient.getMedia(url).copyTo(out)
-            editor.commit()
-            out.close()
+            MediaProviderClient.getMedia(url).use {
+                it.copyTo(out)
+                editor.commit()
+                out.close()
+            }
         }
         Log.d(TAG, "write to disk cache $key")
     }

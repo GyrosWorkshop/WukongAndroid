@@ -17,7 +17,7 @@ class HttpClient(private val cookies: String = "") {
 
     private val TAG = javaClass.simpleName
 
-    private val userAgent = "WukongAndroid/${BuildConfig.VERSION_NAME}(${BuildConfig.VERSION_CODE})"
+    val userAgent = "WukongAndroid/${BuildConfig.VERSION_NAME}(${BuildConfig.VERSION_CODE})"
 
     private val JSON = MediaType.parse("application/json; charset=utf-8")
 

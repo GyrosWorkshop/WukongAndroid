@@ -55,6 +55,8 @@ class WukongActivity : AppCompatActivity() {
     private lateinit var mDrawerToggle: ActionBarDrawerToggle
     private lateinit var headerLayout: View
 
+    lateinit var http: HttpClient
+
     val handler = Handler()
     var connected = false
     var wukongService: WukongService? = null
@@ -62,12 +64,11 @@ class WukongActivity : AppCompatActivity() {
 
     private lateinit var userInfoLocalStore: UserInfoLocalStore
 
-    // FIXME: reuse module
     val serviceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
             connected = false
             wukongService = null
-            updateChannelInfo(false, null, null)
+            updateChannelInfo(WukongService.ConnectStatus.DISCONNECTED, null, null)
             bindService()
         }
 
@@ -87,9 +88,9 @@ class WukongActivity : AppCompatActivity() {
 
     fun pullChannelInfo() {
         if (wukongService != null) {
-            updateChannelInfo(wukongService!!.connected, wukongService!!.userList, wukongService!!.currentPlayUserId)
+            updateChannelInfo(wukongService!!.connectStatus, wukongService!!.userList, wukongService!!.currentPlayUserId)
             setLyric(wukongService!!.currentSong?.lyrics?.find { it.lrc == true && it.translated != true && !it.data.isNullOrBlank() }?.data)
-            updateSongInfo(wukongService!!.currentSong)
+            updateSongInfo(wukongService!!.currentSong, wukongService!!.isPaused)
             updateAlbumArtwork(wukongService!!.getSongArtwork(wukongService!!.currentSong, null, false))
         }
     }
@@ -116,6 +117,7 @@ class WukongActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        updateChannelInfo()
         bindService()
         if (mTimer == null) {
             mTimer = Timer()
@@ -203,12 +205,13 @@ class WukongActivity : AppCompatActivity() {
         fragmentManager.beginTransaction().replace(R.id.fragment, MainFragment(), "MAIN").commit()
 
         mayRequestPermission()
-
         thread {
+            http = HttpClient(getSharedPreferences("wukong", Context.MODE_PRIVATE)
+                    .getString("cookies", ""))
             try {
                 val lastMessageLocalStore = LastMessageLocalStore(this)
                 val last = lastMessageLocalStore.load()
-                val messages = HttpClient().getMessage(last, userInfoLocalStore.load()?.userName)
+                val messages = http.getMessage(last, userInfoLocalStore.load()?.userName)
                 Log.d(TAG, "fetch message gt $last")
                 if (messages.isNotEmpty()) {
                     handler.post {
@@ -264,6 +267,7 @@ class WukongActivity : AppCompatActivity() {
                 val settingsFragment = getSettingsFragment()
                 if (settingsFragment == null || !settingsFragment.isVisible) {
                     fragmentManager.beginTransaction()
+                            .hide(getMainFragment())
                             .replace(R.id.fragment, SettingsFragment(), "SETTINGS")
                             .addToBackStack("tag")
                             .commit()
@@ -287,25 +291,18 @@ class WukongActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun getSettingsFragment(): SettingsFragment? {
-        return fragmentManager.findFragmentByTag("SETTINGS") as SettingsFragment?
-    }
+    private fun getMainFragment() =
+            fragmentManager.findFragmentByTag("MAIN") as MainFragment?
 
-    private fun getLyricView(): LyricView? {
-        return findViewById(R.id.custom_lyric_view)
-    }
+    private fun getSettingsFragment() =
+            fragmentManager.findFragmentByTag("SETTINGS") as SettingsFragment?
 
-    private fun getSongListFragment(): SongListFragment? {
-        val currentFragment = fragmentManager.findFragmentByTag("MAIN")
-        if (currentFragment != null) {
-            val fragment = currentFragment as MainFragment
-            val childFragment = fragment.childFragmentManager.findFragmentByTag("SONGLIST")
-            if (childFragment != null) {
-                return childFragment as SongListFragment
-            }
-        }
-        return null
-    }
+    private fun getLyricView() =
+            findViewById<LyricView>(R.id.custom_lyric_view)
+
+    private fun getSongListFragment() =
+            getMainFragment()?.childFragmentManager?.findFragmentByTag("SONGLIST") as SongListFragment?
+
 
     private fun search(searchView: SearchView) {
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -325,9 +322,11 @@ class WukongActivity : AppCompatActivity() {
         super.onResume()
         if (broadcastReceiver == null) broadcastReceiver = ChannelUpdateBroadcastReceiver()
         val intentFilter = IntentFilter(UPDATE_CHANNEL_INFO_INTENT)
-        intentFilter.addAction(UPDATE_SONG_ARTWORK)
+        intentFilter.addAction(UPDATE_SONG_INFO_INTENT)
+        intentFilter.addAction(UPDATE_SONG_ARTWORK_INTENT)
         intentFilter.addAction(UPDATE_SONG_LIST_INTENT)
-        intentFilter.addAction(SERVICE_STOPPED)
+        intentFilter.addAction(DISCONNECT_INTENT)
+        intentFilter.addAction(SERVICE_STOPPED_INTENT)
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, intentFilter)
     }
 
@@ -341,22 +340,37 @@ class WukongActivity : AppCompatActivity() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 UPDATE_CHANNEL_INFO_INTENT -> {
-                    updateChannelInfo(intent.getBooleanExtra("connected", false),
+                    updateChannelInfo(intent.getSerializableExtra("connectStatus") as WukongService.ConnectStatus,
                             intent.getSerializableExtra("users") as List<User>?,
                             intent.getStringExtra("currentPlayUserId"))
+                }
+
+                UPDATE_SONG_INFO_INTENT -> {
                     val song = intent.getSerializableExtra("song") as Song?
+                    val isPaused = intent.getBooleanExtra("isPaused", false)
                     setLyric(song?.lyrics?.find { it.lrc == true && it.translated != true && !it.data.isNullOrBlank() }?.data)
-                    updateSongInfo(song)
+                    updateSongInfo(song, isPaused)
                     updateAlbumArtwork(wukongService?.getSongArtwork(song, null, false))
                 }
 
-                UPDATE_SONG_ARTWORK ->
+
+                UPDATE_SONG_ARTWORK_INTENT ->
                     updateAlbumArtwork(intent.getParcelableExtra<Bitmap>("artwork"))
 
                 UPDATE_SONG_LIST_INTENT ->
                     updateSongList()
 
-                SERVICE_STOPPED ->
+                DISCONNECT_INTENT -> {
+                    stopService(Intent(this@WukongActivity, WukongService::class.java))
+                    val cause = intent.getStringExtra("cause")
+                    AlertDialog.Builder(this@WukongActivity).setMessage(getString(R.string.disconnect_notification, cause))
+                            .setTitle(R.string.disconnected)
+                            .setPositiveButton(R.string.reconnect) { _, _ -> startWukongService() }
+                            .setNegativeButton(R.string.exit) { _, _ -> }
+                            .show()
+                }
+
+                SERVICE_STOPPED_INTENT ->
                     onServiceStopped()
             }
         }
@@ -386,17 +400,24 @@ class WukongActivity : AppCompatActivity() {
         return false
     }
 
-    fun updateChannelInfo(connected: Boolean, users: List<User>?, currentPlayUserId: String? = null) {
+    fun updateChannelInfo(connectStatus: WukongService.ConnectStatus = WukongService.ConnectStatus.DISCONNECTED, users: List<User>? = null, currentPlayUserId: String? = null) {
         Log.d(TAG, "updateChannelInfo $connected, $currentPlayUserId")
-        (findViewById<TextView>(R.id.channel_info)).text =
-                if (connected && users != null)
-                    Html.fromHtml(String.format(resources.getString(R.string.numberOfPlayers), users.size)
-                            + ": " + users.joinToString {
-                        val escapedName = Html.escapeHtml(it.displayName ?: it.userName)
-                        if (it.id == currentPlayUserId) "<b>$escapedName</b>" else escapedName
-                    })
-                else
-                    Html.fromHtml(resources.getString(R.string.disconnected))
+        val channelId = currentChannel()
+        val connectStatusText = when (connectStatus) {
+            WukongService.ConnectStatus.DISCONNECTED -> resources.getString(R.string.disconnected)
+            WukongService.ConnectStatus.CONNECTING -> resources.getString(R.string.connecting)
+            WukongService.ConnectStatus.RECONNECTING -> resources.getString(R.string.reconnecting)
+            WukongService.ConnectStatus.CONNECTED -> ""
+        } + " #$channelId "
+        Log.d(TAG, connectStatusText)
+        (findViewById<TextView>(R.id.channel_info))?.text = if (users != null)
+            Html.fromHtml(connectStatusText + String.format(resources.getQuantityString(R.plurals.numberOfPlayers, users.size), users.size)
+                    + ": " + users.joinToString {
+                val escapedName = Html.escapeHtml(it.displayName ?: it.userName)
+                if (it.id == currentPlayUserId) "<b>$escapedName</b>" else escapedName
+            })
+        else
+            Html.fromHtml(connectStatusText)
     }
 
     fun updateSongList() {
@@ -415,27 +436,34 @@ class WukongActivity : AppCompatActivity() {
         handler.post {
             Log.d(TAG, "$user, $avatar")
             if (user?.userName != null) {
-                (headerLayout.findViewById<TextView>(R.id.text_drawer_user)).text = user.userName
+                (headerLayout.findViewById<TextView>(R.id.text_drawer_user))?.text = user.userName
             }
             if (avatar != null) {
-                (headerLayout.findViewById<ImageView>(R.id.icon_drawer_user)).setImageBitmap(avatar)
+                (headerLayout.findViewById<ImageView>(R.id.icon_drawer_user))?.setImageBitmap(avatar)
             }
         }
     }
 
     fun onServiceStopped() {
+        updateChannelInfo()
         handler.post {
             updateAlbumArtwork(wukongArtwork)
-            findViewById<TextView>(R.id.song_footer_line_one).setText(R.string.app_name)
-            findViewById<TextView>(R.id.song_footer_line_two).setText(R.string.flows_from_heaven_to_the_soul)
+            findViewById<TextView>(R.id.song_footer_line_one)?.setText(R.string.app_name)
+            findViewById<TextView>(R.id.song_footer_line_two)?.setText(R.string.flows_from_heaven_to_the_soul)
+            findViewById<View>(R.id.button_area)?.visibility = View.INVISIBLE
         }
     }
 
-    fun updateSongInfo(song: Song?) {
-        if (song == null) return
+    fun updateSongInfo(song: Song?, isPaused: Boolean) {
         handler.post {
-            findViewById<TextView>(R.id.song_footer_line_one).setText(song.title)
-            findViewById<TextView>(R.id.song_footer_line_two).setText(song.artist)
+            if (song != null) {
+                findViewById<TextView>(R.id.song_footer_line_one)?.setText(song.title)
+                if (!withLyric) findViewById<TextView>(R.id.song_footer_line_two)?.setText(song.artist ?: "")
+                findViewById<View>(R.id.button_area)?.visibility = View.VISIBLE
+                findViewById<ImageView>(R.id.play_switch_button)?.setImageResource(if (isPaused) R.drawable.ic_play else R.drawable.ic_pause)
+            } else {
+                findViewById<View>(R.id.button_area)?.visibility = View.INVISIBLE
+            }
         }
     }
 
@@ -444,7 +472,7 @@ class WukongActivity : AppCompatActivity() {
 
     fun updateAlbumArtwork(resourceId: Int) {
         handler.post {
-            findViewById<ImageView>(R.id.artwork_thumbnail).setImageResource(resourceId)
+            findViewById<ImageView>(R.id.artwork_thumbnail)?.setImageResource(resourceId)
         }
     }
 
@@ -454,28 +482,30 @@ class WukongActivity : AppCompatActivity() {
         else
             handler.post {
                 Log.d(TAG, "updateAlbumArtwork " + bitmap.toString())
-                findViewById<ImageView>(R.id.artwork_thumbnail).setImageBitmap(bitmap)
+                findViewById<ImageView>(R.id.artwork_thumbnail)?.setImageBitmap(bitmap)
             }
     }
 
     private fun updateChannelText() {
         handler.post {
-            val channelId = getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", "")
+            val channelId = currentChannel()
             if (channelId.isNotBlank()) {
-                (findViewById<NavigationView>(R.id.left_drawer)).menu.findItem(R.id.nav_channel).title = Html.fromHtml(String.format(resources.getString(R.string.channel_id), channelId))
+                (findViewById<NavigationView>(R.id.left_drawer))?.menu?.findItem(R.id.nav_channel)?.title = Html.fromHtml(String.format(resources.getString(R.string.channel_id), channelId))
             }
         }
     }
 
+    private fun currentChannel() = getSharedPreferences("wukong", Context.MODE_PRIVATE).getString("channel", "")
+
+    private var withLyric = false
+
     private fun setLyric(lyric: String?) {
-        handler.post {
-            val lyricView = getLyricView() ?: return@post
-            if (lyric == null) {
-                lyricView.reset()
-                return@post
-            }
-            lyricView.setLyric(lyric)
+        val lyricView = getLyricView() ?: return
+        if (lyric == null) {
+            lyricView.reset()
+            return
         }
+        lyricView.setLyric(lyric)
     }
 
     private var mTimer: Timer? = null
@@ -497,7 +527,10 @@ class WukongActivity : AppCompatActivity() {
             lyricView.setCurrentTimeMillis(time)
             val current = lyricView.currentLine
             if (current != null && time >= 3000) {
-                findViewById<TextView>(R.id.song_footer_line_two).setText(current)
+                withLyric = true
+                findViewById<TextView>(R.id.song_footer_line_two)?.setText(current)
+            } else {
+                withLyric = false
             }
         }
     }
@@ -547,8 +580,10 @@ class WukongActivity : AppCompatActivity() {
         val REQUEST_WRITE_EXTERNAL_STORAGE = 0
         val KEY_PREF_USE_LOCAL_MEDIA = "pref_useLocalMedia"
         val UPDATE_CHANNEL_INFO_INTENT = "UPDATE_CHANNEL_INFO"
-        val UPDATE_SONG_ARTWORK = "UPDATE_SONG_ARTWORK"
+        val UPDATE_SONG_INFO_INTENT = "UPDATE_SONG_INFO"
+        val UPDATE_SONG_ARTWORK_INTENT = "UPDATE_SONG_ARTWORK"
         val UPDATE_SONG_LIST_INTENT = "UPDATE_SONG_LIST"
-        val SERVICE_STOPPED = "SERVICE_STOPPED"
+        val DISCONNECT_INTENT = "DISCONNECT"
+        val SERVICE_STOPPED_INTENT = "SERVICE_STOPPED"
     }
 }

@@ -31,12 +31,13 @@ import com.senorsen.wukong.model.Song
 import com.senorsen.wukong.utils.BitmapHelper
 import java.io.*
 import java.io.File.separator
+import java.lang.ref.WeakReference
 
 
 /**
  * Implements a basic cache of album arts, with async loading support.
  */
-class AlbumArtCache(private val context: Context) {
+class AlbumArtCache(private val context: WeakReference<Context>) {
 
     private val TAG = javaClass.simpleName
 
@@ -49,7 +50,7 @@ class AlbumArtCache(private val context: Context) {
     private val mDiskCacheLock = Object()
     private val mMemoryCache: LruCache<String, Array<Bitmap>>
 
-    private val sharedPref: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+    private val sharedPref: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context.get())
 
     init {
         val cacheDir = getDiskCacheDir(DISK_CACHE_SUBDIR)
@@ -74,9 +75,9 @@ class AlbumArtCache(private val context: Context) {
         // Check if media is mounted or storage is built-in, if so, try and use external cache dir
         // otherwise use internal cache dir
         val cachePath = if (Environment.MEDIA_MOUNTED == Environment.getExternalStorageState() || !isExternalStorageRemovable())
-            context.externalCacheDir.path
+            context.get()?.externalCacheDir?.path
         else
-            context.cacheDir.path
+            context.get()?.cacheDir?.path
 
         return File(cachePath + separator + uniqueName)
     }
@@ -166,6 +167,37 @@ class AlbumArtCache(private val context: Context) {
             fetch(artUrl, listener, key)
     }
 
+    class FetchAsyncTask(private val weakContext: WeakReference<AlbumArtCache>,
+                               private val artUrl: String,
+                               private val listener: FetchListener?,
+                               private val key: String) : AsyncTask<Void, Void, Array<Bitmap>>() {
+        override fun doInBackground(objects: Array<Void>): Array<Bitmap>? {
+            val bitmaps: Array<Bitmap>
+            try {
+                val bitmap = BitmapHelper.fetchAndRescaleBitmap(artUrl,
+                        MAX_ART_WIDTH, MAX_ART_HEIGHT)
+                val icon = BitmapHelper.scaleBitmap(bitmap,
+                        MAX_ART_WIDTH_ICON, MAX_ART_HEIGHT_ICON)
+                bitmaps = arrayOf<Bitmap>(bitmap, icon)
+                Log.d(AlbumArtCache::class.simpleName, "doInBackground: putting bitmap in cache")
+                weakContext.get()?.addBitmapToCache(key, bitmaps)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return null
+            }
+            return bitmaps
+        }
+
+        override fun onPostExecute(bitmaps: Array<Bitmap>?) {
+            if (bitmaps == null) {
+                listener?.onError(artUrl, IllegalArgumentException("got null bitmaps"))
+            } else {
+                listener?.onFetched(artUrl,
+                        bitmaps[BIG_BITMAP_INDEX], bitmaps[ICON_BITMAP_INDEX])
+            }
+        }
+    }
+
     fun fetch(artUrl: String, listener: FetchListener?, key: String = artUrl.hashCode().toString()) {
         // WARNING: for the sake of simplicity, simultaneous multi-workThread fetch requests
         // are not handled properly: they may cause redundant costly operations, like HTTP
@@ -179,34 +211,7 @@ class AlbumArtCache(private val context: Context) {
         }
         Log.d(TAG, "getOrFetch: starting asynctask to fetch " + artUrl)
 
-        object : AsyncTask<Void, Void, Array<Bitmap>>() {
-            override fun doInBackground(objects: Array<Void>): Array<Bitmap>? {
-                val bitmaps: Array<Bitmap>
-                try {
-                    val bitmap = BitmapHelper.fetchAndRescaleBitmap(artUrl,
-                            MAX_ART_WIDTH, MAX_ART_HEIGHT)
-                    val icon = BitmapHelper.scaleBitmap(bitmap,
-                            MAX_ART_WIDTH_ICON, MAX_ART_HEIGHT_ICON)
-                    bitmaps = arrayOf<Bitmap>(bitmap, icon)
-                    addBitmapToCache(key, bitmaps)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    return null
-                }
-
-                Log.d(TAG, "doInBackground: putting bitmap in cache. mem cache size=" + mMemoryCache.size())
-                return bitmaps
-            }
-
-            override fun onPostExecute(bitmaps: Array<Bitmap>?) {
-                if (bitmaps == null) {
-                    listener?.onError(artUrl, IllegalArgumentException("got null bitmaps"))
-                } else {
-                    listener?.onFetched(artUrl,
-                            bitmaps[BIG_BITMAP_INDEX], bitmaps[ICON_BITMAP_INDEX])
-                }
-            }
-        }.execute()
+        FetchAsyncTask(WeakReference(this), artUrl, listener, key).execute()
     }
 
     abstract class FetchListener {

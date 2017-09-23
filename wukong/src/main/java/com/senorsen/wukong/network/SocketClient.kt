@@ -1,6 +1,7 @@
 package com.senorsen.wukong.network
 
 import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.util.Log
 import com.google.common.net.HttpHeaders
@@ -16,16 +17,13 @@ import java.util.concurrent.TimeUnit
 class SocketClient(
         private val wsUrl: String,
         val cookies: String,
+        userAgent: String,
         private val channelId: String,
         private val reconnectCallback: ChannelListener,
-        val socketReceiver: SocketReceiver,
-        val handler: Handler,
-        val applicationContext: Context
+        private val socketReceiver: SocketReceiver
 ) {
 
     private val TAG = javaClass.simpleName
-
-    private val userAgent = "WukongAndroid/${BuildConfig.VERSION_NAME}(${BuildConfig.VERSION_CODE})"
 
     var ws: RealWebSocket? = null
 
@@ -41,11 +39,11 @@ class SocketClient(
             .pingInterval(5, TimeUnit.SECONDS)
             .build()
 
-    val request = Request.Builder()
+    private val request = Request.Builder()
             .header(HttpHeaders.COOKIE, cookies)
             .header(HttpHeaders.USER_AGENT, userAgent)
             .url(wsUrl).build()
-    var listener: ActualWebSocketListener? = null
+    private var listener: ActualWebSocketListener? = null
 
     @Synchronized
     fun connect() {
@@ -77,7 +75,7 @@ class SocketClient(
         var alonePingCount = 0
         var recentlySendPingCount = 0
         private val pingCheck = PingPongCheckerRunnable()
-        private var disconnectCause: String = ""
+        private var disconnectCause: String = "-"
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
             Log.i(TAG, "WebSocket open")
@@ -110,7 +108,7 @@ class SocketClient(
                 Log.i(TAG, "Reconnect")
                 channelListener?.error()
                 channelListener = null
-            } else {
+            } else if (!disconnected) {
                 Log.i(TAG, "Server sent normal closure, disconnected")
                 disconnected = true
                 channelListener?.disconnect(disconnectCause)
@@ -142,6 +140,7 @@ class SocketClient(
                     Log.i(TAG, "recently sent ping count = 0, reconnecting")
                 }
                 if (tryReconnect) {
+                    disconnected = true
                     channelListener?.error()
                     channelListener = null
                 } else {

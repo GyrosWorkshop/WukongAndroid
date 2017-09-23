@@ -54,7 +54,7 @@
         android:layout_weight="0"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
-        android:contentDescription="@string/upvote_this_song"
+        android:contentDescription="@string/song_play_next"
         android:focusable="true"
         android:src="@drawable/ic_keyboard_arrow_up_black_24px" />
 
@@ -66,7 +66,7 @@
         android:layout_weight="0"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
-        android:contentDescription="@string/remove_this_song"
+        android:contentDescription="@string/song_remove"
         android:focusable="true"
         android:src="@drawable/ic_remove_song_24dp" />
 

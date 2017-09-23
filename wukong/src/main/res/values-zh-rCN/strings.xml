@@ -3,11 +3,11 @@
     <string name="app_name">悟空音乐</string>
     <string name="sign_in">登录</string>
     <string name="channel">频道</string>
-    <string name="channel_id">频道：%s</string>
+    <string name="channel_id">频道：%1$s</string>
     <string name="ok">好</string>
     <string name="cancel">取消</string>
     <string name="permission_request">权限请求</string>
-    <string name="permission_request_description">悟空音乐需要读写外置存储权限以读取其他音乐软件的缓存。\n否则播放性能和流量可能受到影响。</string>
+    <string name="permission_request_description">悟空音乐需要读写外置存储权限以读取其他音乐软件的缓存。\n否则播放性能和流量使用可能受到影响。</string>
     <string name="title_activity_settings">设置</string>
     <string name="pref_preferAudioQualityData_default">high</string>
     <string name="pref_preferAudioQualityWifi_default">high</string>
@@ -19,18 +19,37 @@
     <string name="clear">清空歌单</string>
     <string name="shuffle_playlist">随机播放列表</string>
     <string name="disconnected">离线</string>
-    <string name="remove_this_song">删除</string>
+    <string name="song_play_next">提前</string>
+    <string name="song_remove">删除</string>
     <string name="album_artwork">专辑封面</string>
-    <string name="upvote_this_song">提升歌曲</string>
     <string name="default_hint">无歌词</string>
     <string name="play">播放</string>
     <string name="pause">暂停</string>
     <string name="flows_from_heaven_to_the_soul">流入灵魂与内心深处。</string>
-
-    <string name="numberOfPlayers">&lt;b>%d&lt;/b> 位成员</string>
+    <plurals name="numberOfPlayers">
+        <item quantity="other">&lt;b>%1$d&lt;/b> 位成员</item>
+    </plurals>
     <string name="start">开始</string>
     <string name="exit">退出</string>
     <string name="connecting">连接中</string>
     <string name="reconnecting">重新连接中</string>
-    <string name="channel_id_idle">频道 %s 没有动静</string>
+    <string name="channel_id_idle">频道 %1$s</string>
+    <string name="disconnect_notification">您的账号已在另一设备上登录。\n设备：%1$s</string>
+    <string name="reconnect">重新连接</string>
+    <string name="pref_title_use_media_cdn">使能多媒体 CDN</string>
+    <string name="pref_title_auto_use_local_media">自动匹配本地歌曲</string>
+    <string name="pref_summary_auto_use_local_media">匹配并加载来自其他音乐软件的歌曲</string>
+    <string name="pref_title_cache_size">缓存</string>
+    <string name="pref_summary_cache_size">最大缓存空间（GiB）</string>
+    <string name="pref_title_max_audio_quality">音质偏好（数据）</string>
+    <string name="pref_title_sync_playlists">同步歌单列表</string>
+    <string name="pref_title_provider_cookies">多媒体供源 Cookies</string>
+    <string name="downvote">差评</string>
+    <string name="pref_title_network">网络</string>
+    <string name="pref_title_cache_playback">缓存与播放</string>
+    <string name="pref_title_playlists">歌曲清单</string>
+    <string name="sync_playlists_result">同步 %1$d 个歌单，共 %2$d 首曲目</string>
+    <string name="sync_playlists_empty_or_error">同步结果为空或错误</string>
+    <string name="sync_playlists_error">同步错误：%1$s 。震惊！</string>
+    <string name="sync_playlists_configuration_error">同步前配置错误</string>
 </resources>

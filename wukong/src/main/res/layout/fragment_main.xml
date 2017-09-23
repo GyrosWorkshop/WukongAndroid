@@ -1,83 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#fff"
     android:orientation="vertical">
 
+    <!-- header bar -->
     <LinearLayout
+        android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:background="@drawable/myrect"
+        android:elevation="5dp"
         android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/myrect"
-            android:elevation="5dp"
-            android:orientation="vertical">
+            android:layout_marginTop="10dp"
+            android:gravity="start"
+            android:minHeight="50dp"
+            android:orientation="horizontal"
+            android:paddingEnd="16dp"
+            android:paddingStart="16dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <ImageView
+                android:id="@+id/song_list_shuffle"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:gravity="start"
-                android:minHeight="50dp"
-                android:orientation="horizontal"
-                android:paddingEnd="16dp"
-                android:paddingStart="16dp">
+                android:layout_marginEnd="16dp"
+                android:layout_weight="0"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="@string/shuffle_playlist"
+                android:focusable="true"
+                android:src="@drawable/ic_shuffle_playlist"
+                tools:ignore="InefficientWeight" />
 
-                <ImageView
-                    android:id="@+id/song_list_shuffle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="16dp"
-                    android:layout_weight="0"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:contentDescription="@string/shuffle_playlist"
-                    android:focusable="true"
-                    android:src="@drawable/ic_shuffle_playlist"
-                    tools:ignore="InefficientWeight" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="start"
-                android:minHeight="32dp"
-                android:orientation="horizontal"
-                android:paddingEnd="16dp"
-                android:paddingStart="16dp">
-
-                <TextView
-                    android:id="@+id/channel_info"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:singleLine="false"
-                    android:text="@string/disconnected"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
-
-
-            </LinearLayout>
         </LinearLayout>
 
-        <me.zhengken.lyricview.LyricView
-            android:id="@+id/custom_lyric_view"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone" />
+            android:layout_height="wrap_content"
+            android:gravity="start"
+            android:minHeight="32dp"
+            android:orientation="horizontal"
+            android:paddingEnd="16dp"
+            android:paddingStart="16dp">
 
-        <FrameLayout
-            android:id="@+id/main_fragment_container"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            <TextView
+                android:id="@+id/channel_info"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="false"
+                android:text="@string/disconnected"
+                android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
+
+
+        </LinearLayout>
     </LinearLayout>
 
-
+    <!-- footer bar -->
     <RelativeLayout
+        android:id="@+id/footer"
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:layout_alignParentBottom="true"
@@ -85,11 +74,14 @@
         android:layout_alignParentStart="true"
         android:background="@drawable/myrect"
         android:elevation="5dp"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:weightSum="0">
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
+            android:layout_alignParentStart="true"
+            android:layout_toStartOf="@id/button_area"
             android:orientation="horizontal">
 
             <ImageView
@@ -135,22 +127,58 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/button_area"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
-            android:orientation="horizontal">
+            android:layout_centerVertical="true"
+            android:orientation="horizontal"
+            android:visibility="invisible">
 
             <ImageView
                 android:id="@+id/play_switch_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="4dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_margin="5dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
                 android:contentDescription="@string/play"
+                android:focusable="true"
                 android:src="@drawable/ic_play"
-                tools:src="@drawable/ic_play" />
+                android:tint="@color/colorPrimaryDark"
+                app:srcCompat="@drawable/ic_play" />
 
+            <ImageView
+                android:id="@+id/downvote_button"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_margin="5dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="@string/downvote"
+                android:focusable="true"
+                android:src="@drawable/ic_downvote"
+                android:tint="@color/colorPrimaryDark"
+                app:srcCompat="@drawable/ic_downvote" />
         </LinearLayout>
 
+
     </RelativeLayout>
+
+    <!-- contents -->
+    <FrameLayout
+        android:id="@+id/main_fragment_container"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_above="@id/footer"
+        android:layout_below="@id/header" />
+
+    <me.zhengken.lyricview.LyricView
+        android:id="@+id/custom_lyric_view"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_above="@id/footer"
+        android:layout_below="@id/header"
+        android:visibility="gone" />
 
 </RelativeLayout>

@@ -10,19 +10,39 @@ import kotlin.reflect.full.createInstance
 
 class MainFragment : Fragment() {
 
+    private val TAG = javaClass.simpleName
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
 
         val view = inflater.inflate(R.layout.fragment_main, container, false)
 
-        view.findViewById<View>(R.id.song_list_shuffle).setOnClickListener {
-            val childFragment = childFragmentManager.findFragmentByTag("SONGLIST")
-            if (childFragment != null) {
-                val songListFragment = childFragment as SongListFragment
-                songListFragment.shuffleSongList()
+        with(view) {
+            findViewById<View>(R.id.song_list_shuffle).setOnClickListener {
+                val childFragment = childFragmentManager.findFragmentByTag("SONGLIST")
+                if (childFragment != null) {
+                    val songListFragment = childFragment as SongListFragment
+                    songListFragment.shuffleSongList()
+                }
+            }
+
+            findViewById<View>(R.id.play_switch_button).setOnClickListener {
+                val wukongService = (activity as WukongActivity).wukongService
+                if (wukongService != null) {
+                    if (wukongService.isPaused)
+                        wukongService.switchPlay()
+                    else
+                        wukongService.switchPause()
+                }
+            }
+
+            findViewById<View>(R.id.downvote_button).setOnClickListener {
+                val wukongService = (activity as WukongActivity).wukongService
+                val requestSong = wukongService?.currentSong?.toRequestSong()
+                if (requestSong != null)
+                    wukongService.sendDownvote(requestSong)
             }
         }
-
         return view
     }
 

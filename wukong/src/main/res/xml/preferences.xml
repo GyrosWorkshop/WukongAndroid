@@ -1,38 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <CheckBoxPreference
-        android:defaultValue="false"
-        android:key="pref_useCdn"
-        android:summary="May help you get rid of network problem, or not."
-        android:title="Use media CDN" />
 
-    <CheckBoxPreference
-        android:defaultValue="true"
-        android:key="pref_useLocalMedia"
-        android:summary="Load local media in your external storage."
-        android:title="Use local media" />
-    <!-- After user grant WRITE_EXTERNAL_STORAGE permission, this will be changed to true automatically. -->
+    <PreferenceCategory android:title="@string/pref_title_network">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="pref_useCdn"
+            android:summary=""
+            android:title="@string/pref_title_use_media_cdn" />
 
-    <EditTextPreference
-        android:defaultValue="2"
-        android:key="pref_maxMediaCacheSize"
-        android:title="Cache size"
-        android:summary="Maximum cache size (gigabyte)"/>
+        <ListPreference
+            android:defaultValue="@string/pref_preferAudioQualityData_default"
+            android:dialogTitle="Preferred Maximum Audio Quality"
+            android:entries="@array/pref_preferAudioQuality_entries"
+            android:entryValues="@array/pref_preferAudioQuality_values"
+            android:key="pref_preferAudioQualityData"
+            android:summary="%s"
+            android:title="@string/pref_title_max_audio_quality" />
+    </PreferenceCategory>
 
-    <ListPreference
-        android:defaultValue="@string/pref_preferAudioQualityData_default"
-        android:dialogTitle="Preferred Maximum Audio Quality"
-        android:entries="@array/pref_preferAudioQuality_entries"
-        android:entryValues="@array/pref_preferAudioQuality_values"
-        android:key="pref_preferAudioQualityData"
-        android:summary="%s"
-        android:title="Preferred Maximum Audio Quality" />
+    <PreferenceCategory android:title="@string/pref_title_cache_playback">
+        <EditTextPreference
+            android:defaultValue="2"
+            android:key="pref_maxMediaCacheSize"
+            android:summary="@string/pref_summary_cache_size"
+            android:title="@string/pref_title_cache_size" />
 
-    <EditTextPreference
-        android:key="pref_syncPlaylists"
-        android:title="Sync Playlists (separated by line)" />
+        <!-- After user grant WRITE_EXTERNAL_STORAGE permission, this will be changed to true automatically. -->
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="pref_useLocalMedia"
+            android:summary="@string/pref_summary_auto_use_local_media"
+            android:title="@string/pref_title_auto_use_local_media" />
+    </PreferenceCategory>
 
-    <EditTextPreference
-        android:key="pref_cookies"
-        android:title="Music Provider Cookies" />
+    <PreferenceCategory android:title="@string/pref_title_playlists">
+        <EditTextPreference
+            android:key="pref_syncPlaylists"
+            android:title="@string/pref_title_sync_playlists" />
+
+        <EditTextPreference
+            android:key="pref_cookies"
+            android:title="@string/pref_title_provider_cookies" />
+    </PreferenceCategory>
 </PreferenceScreen>
