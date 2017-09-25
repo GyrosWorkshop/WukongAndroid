@@ -124,50 +124,35 @@ class HttpClient(private val cookies: String = "") {
         return Gson().fromJson(ret, object : TypeToken<List<Message>>() {}.type)
     }
 
-    private fun get(url: String, withCookie: Boolean = true): String {
-        val request = Request.Builder()
-                .header(HttpHeaders.COOKIE, if (withCookie) cookies else "")
+    private fun request(url: String, sendCookie: Boolean = true, body: String = null): String {
+        val builder = Request.Builder()
+                .header(HttpHeaders.COOKIE, if (sendCookie) cookies else "")
                 .header(HttpHeaders.USER_AGENT, userAgent)
-                .url(url).build()
-        val response = client.newCall(request).execute()
-        when {
-            response.isSuccessful ->
-                return response.body()!!.string()
-
-            response.code() == 401 ->
-                throw UserUnauthorizedException("Unauthorized: " + response.body()!!.string())
-
-            response.code() == 400 ->
-                throw InvalidRequestException("Invalid request: " + response.body()!!.string())
-
-            else ->
-                throw InvalidResponseException(response)
-        }
-    }
-
-    private fun post(url: String, json: String = "{}"): String {
-        val body = RequestBody.create(JSON, json)
-        Log.d(TAG, "")
-        val request = Request.Builder()
-                .header("Cookie", cookies)
-                .header("User-Agent", userAgent)
                 .url(url)
-                .post(body).build()
-        val response = client.newCall(request).execute()
-        when {
-            response.isSuccessful ->
-                return response.body()!!.string()
+        if (body != null)
+            builder.post(RequestBody.create(JSON, body))
+        client.newCall(builder.build()).execute().use { response
+            when {
+                response.isSuccessful ->
+                    return response.body()!!.string()
 
-            response.code() == 401 ->
-                throw UserUnauthorizedException("Unauthorized: " + response.body()!!.string())
+                response.code() == 401 ->
+                    throw UserUnauthorizedException("Unauthorized: " + response.body()!!.string())
 
-            response.code() == 400 ->
-                throw InvalidRequestException("Invalid request: " + response.body()!!.string())
+                response.code() == 400 ->
+                    throw InvalidRequestException("Invalid request: " + response.body()!!.string())
 
-            else ->
-                throw InvalidResponseException(response)
+                else ->
+                    throw InvalidResponseException(response)
+            }
         }
     }
+
+    private fun post(url: String, body: String = "{}")
+        = request(url, true, body)
+    
+    private fun get(url: String, sendCookie: Boolean = true)
+        = request(url, sendCookie)
 
     private fun urlEncode(segment: String): String {
         return URLEncoder.encode(segment, "utf-8")
