@@ -31,12 +31,14 @@ before_install:
 - chmod +x gradlew
 - ./gradlew dependencies || true
 script:
-- ./gradlew assembleRelease
+- ./gradlew assembleDebug assembleRelease
 deploy:
   provider: releases
   api_key:
     secure: PpEqCtZguVge5D7d1q1RfAJbnxvoBsuf1+aRINeaQS3LNM4n4YQfNCzDfj4Iv0/s6H9skyj2o3PNbn6xt9/IeVwsitS6KQQIfvHjB8cgu0Xv/mWWpo4SFz/F6SZk8ZtWyLXVLWMskTDWP+A7pxT9PltOrLGcvQPPS76LqHBXEqe6sFPk3OyLZr1t7xL523QHXd184Ga+Hu1NOSCd/aCtA+K0WPA2Y94OIcO7RXNsZUmI1job7EF9/VR7QyT1fXgbkcJAs1a4s1uAi5ZhglsTs4DZOirJbysE6o8Owf2DT3ZNCM8AZRCOm+FFdCu7keid14QFenS+Vp6KliE+B//nm8g81/NzABcwuGWXa45TzOuRFfPOFkE0V3nuvpFX6BfYCkbzKEgMRaz2fXWPGF4s7ZBPJVc2wVl/HxJYUgfZGgkmQrxhOdWVYHZTaDfSQWyV2nOZ/rShnZ0tb3j6IGt8GM/5cupkllzmUcXHzlcccNT8e7VlHObaynNrouh75KP6FEw8rfwnZyjQlCn5Hx8nIegDgNobW0ZgffrM7bMPLpHOSL+XyBRKrJtojrx6pUpGW8MKhxbRITRg0xM1VBSL0gRl5aCOJt9SHcq60/xnexJSPKQsDFmVYjl7GT/az1A2S/Je/EY6fS8Ij9B+aNe9HiacBYcwhLxXM2zhRuFDXak=
-  file: wukong/build/outputs/apk/release/wukong-release.apk
+  file:
+  - wukong/build/outputs/apk/debug/wukong-debug.apk
+  - wukong/build/outputs/apk/release/wukong-release.apk
   on:
     tags: true
   skip_cleanup: true
