@@ -76,9 +76,7 @@ class WukongActivity : AppCompatActivity() {
             connected = true
             val wukongService = (service as WukongService.WukongServiceBinder).getService()
             this@WukongActivity.wukongService = wukongService
-            wukongService.registerUpdateUserInfo(this@WukongActivity::updateUserTextAndAvatar)
             if (wukongService.connected) {
-                updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
                 pullChannelInfo()
             } else {
                 onServiceStopped()
@@ -88,6 +86,7 @@ class WukongActivity : AppCompatActivity() {
 
     fun pullChannelInfo() {
         if (wukongService != null) {
+            updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
             updateChannelInfo(wukongService!!.connectStatus, wukongService!!.userList, wukongService!!.currentPlayUserId)
             setLyric(wukongService!!.currentSong?.lyrics?.find { it.lrc == true && it.translated != true && !it.data.isNullOrBlank() }?.data)
             updateSongInfo(wukongService!!.currentSong, wukongService!!.isPaused)
@@ -127,7 +126,6 @@ class WukongActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
-        wukongService?.registerUpdateUserInfo(null)
         handler.removeCallbacks(bindRunnable)
         if (connected) unbindService(serviceConnection)
         mTimer?.cancel()
@@ -325,6 +323,7 @@ class WukongActivity : AppCompatActivity() {
         intentFilter.addAction(UPDATE_SONG_INFO_INTENT)
         intentFilter.addAction(UPDATE_SONG_ARTWORK_INTENT)
         intentFilter.addAction(UPDATE_SONG_LIST_INTENT)
+        intentFilter.addAction(UPDATE_USER_INFO_INTENT)
         intentFilter.addAction(DISCONNECT_INTENT)
         intentFilter.addAction(SERVICE_STOPPED_INTENT)
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, intentFilter)
@@ -359,6 +358,9 @@ class WukongActivity : AppCompatActivity() {
 
                 UPDATE_SONG_LIST_INTENT ->
                     updateSongList()
+
+                UPDATE_USER_INFO_INTENT ->
+                    updateUserTextAndAvatar(intent.getSerializableExtra("user") as User?, intent.getParcelableExtra<Bitmap?>("avatar"))
 
                 DISCONNECT_INTENT -> {
                     stopService(Intent(this@WukongActivity, WukongService::class.java))
@@ -582,6 +584,7 @@ class WukongActivity : AppCompatActivity() {
         val UPDATE_CHANNEL_INFO_INTENT = "UPDATE_CHANNEL_INFO"
         val UPDATE_SONG_INFO_INTENT = "UPDATE_SONG_INFO"
         val UPDATE_SONG_ARTWORK_INTENT = "UPDATE_SONG_ARTWORK"
+        val UPDATE_USER_INFO_INTENT = "UPDATE_USER_INFO"
         val UPDATE_SONG_LIST_INTENT = "UPDATE_SONG_LIST"
         val DISCONNECT_INTENT = "DISCONNECT"
         val SERVICE_STOPPED_INTENT = "SERVICE_STOPPED"

@@ -45,7 +45,6 @@ import java.io.IOException
 import java.io.Serializable
 import java.lang.System.currentTimeMillis
 import java.lang.ref.WeakReference
-import java.net.URL
 import java.net.URLEncoder
 import java.util.*
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -144,6 +143,13 @@ class WukongService : Service() {
         Log.d(TAG, "onUpdateSongArtwork " + artwork)
         val intent = Intent(WukongActivity.UPDATE_SONG_ARTWORK_INTENT)
         intent.putExtra("artwork", artwork)
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+    }
+
+    private fun onUserInfoUpdate(user: User?, avatar: Bitmap?) {
+        val intent = Intent(WukongActivity.UPDATE_USER_INFO_INTENT)
+        intent.putExtra("user", user)
+        intent.putExtra("avatar", avatar)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
@@ -419,12 +425,6 @@ class WukongService : Service() {
         mNotificationManager?.cancelAll()
     }
 
-    var onUserInfoUpdate: ((user: User?, avatar: Bitmap?) -> Unit)? = null
-
-    fun registerUpdateUserInfo(callback: ((user: User?, avatar: Bitmap?) -> Unit)?) {
-        onUserInfoUpdate = callback
-    }
-
     private fun startConnect() {
         val pref = getSharedPreferences("wukong", Context.MODE_PRIVATE)
         val cookies = pref.getString("cookies", "")
@@ -455,24 +455,17 @@ class WukongService : Service() {
                 currentUser = http.getUserInfo()
                 Log.d(TAG, "User: " + currentUser.toString())
                 userInfoLocalStore.save(currentUser)
-                try {
-                    onUserInfoUpdate?.invoke(currentUser, null)
-                } catch (e: Exception) {
-
-                }
-                // FIXME: !!
+                // FIXME: Use glide!!
                 if (currentUser.avatar != null) {
                     albumArtCache.fetch(currentUser.avatar!!, object : AlbumArtCache.FetchListener() {
                         override fun onFetched(artUrl: String, bigImage: Bitmap, iconImage: Bitmap) {
                             Log.d(TAG, "onFetched avatar $artUrl")
                             userInfoLocalStore.save(avatar = bigImage)
-                            try {
-                                onUserInfoUpdate?.invoke(currentUser, bigImage)
-                            } catch (e: Exception) {
-
-                            }
+                            onUserInfoUpdate(currentUser, bigImage)
                         }
                     })
+                } else {
+                    onUserInfoUpdate(currentUser, null)
                 }
 
                 mediaPlayer.setOnCompletionListener {
@@ -770,6 +763,7 @@ class WukongService : Service() {
         mChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC)
         mNotificationManager.createNotificationChannel(mChannel)
     }
+
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createMessageChannel() {
         val mNotificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
