@@ -119,7 +119,6 @@ class SocketClient(
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             Log.e(TAG, "failure, reconnect")
             t.printStackTrace()
-            disconnect()
             channelListener?.error()
             channelListener = null
         }

@@ -107,6 +107,7 @@ class WukongService : Service() {
 
     var songListUpdateCallback: ((List<Song>) -> Unit)? = null
 
+    private val ACTION_TURN_OFF = "com.senorsen.wukong.TURN_OFF"
     private val ACTION_DOWNVOTE = "com.senorsen.wukong.DOWNVOTE"
     private val ACTION_PAUSE = "com.senorsen.wukong.PAUSE"
     private val ACTION_PLAY = "com.senorsen.wukong.PLAY"
@@ -267,6 +268,7 @@ class WukongService : Service() {
         // Create media cache later (on start).
 
         val filter = IntentFilter()
+        filter.addAction(ACTION_TURN_OFF)
         filter.addAction(ACTION_DOWNVOTE)
         filter.addAction(ACTION_PAUSE)
         filter.addAction(ACTION_PLAY)
@@ -276,12 +278,13 @@ class WukongService : Service() {
                 if (intent != null) {
                     Log.d(TAG, intent.action)
                     when (intent.action) {
+                        ACTION_TURN_OFF -> stopService(Intent(this@WukongService, WukongService::class.java))
+
                         ACTION_DOWNVOTE -> sendDownvote(intent.getStringExtra("song").toRequestSong())
 
                         ACTION_PAUSE -> switchPause()
 
                         ACTION_PLAY -> switchPlay()
-
                     }
                 }
             }
@@ -592,7 +595,7 @@ class WukongService : Service() {
                     http.channelJoin(channelId)
                     fetchConfiguration()
                     if (socket == null) {
-                        socket = SocketClient(ApiUrls.wsEndpoint + "?deviceId=" + URLEncoder.encode("${http.userAgent} ${Build.MANUFACTURER} ${Build.MODEL} ${Build.PRODUCT}", Charsets.UTF_8.name()), cookies, http.userAgent, channelId, channelListener!!, receiver)
+                        socket = SocketClient(ApiUrls.wsEndpoint + "?deviceId=" + URLEncoder.encode("${http.userAgent} ${Build.PRODUCT}", Charsets.UTF_8.name()), cookies, http.userAgent, channelId, channelListener!!, receiver)
                     }
                     socket!!.connect()
                     connected = true
@@ -605,7 +608,7 @@ class WukongService : Service() {
                         var retry = true
                         connectStatus = ConnectStatus.RECONNECTING
                         onUpdateChannelInfo()
-                        while (retry && connected) {
+                        while (retry) {
                             try {
                                 Thread.sleep(3000)
                                 doConnectWebSocket()
@@ -792,10 +795,10 @@ class WukongService : Service() {
             createMediaChannel()
             NotificationCompat.Builder(this, MEDIA_CHANNEL_ID)
         }
+        val shouldDisplayDownvote = currentSong != null && !downvoted
+        val mediaStyle = MediaStyle().setMediaSession(mSessionCompat.sessionToken)
         notificationBuilder
-                .setStyle(MediaStyle()
-                        .setShowActionsInCompactView()
-                        .setMediaSession(mSession))
+                .setStyle(mediaStyle)
                 .setColor(mNotificationColor)
                 .setContentIntent(contextIntent)
                 .setUsesChronometer(true)
@@ -814,7 +817,7 @@ class WukongService : Service() {
                 PendingIntent.getBroadcast(this, 100,
                         Intent(playButtonAction).setPackage(packageName), PendingIntent.FLAG_CANCEL_CURRENT)))
 
-        if (currentSong != null && !downvoted) {
+        if (shouldDisplayDownvote) {
             notificationBuilder.addAction(NotificationCompat.Action(R.drawable.ic_downvote, "Downvote",
                     PendingIntent.getBroadcast(this, 100,
                             Intent(ACTION_DOWNVOTE).setPackage(packageName)
