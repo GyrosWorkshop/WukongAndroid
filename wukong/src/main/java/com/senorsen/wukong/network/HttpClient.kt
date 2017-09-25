@@ -131,7 +131,7 @@ class HttpClient(private val cookies: String = "") {
                 .url(url)
         if (body != null)
             builder.post(RequestBody.create(JSON, body))
-        client.newCall(builder.build()).execute().use { response
+        client.newCall(builder.build()).execute().use { response ->
             when {
                 response.isSuccessful ->
                     return response.body()!!.string()
