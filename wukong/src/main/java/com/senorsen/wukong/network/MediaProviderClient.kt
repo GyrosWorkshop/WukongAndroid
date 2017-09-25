@@ -18,14 +18,15 @@ object MediaProviderClient {
                 .head()
                 .header(HttpHeaders.USER_AGENT, "")
                 .url(url).build()
-        val response = client.newCall(request).execute()
-        when {
-            response.isSuccessful && response.code() == 200 -> {
-                Log.d(TAG, response.toString())
-                return response.request().url().toString()
+        client.newCall(request).execute().use { response ->
+            when {
+                response.isSuccessful && response.code() == 200 -> {
+                    Log.d(TAG, response.toString())
+                    return response.request().url().toString()
+                }
+                else ->
+                    throw HttpClient.InvalidResponseException(response)
             }
-            else ->
-                throw HttpClient.InvalidResponseException(response)
         }
     }
 
@@ -33,12 +34,13 @@ object MediaProviderClient {
         val request = Request.Builder()
                 .header(HttpHeaders.USER_AGENT, "")
                 .url(url).build()
-        val response = client.newCall(request).execute()
-        when {
-            response.isSuccessful ->
-                return response.body()!!.byteStream()
-            else ->
-                throw HttpClient.InvalidResponseException(response)
+        client.newCall(request).execute().use { response ->
+            when {
+                response.isSuccessful ->
+                    return response.body()!!.byteStream()
+                else ->
+                    throw HttpClient.InvalidResponseException(response)
+            }
         }
     }
 
