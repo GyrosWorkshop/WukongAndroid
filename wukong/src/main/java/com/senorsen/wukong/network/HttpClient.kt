@@ -124,7 +124,7 @@ class HttpClient(private val cookies: String = "") {
         return Gson().fromJson(ret, object : TypeToken<List<Message>>() {}.type)
     }
 
-    private fun request(url: String, sendCookie: Boolean = true, body: String = null): String {
+    private fun request(url: String, sendCookie: Boolean = true, body: String? = null): String {
         val builder = Request.Builder()
                 .header(HttpHeaders.COOKIE, if (sendCookie) cookies else "")
                 .header(HttpHeaders.USER_AGENT, userAgent)
