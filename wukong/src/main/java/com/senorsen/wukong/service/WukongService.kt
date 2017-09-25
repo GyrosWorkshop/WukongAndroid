@@ -547,6 +547,9 @@ class WukongService : Service() {
                                     return
                                 }
 
+                                mediaPlayer.reset()
+                                currentSong = song
+
                                 setNotification()
                                 onUpdateChannelInfo(userList, currentPlayUserId)
                                 onUpdateSongInfo(song)
@@ -566,7 +569,6 @@ class WukongService : Service() {
                                         Log.i(TAG, "media cache MISS")
                                         val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song)
                                         Log.d(TAG, "play media sources: $mediaSources")
-                                        currentSong = song
                                         MediaSourcePreparer.setMediaSources(mediaPlayer, mediaSources, protocol.elapsed)
                                     }
                                     if (!isPaused) mediaPlayer.start()
