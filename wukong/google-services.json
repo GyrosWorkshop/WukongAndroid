@@ -1,0 +1,99 @@
+{
+  "project_info": {
+    "project_number": "171822759126",
+    "firebase_url": "https://wukongfire-e72dd.firebaseio.com",
+    "project_id": "wukongfire-e72dd",
+    "storage_bucket": "wukongfire-e72dd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:171822759126:android:4fe07c6da8b66b7d",
+        "android_client_info": {
+          "package_name": "us.wukongmusic.firebase.testing"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "171822759126-6uk4o74e5i1re3dudeij21knmcl95rkf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "us.wukongmusic.firebase.testing",
+            "certificate_hash": "2e8e8842b8e8d4f861cae9ff150209dfb7c4fc33"
+          }
+        },
+        {
+          "client_id": "171822759126-kfnq0222s0lols3pvqm0vd1qqf7u16gt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzK-QMwGbCBGxP7AUPmLSKG3cGgjKjYYI"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "171822759126-kfnq0222s0lols3pvqm0vd1qqf7u16gt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:171822759126:android:bed00ef29533b63c",
+        "android_client_info": {
+          "package_name": "com.senorsen.wukong"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "171822759126-ietv1iao8vg1o3lrb4ipbha6hb3kvki8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.senorsen.wukong",
+            "certificate_hash": "449db766f48c3e77c55e3fd0e679b17ff982699b"
+          }
+        },
+        {
+          "client_id": "171822759126-kfnq0222s0lols3pvqm0vd1qqf7u16gt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzK-QMwGbCBGxP7AUPmLSKG3cGgjKjYYI"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "171822759126-kfnq0222s0lols3pvqm0vd1qqf7u16gt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
