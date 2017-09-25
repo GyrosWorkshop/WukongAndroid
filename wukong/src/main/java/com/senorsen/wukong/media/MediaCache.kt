@@ -7,6 +7,7 @@ import android.util.Log
 import com.senorsen.wukong.network.MediaProviderClient
 import java.io.File
 import java.io.FileInputStream
+import java.io.IOException
 import java.lang.ref.WeakReference
 
 class MediaCache(private val context: WeakReference<Context>) {
@@ -59,15 +60,27 @@ class MediaCache(private val context: WeakReference<Context>) {
             return
         }
 
+        var ex: Exception? = null
+
         synchronized(mDiskCacheLock) {
-            val editor = mDiskLruCache.edit(key)
-            val out = editor.newOutputStream(MEDIA_INDEX)
-            MediaProviderClient.getMedia(url).use {
-                it.copyTo(out)
-                editor.commit()
-                out.close()
-            }
+            var retryCount = 2
+            while (retryCount > 0)
+                try {
+                    val editor = mDiskLruCache.edit(key)
+                    val out = editor.newOutputStream(MEDIA_INDEX)
+                    MediaProviderClient.getMedia(url).use {
+                        it.copyTo(out)
+                        editor.commit()
+                        out.close()
+                    }
+                    ex = null
+                } catch (e: IOException) {
+                    ex = e
+                    retryCount--
+                    Thread.sleep(5000)
+                }
         }
+        if (ex != null) throw ex as Exception
         Log.d(TAG, "write to disk cache $key")
     }
 

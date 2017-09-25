@@ -14,9 +14,10 @@ android {
         applicationId "com.senorsen.wukong"
         minSdkVersion 21
         targetSdkVersion 26
-        versionCode 9007
-        versionName "1.0.0-alpha7.2"
+        versionCode 9008
+        versionName "1.0.0-alpha8"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
     }
     buildTypes {
         debug {
@@ -31,6 +32,9 @@ android {
     }
     lintOptions {
         abortOnError false
+    }
+    dexOptions {
+        jumboMode = true
     }
 }
 

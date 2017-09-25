@@ -302,7 +302,7 @@ class WukongService : Service() {
     private var mTimer: Timer? = null
     private var mTask: LrcTask? = null
 
-    private fun createMedia() {
+    private fun createMediaPlayer() {
         mediaPlayer = MediaPlayer()
         mediaPlayer.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
@@ -313,12 +313,12 @@ class WukongService : Service() {
                 mTimer!!.scheduleAtFixedRate(mTask, 0, 500)
             }
         }
-        mediaPlayer.setOnCompletionListener {
-            stopLrc()
-        }
+    }
+
+    private fun createMedia() {
+        createMediaPlayer()
 
         mediaPlayerForPreloadVerification = MediaPlayer()
-        mediaPlayerForPreloadVerification.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
         mediaPlayerForPreloadVerification.setAudioStreamType(AudioManager.STREAM_MUSIC)
 
         mSessionCompat = MediaSessionCompat(this, "WukongMusicService")
@@ -469,6 +469,7 @@ class WukongService : Service() {
                 }
 
                 mediaPlayer.setOnCompletionListener {
+                    stopLrc()
                     if (currentSong == null) return@setOnCompletionListener
                     Log.d(TAG, "finished")
                     thread {
@@ -526,7 +527,6 @@ class WukongService : Service() {
                             }
 
                             Protocol.PLAY -> {
-
                                 if (protocol.song == null) {
                                     setNotification("Channel $channelId: play null")
                                     return
@@ -537,10 +537,15 @@ class WukongService : Service() {
                                 currentPlayUserId = protocol.user
                                 currentPlayUser = User.getUserFromList(userList, currentPlayUserId) ?: currentPlayUser
 
-                                currentSong = song
                                 downvoted = protocol.downvote ?: false
                                 val oldStartTime = songStartTime
                                 songStartTime = currentTimeMillis() - (protocol.elapsed!! * 1000).toLong()
+
+                                // Reduce noise or glitch.
+                                if (currentSong?.songKey == song.songKey && Math.abs(songStartTime - oldStartTime) < 5000) {
+                                    Log.i(TAG, "server may send exactly the same song ${song.songKey}, skipping")
+                                    return
+                                }
 
                                 setNotification()
                                 onUpdateChannelInfo(userList, currentPlayUserId)
@@ -551,16 +556,9 @@ class WukongService : Service() {
                                     doUpdateNextSong()
                                 }
 
-                                // Reduce noise or glitch.
-                                if (currentSong?.songKey == song.songKey && Math.abs(songStartTime - oldStartTime) < 5000) {
-                                    Log.i(TAG, "server may send exactly the same song ${song.songKey}, skipping")
-                                    return
-                                }
-
                                 try {
                                     val out = mediaCache.getMediaFromDiskCache(song.songKey)
                                     // Stop playing first.
-                                    mediaPlayer.reset()
                                     if (out != null) {
                                         Log.i(TAG, "media cache HIT: $out")
                                         MediaSourcePreparer.setMediaSource(mediaPlayer, out, protocol.elapsed)
@@ -568,6 +566,7 @@ class WukongService : Service() {
                                         Log.i(TAG, "media cache MISS")
                                         val (files, mediaSources) = mediaSourceSelector.selectFromMultipleMediaFiles(song)
                                         Log.d(TAG, "play media sources: $mediaSources")
+                                        currentSong = song
                                         MediaSourcePreparer.setMediaSources(mediaPlayer, mediaSources, protocol.elapsed)
                                     }
                                     if (!isPaused) mediaPlayer.start()
