@@ -321,7 +321,7 @@ class WukongService : Service() {
         mediaPlayerForPreloadVerification = MediaPlayer()
         mediaPlayerForPreloadVerification.setAudioStreamType(AudioManager.STREAM_MUSIC)
 
-        mSessionCompat = MediaSessionCompat(this, "WukongMusicService")
+        mSessionCompat = MediaSessionCompat(this, "WukongService")
         mSession = mSessionCompat.sessionToken
         mSessionCompat.setCallback(object : MediaSessionCompat.Callback() {
             override fun onPause() {
@@ -415,14 +415,6 @@ class WukongService : Service() {
         }
         mediaPlayer.reset()
         mediaPlayerForPreloadVerification.reset()
-        am.abandonAudioFocus(afChangeListener)
-
-        mSessionCompat.isActive = false
-        mSessionCompat.release()
-
-        onServiceStopped()
-        stopForeground(true)
-        mNotificationManager?.cancelAll()
     }
 
     private fun startConnect() {
@@ -550,7 +542,10 @@ class WukongService : Service() {
                                 mediaPlayer.reset()
                                 currentSong = song
 
+                                val art = getSongArtwork(song)
+                                updateMediaSessionMeta(art)
                                 setNotification()
+
                                 onUpdateChannelInfo(userList, currentPlayUserId)
                                 onUpdateSongInfo(song)
 
@@ -732,6 +727,7 @@ class WukongService : Service() {
     override fun onDestroy() {
 
         stopPrevConnect()
+        onServiceStopped()
         onUpdateChannelInfo(null, null)
         unregisterReceiver(receiver)
 
@@ -825,19 +821,13 @@ class WukongService : Service() {
                                     .putExtra("song", currentSong!!.toRequestSong().toString()),
                             PendingIntent.FLAG_CANCEL_CURRENT)))
         }
-
-        val art = getSongArtwork(currentSong, notificationBuilder)
-        if (currentSong != null)
-            updateMediaSessionMeta(art)
-        notificationBuilder.setLargeIcon(art ?: defaultArtwork)
+        notificationBuilder.setLargeIcon(getSongArtwork(currentSong, notificationBuilder, true) ?: defaultArtwork)
 
         return notificationBuilder
     }
 
-    private fun isUIThread() = Thread.currentThread() == Looper.getMainLooper().thread
-
-    private fun setNotification(content: String? = null) {
-        handler.post {
+    private fun setNotification(content: String? = null): NotificationCompat.Builder? {
+        fun realSetNotification(): NotificationCompat.Builder {
             Log.d(TAG, "setNotification $content")
             val builder = makeMediaNotificationBuilder(content)
             if (content == null)
@@ -847,12 +837,21 @@ class WukongService : Service() {
             notification.flags = NotificationCompat.FLAG_ONGOING_EVENT
             mNotificationManager!!.notify(MEDIA_NOTIFICATION_ID, notification)
             startForeground(MEDIA_NOTIFICATION_ID, notification)
+            return builder
+        }
+        return if (isUiThread())
+            realSetNotification()
+        else {
+            handler.post { realSetNotification() }
+            null
         }
     }
 
-    private fun updateMediaSessionMeta(bitmap: Bitmap?) {
+    private fun isUiThread() = Thread.currentThread() == Looper.getMainLooper().thread
+
+    private fun updateMediaSessionMeta(bitmap: Bitmap? = null) {
+        Log.d(TAG, "updateMediaSessionMeta $bitmap")
         mSessionCompat.setMetadata(currentSong!!.toMediaMetaData(bitmap))
-        mSessionCompat.isActive = true
         updateMediaSessionState()
     }
 
@@ -864,7 +863,7 @@ class WukongService : Service() {
         stateBuilder.setState(if (isPaused) PlaybackStateCompat.STATE_PAUSED else PlaybackStateCompat.STATE_PLAYING, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1f)
 
         mSessionCompat.setPlaybackState(stateBuilder.build())
-        mSessionCompat.isActive = !isPaused
+        mSessionCompat.isActive = true
     }
 
     private lateinit var defaultArtwork: Bitmap
@@ -889,8 +888,10 @@ class WukongService : Service() {
                     Log.d(TAG, "fetchBitmapFromURLAsync: set bitmap to " + artUrl)
                     updateMediaSessionMeta(bigImage)
                     if (builder != null) {
-                        builder.setLargeIcon(bigImage)
-                        mNotificationManager!!.notify(MEDIA_NOTIFICATION_ID, builder.build())
+                        val notification = builder
+                                .setLargeIcon(bigImage)
+                                .build()
+                        mNotificationManager!!.notify(MEDIA_NOTIFICATION_ID, notification)
                     }
                     // Update UI
                     onUpdateSongArtwork(bigImage)
