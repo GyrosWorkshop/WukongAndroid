@@ -89,7 +89,7 @@ class WukongActivity : AppCompatActivity() {
             updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
             updateChannelInfo(wukongService!!.connectStatus, wukongService!!.userList, wukongService!!.currentPlayUserId)
             setLyric(wukongService!!.currentSong?.lyrics?.find { it.lrc == true && it.translated != true && !it.data.isNullOrBlank() }?.data)
-            updateSongInfo(wukongService!!.currentSong, wukongService!!.isPaused)
+            updateSongInfo(wukongService!!.currentSong, wukongService!!.isPaused, wukongService!!.downvoted)
             updateAlbumArtwork(wukongService!!.getSongArtwork(wukongService!!.currentSong, null, false))
         }
     }
@@ -347,8 +347,9 @@ class WukongActivity : AppCompatActivity() {
                 UPDATE_SONG_INFO_INTENT -> {
                     val song = intent.getSerializableExtra("song") as Song?
                     val isPaused = intent.getBooleanExtra("isPaused", false)
+                    val downvoted = intent.getBooleanExtra("downvoted", false)
                     setLyric(song?.lyrics?.find { it.lrc == true && it.translated != true && !it.data.isNullOrBlank() }?.data)
-                    updateSongInfo(song, isPaused)
+                    updateSongInfo(song, isPaused, downvoted)
                     updateAlbumArtwork(wukongService?.getSongArtwork(song, null, false))
                 }
 
@@ -456,13 +457,14 @@ class WukongActivity : AppCompatActivity() {
         }
     }
 
-    fun updateSongInfo(song: Song?, isPaused: Boolean) {
+    fun updateSongInfo(song: Song?, isPaused: Boolean, downvoted: Boolean) {
         handler.post {
             if (song != null) {
                 findViewById<TextView>(R.id.song_footer_line_one)?.setText(song.title)
                 if (!withLyric) findViewById<TextView>(R.id.song_footer_line_two)?.setText(song.artist ?: "")
                 findViewById<View>(R.id.button_area)?.visibility = View.VISIBLE
                 findViewById<ImageView>(R.id.play_switch_button)?.setImageResource(if (isPaused) R.drawable.ic_play else R.drawable.ic_pause)
+                findViewById<ImageView>(R.id.downvote_button)?.visibility = if (downvoted) View.INVISIBLE else View.VISIBLE
             } else {
                 findViewById<View>(R.id.button_area)?.visibility = View.INVISIBLE
             }

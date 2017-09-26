@@ -31,6 +31,7 @@ import com.senorsen.wukong.service.WukongService
 import com.senorsen.wukong.store.ConfigurationLocalStore
 import com.senorsen.wukong.store.SongListLocalStore
 import jp.wasabeef.recyclerview.animators.SlideInRightAnimator
+import java.lang.ref.WeakReference
 import java.util.*
 import kotlin.concurrent.thread
 
@@ -59,7 +60,6 @@ class SongListFragment : Fragment() {
             connected = true
             val wukongService = (service as WukongService.WukongServiceBinder).getService()
             this@SongListFragment.wukongService = wukongService
-            wukongService.songListUpdateCallback = this@SongListFragment::onSongListUpdate
 
             if (adapter.list?.isEmpty() != false) {
                 fetchSongList()
@@ -73,14 +73,6 @@ class SongListFragment : Fragment() {
                     adapter.reloadFilteredList()
                 }
             }
-        }
-    }
-
-    fun onSongListUpdate(list: List<Song>) {
-        handler.post {
-            Log.d(SongListFragment::class.simpleName, "onSongListUpdate ${list.firstOrNull()}")
-            adapter.list = list.toMutableList()
-            adapter.reloadFilteredList()
         }
     }
 
@@ -205,7 +197,6 @@ class SongListFragment : Fragment() {
     }
 
     override fun onStop() {
-        wukongService?.songListUpdateCallback = null
         handler.removeCallbacks(bindRunnable)
         if (connected) activity.unbindService(serviceConnection)
         super.onStop()

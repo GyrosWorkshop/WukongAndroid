@@ -105,8 +105,6 @@ class WukongService : Service() {
     lateinit var songListLocalStore: SongListLocalStore
     lateinit var userInfoLocalStore: UserInfoLocalStore
 
-    var songListUpdateCallback: ((List<Song>) -> Unit)? = null
-
     private val ACTION_TURN_OFF = "com.senorsen.wukong.TURN_OFF"
     private val ACTION_DOWNVOTE = "com.senorsen.wukong.DOWNVOTE"
     private val ACTION_PAUSE = "com.senorsen.wukong.PAUSE"
@@ -137,6 +135,7 @@ class WukongService : Service() {
         val intent = Intent(WukongActivity.UPDATE_SONG_INFO_INTENT)
         intent.putExtra("song", song)
         intent.putExtra("isPaused", isPaused)
+        intent.putExtra("downvoted", downvoted)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
@@ -144,6 +143,11 @@ class WukongService : Service() {
         Log.d(TAG, "onUpdateSongArtwork " + artwork)
         val intent = Intent(WukongActivity.UPDATE_SONG_ARTWORK_INTENT)
         intent.putExtra("artwork", artwork)
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+    }
+
+    fun onUpdateSongList() {
+        val intent = Intent(WukongActivity.UPDATE_SONG_LIST_INTENT)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
@@ -214,14 +218,8 @@ class WukongService : Service() {
             if (first.siteId == song.siteId && first.songId == song.songId) {
                 userSongList.remove(first)
                 userSongList.add(first)
-                handler.post {
-                    try {
-                        songListUpdateCallback?.invoke(userSongList)
-                    } catch (e: Exception) {
-                        // Activity may exited.
-                        songListLocalStore.save(userSongList)
-                    }
-                }
+                songListLocalStore.save(userSongList)
+                onUpdateSongList()
             }
         }
     }
@@ -671,6 +669,9 @@ class WukongService : Service() {
             thread {
                 try {
                     http.downvote(song)
+                    downvoted = true
+                    setNotification()
+                    onUpdateSongInfo()
                 } catch (e: Exception) {
                     Log.e(TAG, "sendDownvote", e)
                     handler.post {
@@ -678,8 +679,6 @@ class WukongService : Service() {
                     }
                 }
             }
-            downvoted = true
-            setNotification()
         }
     }
 
@@ -713,9 +712,8 @@ class WukongService : Service() {
 
     private fun shuffleSongList() {
         Collections.shuffle(userSongList, Random(System.nanoTime()))
+        onUpdateSongList()
         doUpdateNextSong()
-        val intent = Intent(WukongActivity.UPDATE_SONG_LIST_INTENT)
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
