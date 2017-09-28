@@ -461,22 +461,6 @@ class WukongService : Service() {
                     onUserInfoUpdate(currentUser, null)
                 }
 
-                mediaPlayer.setOnCompletionListener {
-                    stopLrc()
-                    if (currentSong == null) return@setOnCompletionListener
-                    Log.d(TAG, "finished")
-                    thread {
-                        try {
-                            http.reportFinish(currentSong!!.toRequestSong())
-                        } catch (e: HttpClient.InvalidRequestException) {
-                            Log.e(TAG, "reportFinish invalid request, means data not sync. But server will save us.")
-                            e.printStackTrace()
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-                }
-
                 val receiver = object : SocketClient.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
 
@@ -568,6 +552,20 @@ class WukongService : Service() {
                                         MediaSourcePreparer.setMediaSources(mediaPlayer, mediaSources, protocol.elapsed)
                                     }
                                     if (!isPaused) mediaPlayer.start()
+                                    mediaPlayer.setOnCompletionListener {
+                                        stopLrc()
+                                        Log.d(TAG, "finished")
+                                        thread {
+                                            try {
+                                                http.reportFinish(song.toRequestSong())
+                                            } catch (e: HttpClient.InvalidRequestException) {
+                                                Log.e(TAG, "reportFinish invalid request, means data not sync. But server will save us.")
+                                                e.printStackTrace()
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
+                                            }
+                                        }
+                                    }
                                 } catch (e: Exception) {
                                     Log.e(TAG, "play", e)
                                     handler.post {
