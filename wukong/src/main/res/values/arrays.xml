@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
-    <string-array name="pref_preferAudioQuality_values">
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string-array name="pref_preferAudioQuality_values" tools:ignore="MissingTranslation">
         <item>lossless</item>
         <item>high</item>
         <item>medium</item>
@@ -8,9 +8,32 @@
     </string-array>
 
     <string-array name="pref_preferAudioQuality_entries">
-        <item>Lossless</item>
-        <item>High</item>
-        <item>Medium</item>
-        <item>Low</item>
+        <item>Lossless > 600kbps</item>
+        <item>High ~ 320kbps</item>
+        <item>Medium ~ 192kbps</item>
+        <item>Low ~ 128kbps</item>
     </string-array>
+
+    <string-array name="schedule_shutdown_entries">
+        <item>After 15 minutes</item>
+        <item>After half an hour</item>
+        <item>After one hour</item>
+        <item>After two hours</item>
+        <item>Remove schedule</item>
+    </string-array>
+
+    <string-array name="schedule_shutdown_hints">
+        <item>15 minutes</item>
+        <item>half an hour</item>
+        <item>one hour</item>
+        <item>two hours</item>
+    </string-array>
+
+    <integer-array name="schedule_shutdown_values" tools:ignore="MissingTranslation">
+        <item>900000</item>
+        <item>1800000</item>
+        <item>3600000</item>
+        <item>7200000</item>
+        <item>0</item>
+    </integer-array>
 </resources>

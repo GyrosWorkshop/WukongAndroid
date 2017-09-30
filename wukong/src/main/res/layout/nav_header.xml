@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_gravity="center_vertical"
-    android:background="#eee"
+    android:background="#FFF3E0"
     android:minHeight="?android:attr/listPreferredItemHeightSmall"
     android:padding="10dp">
 

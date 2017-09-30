@@ -32,7 +32,7 @@ class MainFragment : Fragment() {
                     if (wukongService.isPaused)
                         wukongService.switchPlay()
                     else
-                        wukongService.switchPause()
+                        wukongService.switchPause(true)
                 }
             }
 

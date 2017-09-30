@@ -187,6 +187,55 @@ class WukongService : Service() {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
+    private var mShutdownTimer: Timer? = null
+    private var mShutdownTask: TimerTask? = null
+    private var shutdownAfterSongFinished = false
+    private var shouldShutdownNow = false
+    var shutdownScheduleAt: Date? = null
+        get() = field
+        private set(value) {
+            field = value
+        }
+
+    fun enableScheduleShutdown(after: Long, afterSongFinished: Boolean) {
+        if (mShutdownTimer != null) {
+            mShutdownTask?.cancel()
+            mShutdownTimer!!.purge()
+        }
+        if (after > 0) {
+            mShutdownTimer = Timer()
+            mShutdownTask = ShutdownTask()
+            val calendar = Calendar.getInstance()
+            calendar.add(Calendar.MILLISECOND, after.toInt())
+            shutdownScheduleAt = calendar.time
+            mShutdownTimer!!.schedule(mShutdownTask, after)
+            shutdownAfterSongFinished = afterSongFinished
+        } else {
+            shutdownScheduleAt = null
+            shutdownAfterSongFinished = false
+        }
+    }
+
+    private fun doScheduleShutdown() {
+        val isDay = Calendar.getInstance().get(Calendar.HOUR_OF_DAY) in (6..20)
+        handler.post {
+            Toast.makeText(this, if (isDay) R.string.notification_schedule_shutdown_day else R.string.notification_schedule_shutdown_night, Toast.LENGTH_LONG).show()
+        }
+        stopSelf()
+    }
+
+    private inner class ShutdownTask : TimerTask() {
+        override fun run() {
+            if (shutdownAfterSongFinished) {
+                Log.i(TAG, "shutdown task triggered, will stop after song finish")
+                shouldShutdownNow = true
+            } else {
+                Log.i(TAG, "shutdown task triggered, stop")
+                doScheduleShutdown()
+            }
+        }
+    }
+
     fun fetchConfiguration(http: HttpClient = this.http): Configuration? {
         try {
             configuration = http.getConfiguration()
@@ -276,11 +325,11 @@ class WukongService : Service() {
                 if (intent != null) {
                     Log.d(TAG, intent.action)
                     when (intent.action) {
-                        ACTION_TURN_OFF -> stopService(Intent(this@WukongService, WukongService::class.java))
+                        ACTION_TURN_OFF -> stopSelf()
 
                         ACTION_DOWNVOTE -> sendDownvote(intent.getStringExtra("song").toRequestSong())
 
-                        ACTION_PAUSE -> switchPause()
+                        ACTION_PAUSE -> switchPause(true)
 
                         ACTION_PLAY -> switchPlay()
                     }
@@ -504,6 +553,11 @@ class WukongService : Service() {
                             }
 
                             Protocol.PLAY -> {
+                                if (shouldShutdownNow) {
+                                    doScheduleShutdown()
+                                    return
+                                }
+
                                 if (protocol.song == null) {
                                     setNotification("Channel $channelId: play null")
                                     return
@@ -564,6 +618,7 @@ class WukongService : Service() {
                                             } catch (e: Exception) {
                                                 e.printStackTrace()
                                             }
+                                            if (shouldShutdownNow) doScheduleShutdown()
                                         }
                                     }
                                 } catch (e: Exception) {
@@ -639,7 +694,7 @@ class WukongService : Service() {
             } catch (e: Exception) {
                 handler.post {
                     Toast.makeText(applicationContext, "Error: " + e.message, Toast.LENGTH_LONG).show()
-                    stopService(Intent(this, WukongService::class.java))
+                    stopSelf()
                 }
             }
 
@@ -680,7 +735,7 @@ class WukongService : Service() {
         }
     }
 
-    fun switchPause() {
+    fun switchPause(triggeredByUser: Boolean = false) {
         try {
             Log.d(TAG, "switchPause")
             mediaPlayer.pause()
@@ -688,6 +743,8 @@ class WukongService : Service() {
             setNotification()
             updateMediaSessionState()
             onUpdateSongInfo()
+            if (triggeredByUser)
+                am.abandonAudioFocus(afChangeListener)
         } catch (e: Exception) {
             Log.e(TAG, "switchPause", e)
         }
@@ -700,6 +757,7 @@ class WukongService : Service() {
             mediaPlayer.start()
             mediaPlayer.setVolume(1.0f, 1.0f)
             isPaused = false
+            requestAudioFocus()
             setNotification()
             updateMediaSessionState()
             onUpdateSongInfo()
@@ -715,20 +773,21 @@ class WukongService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
         if (intent != null) {
             startConnect()
         }
-
         return START_REDELIVER_INTENT
     }
 
     override fun onDestroy() {
-
         stopPrevConnect()
         onServiceStopped()
         onUpdateChannelInfo(null, null)
         unregisterReceiver(receiver)
+        mTask?.cancel()
+        mTimer?.purge()
+        mShutdownTask?.cancel()
+        mShutdownTimer?.purge()
 
         super.onDestroy()
         Log.d(TAG, "onDestroy")

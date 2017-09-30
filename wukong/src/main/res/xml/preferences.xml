@@ -10,7 +10,7 @@
 
         <ListPreference
             android:defaultValue="@string/pref_preferAudioQualityData_default"
-            android:dialogTitle="Preferred Maximum Audio Quality"
+            android:dialogTitle="@string/pref_dialog_title_max_audio_quality"
             android:entries="@array/pref_preferAudioQuality_entries"
             android:entryValues="@array/pref_preferAudioQuality_values"
             android:key="pref_preferAudioQualityData"

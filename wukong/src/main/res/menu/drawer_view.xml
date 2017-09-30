@@ -22,6 +22,10 @@
             android:icon="@drawable/ic_settings"
             android:title="@string/settings" />
         <item
+            android:id="@+id/nav_schedule_shutdown"
+            android:icon="@drawable/ic_schedule_shutdown"
+            android:title="@string/schedule_shutdown"/>
+        <item
             android:id="@+id/nav_start_service"
             android:icon="@drawable/ic_drawer_start_service"
             android:title="@string/start" />

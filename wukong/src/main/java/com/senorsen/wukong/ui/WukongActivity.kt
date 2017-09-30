@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.preference.PreferenceManager
+import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.NavigationView
 import android.support.design.widget.Snackbar
 import android.support.v4.content.LocalBroadcastManager
@@ -123,13 +124,22 @@ class WukongActivity : AppCompatActivity() {
             mLrcTask = LrcTask()
             mTimer!!.scheduleAtFixedRate(mLrcTask, 1000, 500)
         }
+        if (mScheduleShutdownPullTimer == null) {
+            mScheduleShutdownPullTimer = Timer()
+            mScheduleShutdownPullTask = ScheduleShutdownPullTask()
+            mScheduleShutdownPullTimer!!.scheduleAtFixedRate(mScheduleShutdownPullTask, 0, 1000)
+        }
     }
 
     override fun onStop() {
         handler.removeCallbacks(bindRunnable)
         if (connected) unbindService(serviceConnection)
-        mTimer?.cancel()
+        mLrcTask?.cancel()
+        mTimer?.purge()
         mTimer = null
+        mScheduleShutdownPullTask?.cancel()
+        mScheduleShutdownPullTimer?.purge()
+        mScheduleShutdownPullTimer = null
         super.onStop()
     }
 
@@ -271,6 +281,9 @@ class WukongActivity : AppCompatActivity() {
                             .commit()
                 }
             }
+
+            R.id.nav_schedule_shutdown ->
+                showScheduleShutdownDialog()
 
             R.id.nav_start_service ->
                 startWukongService()
@@ -471,6 +484,43 @@ class WukongActivity : AppCompatActivity() {
         }
     }
 
+    private var mScheduleShutdownPullTimer: Timer? = null
+    private var mScheduleShutdownPullTask: TimerTask? = null
+
+    private inner class ScheduleShutdownPullTask : TimerTask() {
+        override fun run() {
+            if (wukongService != null) {
+                updateScheduleShutdownTimeLeft(wukongService!!.shutdownScheduleAt)
+            } else {
+                updateScheduleShutdownTimeLeft(null)
+            }
+        }
+    }
+
+    fun updateScheduleShutdownTimeLeft(scheduleShutdownAt: Date?) {
+        if (scheduleShutdownAt != null) {
+            val millis = scheduleShutdownAt.time - Date().time
+            val text = when {
+                millis < 1000 -> resources.getString(R.string.schedule_shutdown_shortly)
+                millis > 60000 -> resources.getQuantityString(R.plurals.time_minute, ((millis + 30000) / 60000).toInt(), ((millis + 30000) / 60000).toInt())
+                else -> resources.getQuantityString(R.plurals.time_second, (millis / 1000 % 60).toInt(), (millis / 1000 % 60).toInt())
+            }
+            handler.post {
+                findViewById<NavigationView>(R.id.left_drawer)
+                        ?.menu
+                        ?.findItem(R.id.nav_schedule_shutdown)
+                        ?.setTitle(getString(R.string.schedule_shutdown) + ": " + text)
+            }
+        } else {
+            handler.post {
+                findViewById<NavigationView>(R.id.left_drawer)
+                        ?.menu
+                        ?.findItem(R.id.nav_schedule_shutdown)
+                        ?.setTitle(R.string.schedule_shutdown)
+            }
+        }
+    }
+
     private val defaultArtwork = R.mipmap.ic_default_art
     private val wukongArtwork = R.mipmap.ic_launcher
 
@@ -557,6 +607,24 @@ class WukongActivity : AppCompatActivity() {
         }
         builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
 
+        builder.show()
+    }
+
+    private fun showScheduleShutdownDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(R.string.schedule_shutdown)
+                .setItems(R.array.schedule_shutdown_entries) { dialog, which ->
+                    val millis = resources.getIntArray(R.array.schedule_shutdown_values)[which].toLong()
+                    if (wukongService != null) {
+                        wukongService!!.enableScheduleShutdown(millis, true)
+                        if (millis > 0)
+                            Snackbar.make(findViewById<CoordinatorLayout>(R.id.mainCoordinatorLayout), getString(R.string.will_schedule_shutdown_at, resources.getStringArray(R.array.schedule_shutdown_hints)[which]), Snackbar.LENGTH_SHORT).show()
+                        else
+                            Snackbar.make(findViewById<CoordinatorLayout>(R.id.mainCoordinatorLayout), getString(R.string.cancel_schedule_shutdown), Snackbar.LENGTH_SHORT).show()
+                    } else {
+                        Snackbar.make(findViewById<CoordinatorLayout>(R.id.mainCoordinatorLayout), R.string.start_service_first, Snackbar.LENGTH_SHORT).show()
+                    }
+                }
         builder.show()
     }
 

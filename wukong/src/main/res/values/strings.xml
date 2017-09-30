@@ -51,9 +51,25 @@
     <string name="pref_title_cache_size">Cache size</string>
     <string name="pref_summary_cache_size">Maximum cache size (gigabyte)</string>
     <string name="pref_title_max_audio_quality">Preferred Maximum Audio Quality (Data)</string>
+    <string name="pref_dialog_title_max_audio_quality">Preferred Maximum Audio Quality</string>
     <string name="pref_title_sync_playlists">Sync Playlists (separated by line)</string>
     <string name="pref_title_provider_cookies">Media Provider Cookies</string>
     <string name="pref_title_network">Network</string>
     <string name="pref_title_cache_playback"><![CDATA[Media Caching & Playback]]></string>
     <string name="pref_title_playlists">Playlists</string>
+    <string name="schedule_shutdown">Schedule Shutdown</string>
+    <plurals name="time_minute">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
+    <plurals name="time_second">
+        <item quantity="one">%1$d second</item>
+        <item quantity="other">%1$d seconds</item>
+    </plurals>
+    <string name="schedule_shutdown_shortly">shortly</string>
+    <string name="start_service_first">Please start Wukong service first.</string>
+    <string name="will_schedule_shutdown_at">Wukong will exit after %1$s.</string>
+    <string name="cancel_schedule_shutdown">Shutdown schedule removed.</string>
+    <string name="notification_schedule_shutdown_night">Wukong just turned off. Sweet dreams!</string>
+    <string name="notification_schedule_shutdown_day">Wukong just turned off. Have a nice day!</string>
 </resources>

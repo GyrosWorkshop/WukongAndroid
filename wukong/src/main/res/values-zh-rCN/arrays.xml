@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string-array name="pref_preferAudioQuality_entries">
+        <item>极佳（无损） > 600kbps</item>
+        <item>高 ~ 320kbps</item>
+        <item>中 ~ 192kbps</item>
+        <item>低 ~ 128kbps</item>
+    </string-array>
+
+    <string-array name="schedule_shutdown_entries">
+        <item>15分钟后</item>
+        <item>30分钟后</item>
+        <item>1小时后</item>
+        <item>2小时后</item>
+        <item>不关闭</item>
+    </string-array>
+
+    <string-array name="schedule_shutdown_hints">
+        <item>15分钟</item>
+        <item>半小时</item>
+        <item>一小时</item>
+        <item>2小时</item>
+    </string-array>
+</resources>
