@@ -87,6 +87,7 @@ class SongListFragment : Fragment() {
     }
 
     fun bindService() {
+        connected = false
         bindRunnable.run()
     }
 

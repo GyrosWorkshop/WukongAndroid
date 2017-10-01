@@ -13,7 +13,7 @@ import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 
-class HttpClient(private val cookies: String = "") {
+class HttpClient(var cookies: String = "") {
 
     private val TAG = javaClass.simpleName
 

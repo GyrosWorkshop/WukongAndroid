@@ -75,12 +75,11 @@ class WukongActivity : AppCompatActivity() {
 
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             connected = true
+            Log.d(TAG, "service connected")
             val wukongService = (service as WukongService.WukongServiceBinder).getService()
             this@WukongActivity.wukongService = wukongService
             if (wukongService.connected) {
                 pullChannelInfo()
-            } else {
-                onServiceStopped()
             }
         }
     }
@@ -107,6 +106,7 @@ class WukongActivity : AppCompatActivity() {
 
     // Workaround for type recursive.
     fun bindService() {
+        wukongService = null
         bindRunnable.run()
     }
 
@@ -116,8 +116,9 @@ class WukongActivity : AppCompatActivity() {
     }
 
     override fun onStart() {
+        Log.d(TAG, "onStart")
         super.onStart()
-        updateChannelInfo()
+        onServiceStopped()
         bindService()
         if (mTimer == null) {
             mTimer = Timer()
@@ -152,9 +153,12 @@ class WukongActivity : AppCompatActivity() {
         if (data == null) return
         when (requestCode) {
             REQUEST_COOKIES -> {
-                cookies = data.getStringExtra("cookies")
-                val username = "xxx"
-                Snackbar.make(findViewById(R.id.mainCoordinatorLayout), "Logged in as $username.", Snackbar.LENGTH_SHORT).show()
+                cookies = data.getStringExtra("cookies") ?: ""
+                thread {
+                    http.cookies = cookies!!
+                    val userInfo = http.getUserInfo()
+                    Snackbar.make(findViewById(R.id.mainCoordinatorLayout), getString(R.string.logged_in_as_username, userInfo.userName), Snackbar.LENGTH_SHORT).show()
+                }
 
                 val sharedPref = getSharedPreferences("wukong", Context.MODE_PRIVATE)
                 sharedPref.edit().putString("cookies", cookies).apply()
@@ -204,13 +208,18 @@ class WukongActivity : AppCompatActivity() {
         headerLayout = navigationView.inflateHeaderView(R.layout.nav_header)
         headerLayout.findViewById<RelativeLayout>(R.id.drawer_user).setOnClickListener {
             mDrawerLayout.closeDrawer(GravityCompat.START)
-            startActivityForResult(Intent(this, WebViewActivity::class.java), REQUEST_COOKIES)
+            startActivityForResult(Intent(this, SignInWebViewActivity::class.java), REQUEST_COOKIES)
         }
 
         userInfoLocalStore = UserInfoLocalStore(this)
         updateUserTextAndAvatar(userInfoLocalStore.load(), userInfoLocalStore.loadUserAvatar())
         updateChannelText()
         fragmentManager.beginTransaction().replace(R.id.fragment, MainFragment(), "MAIN").commit()
+
+        if (intent != null) {
+            if (broadcastReceiver == null) broadcastReceiver = ChannelUpdateBroadcastReceiver()
+            broadcastReceiver!!.onReceive(this, intent)
+        }
 
         mayRequestPermission()
         thread {
@@ -342,6 +351,13 @@ class WukongActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, intentFilter)
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+
+        if (broadcastReceiver == null) broadcastReceiver = ChannelUpdateBroadcastReceiver()
+        broadcastReceiver!!.onReceive(this, intent)
+    }
+
     override fun onPause() {
         if (broadcastReceiver != null) LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
         super.onPause()
@@ -382,7 +398,7 @@ class WukongActivity : AppCompatActivity() {
                     AlertDialog.Builder(this@WukongActivity).setMessage(getString(R.string.disconnect_notification, cause))
                             .setTitle(R.string.disconnected)
                             .setPositiveButton(R.string.reconnect) { _, _ -> startWukongService() }
-                            .setNegativeButton(R.string.exit) { _, _ -> }
+                            .setNegativeButton(R.string.exit) { _, _ -> stopService(Intent(context, WukongService::class.java)) }
                             .show()
                 }
 
@@ -417,7 +433,7 @@ class WukongActivity : AppCompatActivity() {
     }
 
     fun updateChannelInfo(connectStatus: WukongService.ConnectStatus = WukongService.ConnectStatus.DISCONNECTED, users: List<User>? = null, currentPlayUserId: String? = null) {
-        Log.d(TAG, "updateChannelInfo $connected, $currentPlayUserId")
+        Log.d(TAG, "updateChannelInfo $connectStatus, $currentPlayUserId")
         val channelId = currentChannel()
         val connectStatusText = when (connectStatus) {
             WukongService.ConnectStatus.DISCONNECTED -> resources.getString(R.string.disconnected)
@@ -425,7 +441,6 @@ class WukongActivity : AppCompatActivity() {
             WukongService.ConnectStatus.RECONNECTING -> resources.getString(R.string.reconnecting)
             WukongService.ConnectStatus.CONNECTED -> ""
         } + " #$channelId "
-        Log.d(TAG, connectStatusText)
         (findViewById<TextView>(R.id.channel_info))?.text = if (users != null)
             Html.fromHtml(connectStatusText + String.format(resources.getQuantityString(R.plurals.numberOfPlayers, users.size), users.size)
                     + ": " + users.joinToString {
@@ -489,11 +504,7 @@ class WukongActivity : AppCompatActivity() {
 
     private inner class ScheduleShutdownPullTask : TimerTask() {
         override fun run() {
-            if (wukongService != null) {
-                updateScheduleShutdownTimeLeft(wukongService!!.shutdownScheduleAt)
-            } else {
-                updateScheduleShutdownTimeLeft(null)
-            }
+            updateScheduleShutdownTimeLeft(wukongService?.shutdownScheduleAt)
         }
     }
 

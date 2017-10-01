@@ -30,7 +30,7 @@
     </string-array>
 
     <integer-array name="schedule_shutdown_values" tools:ignore="MissingTranslation">
-        <item>900000</item>
+        <item>900000</item>-->
         <item>1800000</item>
         <item>3600000</item>
         <item>7200000</item>

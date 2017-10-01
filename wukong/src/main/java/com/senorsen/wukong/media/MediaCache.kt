@@ -32,7 +32,7 @@ class MediaCache(private val context: WeakReference<Context>) {
         mDiskCacheStarting = false
     }
 
-    fun getDiskCacheDir(uniqueName: String): File {
+    private fun getDiskCacheDir(uniqueName: String): File {
         val cachePath = context.get()?.externalCacheDir?.path
         return File(cachePath + File.separator + uniqueName)
     }
@@ -44,8 +44,8 @@ class MediaCache(private val context: WeakReference<Context>) {
                 try {
                     mDiskCacheLock.wait()
                 } catch (e: InterruptedException) {
+                    e.printStackTrace()
                 }
-
             }
             val stream = (mDiskLruCache.get(key)?.getInputStream(MEDIA_INDEX)) ?: return null
             Log.d(TAG, "disk cache hit $key")
@@ -62,23 +62,28 @@ class MediaCache(private val context: WeakReference<Context>) {
 
         var ex: Exception? = null
 
-        synchronized(mDiskCacheLock) {
-            var retryCount = 2
-            while (retryCount > 0)
-                try {
-                    val editor = mDiskLruCache.edit(key)
-                    val out = editor.newOutputStream(MEDIA_INDEX)
-                    MediaProviderClient.getMedia(url).use {
-                        it.copyTo(out)
-                        editor.commit()
-                        out.close()
-                    }
-                    ex = null
-                } catch (e: IOException) {
-                    ex = e
-                    retryCount--
-                    Thread.sleep(5000)
+        Log.d(TAG, "try to preload $key $url")
+        Log.d(TAG, "try to preload start $key $url")
+        var retryCount = 2
+        var success = false
+        while (retryCount > 0 && !success) {
+            val editor = mDiskLruCache.edit(key)
+            try {
+                editor.newOutputStream(MEDIA_INDEX).use { out ->
+                    val bytes = MediaProviderClient.getMedia(url)
+                    out.write(bytes)
+                    editor.commit()
+                    mDiskLruCache.flush()
                 }
+                ex = null
+                success = true
+            } catch (e: IOException) {
+                e.printStackTrace()
+                ex = e
+                retryCount--
+                Thread.sleep(5000)
+                editor.abort()
+            }
         }
         if (ex != null) throw ex as Exception
         Log.d(TAG, "write to disk cache $key")

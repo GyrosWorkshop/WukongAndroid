@@ -67,8 +67,9 @@ class WukongService : Service() {
             field = value
         }
 
-    private val MEDIA_NOTIFICATION_ID = 1001
-    private val MESSAGE_NOTIFICATION_ID = 1002
+    private val random = Random()
+    private val MEDIA_NOTIFICATION_ID = random.nextInt()
+    private val MESSAGE_NOTIFICATION_ID = random.nextInt()
 
     private lateinit var albumArtCache: AlbumArtCache
 
@@ -125,6 +126,7 @@ class WukongService : Service() {
 
     fun onUpdateChannelInfo(users: List<User>? = null, currentPlayUserId: String? = null) {
         val intent = Intent(WukongActivity.UPDATE_CHANNEL_INFO_INTENT)
+        Log.d(TAG, "connectStatus $connectStatus")
         intent.putExtra("connectStatus", connectStatus)
         intent.putExtra("users", if (users == null) null else users as Serializable)
         intent.putExtra("currentPlayUserId", currentPlayUserId)
@@ -160,26 +162,30 @@ class WukongService : Service() {
 
     fun onDisconnectNotification(cause: String) {
         Log.d(TAG, "onDisconnectNotification, cause=" + cause)
+        stopForeground(true)
         val notificationBuilder = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
             NotificationCompat.Builder(this)
         else {
             createMessageChannel()
             NotificationCompat.Builder(this, MESSAGE_CHANNEL_ID)
         }
-        val intent = Intent(this, WukongActivity::class.java)
-        val contextIntent = PendingIntent.getActivity(this, 0, intent, 0)
+        val sendIntent = Intent(this, WukongActivity::class.java)
+        sendIntent.action = WukongActivity.DISCONNECT_INTENT
+        sendIntent.putExtra("cause", cause)
+        val contentIntent = PendingIntent.getActivity(this, 0, sendIntent, PendingIntent.FLAG_CANCEL_CURRENT)
         val text = getString(R.string.disconnect_notification, cause)
         notificationBuilder.setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(getString(R.string.app_name))
                 .setContentText(text)
-                .setContentIntent(contextIntent)
+                .setContentIntent(contentIntent)
                 .setDefaults(Notification.DEFAULT_SOUND)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))
         mNotificationManager!!.notify(MESSAGE_NOTIFICATION_ID, notificationBuilder.build())
-
-        val sendIntent = Intent(WukongActivity.DISCONNECT_INTENT)
-        sendIntent.putExtra("cause", cause)
         LocalBroadcastManager.getInstance(this).sendBroadcast(sendIntent)
+
+        currentSong = null
+        onUpdateSongInfo()
+        onUpdateChannelInfo()
     }
 
     private fun onServiceStopped() {
@@ -192,7 +198,6 @@ class WukongService : Service() {
     private var shutdownAfterSongFinished = false
     private var shouldShutdownNow = false
     var shutdownScheduleAt: Date? = null
-        get() = field
         private set(value) {
             field = value
         }
@@ -459,10 +464,7 @@ class WukongService : Service() {
         socket?.disconnect()
         workThread?.interrupt()
 
-        currentSong = null
-        if (mediaPlayer.isPlaying) {
-            mediaPlayer.stop()
-        }
+        am.abandonAudioFocus(afChangeListener)
         mediaPlayer.reset()
         mediaPlayerForPreloadVerification.reset()
     }
@@ -475,6 +477,7 @@ class WukongService : Service() {
         Log.d(TAG, "Cookies: " + cookies)
 
         stopPrevConnect()
+        requestAudioFocus()
 
         val intentFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
         intentFilter.addAction(AudioManager.ACTION_HEADSET_PLUG)
@@ -512,6 +515,13 @@ class WukongService : Service() {
 
                 val receiver = object : SocketClient.SocketReceiver {
                     override fun onEventMessage(protocol: WebSocketReceiveProtocol) {
+                        if (shouldShutdownNow) {
+                            when (protocol.eventName) {
+                                Protocol.PLAY ->
+                                    doScheduleShutdown()
+                            }
+                            return
+                        }
 
                         when (protocol.eventName) {
 
@@ -553,11 +563,6 @@ class WukongService : Service() {
                             }
 
                             Protocol.PLAY -> {
-                                if (shouldShutdownNow) {
-                                    doScheduleShutdown()
-                                    return
-                                }
-
                                 if (protocol.song == null) {
                                     setNotification("Channel $channelId: play null")
                                     return
@@ -570,7 +575,7 @@ class WukongService : Service() {
 
                                 downvoted = protocol.downvote ?: false
                                 val oldStartTime = songStartTime
-                                songStartTime = currentTimeMillis() - (protocol.elapsed!! * 1000).toLong()
+                                songStartTime = currentTimeMillis() - ((if (protocol.elapsed!! <= 10) 0.toFloat() else protocol.elapsed) * 1000).toLong()
 
                                 // Reduce noise or glitch.
                                 if (currentSong?.songKey == song.songKey && Math.abs(songStartTime - oldStartTime) < 5000) {
@@ -780,6 +785,7 @@ class WukongService : Service() {
     }
 
     override fun onDestroy() {
+        Log.i(TAG, "onDestroy")
         stopPrevConnect()
         onServiceStopped()
         onUpdateChannelInfo(null, null)
@@ -788,9 +794,10 @@ class WukongService : Service() {
         mTimer?.purge()
         mShutdownTask?.cancel()
         mShutdownTimer?.purge()
+        mNotificationManager?.cancelAll()
 
         super.onDestroy()
-        Log.d(TAG, "onDestroy")
+        Log.d(TAG, "onDestroy finished")
     }
 
     private var mNotificationManager: NotificationManagerCompat? = null

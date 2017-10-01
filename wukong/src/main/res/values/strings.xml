@@ -3,6 +3,7 @@
     <string name="app_name">Wukong</string>
 
     <string name="sign_in">Sign In</string>
+    <string name="logged_in_as_username">Logged in as %1$s.</string>
     <string name="channel">Channel</string>
     <string name="channel_id">Channel: %1$s</string>
     <string name="ok">OK</string>
@@ -53,7 +54,7 @@
     <string name="pref_title_max_audio_quality">Preferred Maximum Audio Quality (Data)</string>
     <string name="pref_dialog_title_max_audio_quality">Preferred Maximum Audio Quality</string>
     <string name="pref_title_sync_playlists">Sync Playlists (separated by line)</string>
-    <string name="pref_title_provider_cookies">Media Provider Cookies</string>
+    <string name="pref_title_provider_cookies">Provider Cookies</string>
     <string name="pref_title_network">Network</string>
     <string name="pref_title_cache_playback"><![CDATA[Media Caching & Playback]]></string>
     <string name="pref_title_playlists">Playlists</string>

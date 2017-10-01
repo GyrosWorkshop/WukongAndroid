@@ -30,14 +30,14 @@ object MediaProviderClient {
         }
     }
 
-    fun getMedia(url: String): InputStream {
+    fun getMedia(url: String): ByteArray {
         val request = Request.Builder()
                 .header(HttpHeaders.USER_AGENT, "")
                 .url(url).build()
         client.newCall(request).execute().use { response ->
             when {
                 response.isSuccessful ->
-                    return response.body()!!.byteStream()
+                    return response.body()!!.bytes()
                 else ->
                     throw HttpClient.InvalidResponseException(response)
             }

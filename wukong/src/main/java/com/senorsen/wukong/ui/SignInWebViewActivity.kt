@@ -3,6 +3,7 @@ package com.senorsen.wukong.ui
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -16,7 +17,7 @@ import com.senorsen.wukong.network.HttpClient
 import kotlin.concurrent.thread
 
 
-class WebViewActivity : AppCompatActivity() {
+class SignInWebViewActivity : AppCompatActivity() {
 
     private val TAG = javaClass.simpleName
 
@@ -39,23 +40,15 @@ class WebViewActivity : AppCompatActivity() {
         thread {
             HttpClient()
         }.join()
+        webView.settings.userAgentString = "WukongAndroid"
         webView.loadUrl(ApiUrls.oAuthEndpoint)
 
         var loggedIn = false
 
         webView.webViewClient = object : WebViewClient() {
-
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                val url = request.url.toString()
-                if (url.startsWith(ApiUrls.base)) {
-                    CookieManager.getInstance().setCookie(url, "")
-                }
-                view.loadUrl(url)
-                return false
-            }
-
-            override fun onPageFinished(view: WebView?, url: String) {
-                if (url == ApiUrls.base + "/" && !loggedIn) {
+            override fun onPageFinished(view: WebView, url: String) {
+                Log.d(TAG, "Navigate: $url")
+                if (url in arrayOf(ApiUrls.base + "/", ApiUrls.base + "/#") && !loggedIn) {
                     val cookies = CookieManager.getInstance().getCookie(url)
                     Log.d(TAG, "All the cookies of $url: $cookies")
                     if (cookies.isNotBlank()) {
@@ -70,14 +63,12 @@ class WebViewActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError) {
+            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                 if (Build.VERSION.SDK_INT >= 23)
-                    Log.d(TAG, error.description.toString() + " " + request?.url)
+                    Log.d(TAG, error.description.toString() + " " + request.url)
                 super.onReceivedError(view, request, error)
             }
 
         }
-
     }
-
 }

@@ -10,6 +10,7 @@ object ApiUrls {
 
     // Base url, hostname, etc.
     var base: String = "https://api.wukongmusic.us:443" // Default, will be dynamically updated.
+    var baseDebug: String = "http://172.22.5.16:5000"
 
     // API endpoints.
     val apiEndpoint: String
@@ -42,6 +43,6 @@ object ApiUrls {
 
     // OAuth endpoint.
     val oAuthEndpoint: String
-        get() = "$base/oauth/go/OpenIdConnect?redirectUri=/"
+        get() = "$base/oauth/go/Google?redirectUri=/"
 
 }

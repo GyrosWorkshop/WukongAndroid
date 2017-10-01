@@ -87,16 +87,17 @@ class AlbumArtCache(private val context: WeakReference<Context>) {
         mDiskCacheStarting = false // Finished initialization
     }
 
-    fun getBitmapFromDiskCache(key: String): Array<Bitmap>? {
+    private fun getBitmapFromDiskCache(key: String): Array<Bitmap>? {
         synchronized(mDiskCacheLock) {
             // Wait while disk cache is started from background thread
             while (mDiskCacheStarting) {
                 try {
                     mDiskCacheLock.wait()
                 } catch (e: InterruptedException) {
+                    e.printStackTrace()
                 }
-
             }
+            Log.i(TAG, "read from disk $key")
             val snapshot = mDiskLruCache.get(key) ?: return null
             Log.d(TAG, "disk cache hit $key")
             return arrayOf(BIG_BITMAP_INDEX, ICON_BITMAP_INDEX).map {
@@ -117,16 +118,15 @@ class AlbumArtCache(private val context: WeakReference<Context>) {
         addBitmapToMemoryCache(key, bitmaps)
 
         // Also add to disk cache
-        synchronized(mDiskCacheLock) {
-            val editor = mDiskLruCache.edit(key)
-            val outs = arrayOf(BIG_BITMAP_INDEX, ICON_BITMAP_INDEX).map {
-                val out = editor.newOutputStream(it)
-                writeOutputStreamFromBitmap(bitmaps[it], out)
-                out
-            }
-            editor.commit()
-            outs.forEach { it.close() }
+        val editor = mDiskLruCache.edit(key)
+        val outs = arrayOf(BIG_BITMAP_INDEX, ICON_BITMAP_INDEX).map {
+            val out = editor.newOutputStream(it)
+            writeOutputStreamFromBitmap(bitmaps[it], out)
+            out
         }
+        editor.commit()
+        mDiskLruCache.flush()
+        outs.forEach { it.close() }
         Log.d(TAG, "write to disk cache $key")
     }
 
@@ -168,9 +168,9 @@ class AlbumArtCache(private val context: WeakReference<Context>) {
     }
 
     class FetchAsyncTask(private val weakContext: WeakReference<AlbumArtCache>,
-                               private val artUrl: String,
-                               private val listener: FetchListener?,
-                               private val key: String) : AsyncTask<Void, Void, Array<Bitmap>>() {
+                         private val artUrl: String,
+                         private val listener: FetchListener?,
+                         private val key: String) : AsyncTask<Void, Void, Array<Bitmap>>() {
         override fun doInBackground(objects: Array<Void>): Array<Bitmap>? {
             val bitmaps: Array<Bitmap>
             try {
@@ -226,7 +226,7 @@ class AlbumArtCache(private val context: WeakReference<Context>) {
     companion object {
 
         private val DISK_CACHE_SUBDIR = "music_artwork"
-        private val MAX_ALBUM_ART_CACHE_SIZE: Long = 50 * 1024 * 1024  // 50 MB
+        private val MAX_ALBUM_ART_CACHE_SIZE: Long = 100 * 1024 * 1024  // 50 MB
         private val MAX_ART_WIDTH = 1000  // pixels
         private val MAX_ART_HEIGHT = 1000  // pixels
 

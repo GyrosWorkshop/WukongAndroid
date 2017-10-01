@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">悟空音乐</string>
     <string name="sign_in">登录</string>
+    <string name="logged_in_as_username">已作为 %1$s 登录。</string>
     <string name="channel">频道</string>
     <string name="channel_id">频道：%1$s</string>
     <string name="ok">好</string>
@@ -43,7 +44,7 @@
     <string name="pref_summary_cache_size">最大缓存空间（GiB）</string>
     <string name="pref_title_max_audio_quality">音质偏好（数据）</string>
     <string name="pref_title_sync_playlists">同步歌单列表</string>
-    <string name="pref_title_provider_cookies">多媒体供源 Cookies</string>
+    <string name="pref_title_provider_cookies">供应方 Cookies</string>
     <string name="downvote">差评</string>
     <string name="pref_title_network">网络</string>
     <string name="pref_title_cache_playback">缓存与播放</string>
