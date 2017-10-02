@@ -56,11 +56,11 @@ class AlbumArtCache(private val context: WeakReference<Context>) {
         val cacheDir = getDiskCacheDir(DISK_CACHE_SUBDIR)
         initDiskCache(cacheDir)
         Log.i(TAG, "cacheDir: $cacheDir")
-        val memCacheSize = (Runtime.getRuntime().maxMemory() / 10).toInt()
-        Log.i(TAG, "memCacheSize=$memCacheSize")
+        val memCacheSize = 10 * 1024    // 10 MiB
+        Log.i(TAG, "memCacheSize: $memCacheSize kb")
         mMemoryCache = object : LruCache<String, Array<Bitmap>>(memCacheSize) {
-            override fun sizeOf(key: String, value: Array<Bitmap>): Int {
-                return value[BIG_BITMAP_INDEX].byteCount + value[ICON_BITMAP_INDEX].byteCount
+            override fun sizeOf(key: String, bitmaps: Array<Bitmap>): Int {
+                return bitmaps.map { it.byteCount }.reduce { a, b -> a + b } / 1024
             }
         }
     }
@@ -139,11 +139,12 @@ class AlbumArtCache(private val context: WeakReference<Context>) {
     }
 
     private fun addBitmapToMemoryCache(key: String, bitmaps: Array<Bitmap>) {
-        Log.d(TAG, "put memory cache $key ${bitmaps.map { it.byteCount }.joinToString()}")
+        Log.d(TAG, "put memory cache $key , prev size: ${mMemoryCache.size()} / ${mMemoryCache.maxSize()}")
         mMemoryCache.put(key, bitmaps)
     }
 
     private fun getBitmapFromMemCache(key: String): Array<Bitmap>? {
+        Log.d(TAG, "memory cache size: ${mMemoryCache.size()}")
         return mMemoryCache.get(key)
     }
 

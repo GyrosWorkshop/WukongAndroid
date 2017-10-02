@@ -612,18 +612,21 @@ class WukongService : Service() {
                                     }
                                     if (!isPaused) mediaPlayer.start()
                                     mediaPlayer.setOnCompletionListener {
-                                        stopLrc()
-                                        Log.d(TAG, "finished")
-                                        thread {
-                                            try {
-                                                http.reportFinish(song.toRequestSong())
-                                            } catch (e: HttpClient.InvalidRequestException) {
-                                                Log.e(TAG, "reportFinish invalid request, means data not sync. But server will save us.")
-                                                e.printStackTrace()
-                                            } catch (e: Exception) {
-                                                e.printStackTrace()
+                                        Log.d(TAG, "media player position ${mediaPlayer.currentPosition}, duration ${mediaPlayer.duration}")
+                                        if (mediaPlayer.currentPosition >= mediaPlayer.duration - 1000) {
+                                            stopLrc()
+                                            Log.d(TAG, "finished")
+                                            thread {
+                                                try {
+                                                    http.reportFinish(song.toRequestSong())
+                                                } catch (e: HttpClient.InvalidRequestException) {
+                                                    Log.e(TAG, "reportFinish invalid request, means data not sync. But server will save us.")
+                                                    e.printStackTrace()
+                                                } catch (e: Exception) {
+                                                    e.printStackTrace()
+                                                }
+                                                if (shouldShutdownNow) doScheduleShutdown()
                                             }
-                                            if (shouldShutdownNow) doScheduleShutdown()
                                         }
                                     }
                                 } catch (e: Exception) {
@@ -698,6 +701,7 @@ class WukongService : Service() {
                 }
             } catch (e: Exception) {
                 handler.post {
+                    Log.e(TAG, "error on first connect ", e)
                     Toast.makeText(applicationContext, "Error: " + e.message, Toast.LENGTH_LONG).show()
                     stopSelf()
                 }
