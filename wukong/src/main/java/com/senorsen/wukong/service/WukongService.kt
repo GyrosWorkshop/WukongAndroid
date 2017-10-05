@@ -533,6 +533,7 @@ class WukongService : Service() {
 
                             Protocol.PRELOAD -> {
                                 val song = protocol.song!!
+                                Log.i(TAG, "debounce preload: ${song.songKey} ${song.title}")
                                 debounce.run {
                                     try {
                                         // Preload artwork image.
@@ -572,16 +573,19 @@ class WukongService : Service() {
 
                                 currentPlayUserId = protocol.user
                                 currentPlayUser = User.getUserFromList(userList, currentPlayUserId) ?: currentPlayUser
-
                                 downvoted = protocol.downvote ?: false
-                                val oldStartTime = songStartTime
-                                songStartTime = currentTimeMillis() - ((if (protocol.elapsed!! <= 10) 0.toFloat() else protocol.elapsed) * 1000).toLong()
 
+                                Log.i(TAG, "Play: ${song.songKey} ${song.title} by user ${currentPlayUser?.userName}")
+
+                                val oldStartTime = songStartTime
+                                songStartTime = currentTimeMillis() - (protocol.elapsed * 1000).toLong()
                                 // Reduce noise or glitch.
                                 if (currentSong?.songKey == song.songKey && Math.abs(songStartTime - oldStartTime) < 5000) {
                                     Log.i(TAG, "server may send exactly the same song ${song.songKey}, skipping")
                                     return
                                 }
+                                // Play from the beginning if elapsed time is too short.
+                                songStartTime = currentTimeMillis() - ((if (protocol.elapsed <= 10) 0.toFloat() else protocol.elapsed) * 1000).toLong()
 
                                 mediaPlayer.reset()
                                 currentSong = song
@@ -639,7 +643,7 @@ class WukongService : Service() {
 
                             Protocol.NOTIFICATION -> {
                                 handler.post {
-                                    Toast.makeText(applicationContext, "Wukong: " + protocol.notification?.message, Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(applicationContext, "Wukong: " + protocol.notification?.message, Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
